@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
 import { build, gotoPage } from '@e2e/helper';
+import { expect, test } from '@playwright/test';
 
 test('should set template via function correctly', async () => {
   const rsbuild = await build({
@@ -33,7 +33,7 @@ test('should set template via function correctly', async () => {
 
   const indexHtml =
     files[Object.keys(files).find((file) => file.endsWith('index.html'))!];
-  expect(indexHtml).toContain('<div id="test-template">xxx</div>');
+  expect(indexHtml).toContain('<div id="test-template">text</div>');
 });
 
 test('should allow to access templateParameters', async ({ page }) => {
@@ -53,7 +53,7 @@ test('should allow to access templateParameters', async ({ page }) => {
   await gotoPage(page, rsbuild);
 
   const testTemplate = page.locator('#test-template');
-  await expect(testTemplate).toHaveText('xxx');
+  await expect(testTemplate).toHaveText('text');
 
   const testEl = page.locator('#test');
   await expect(testEl).toHaveText('Hello Rsbuild!');

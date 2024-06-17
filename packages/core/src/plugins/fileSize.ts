@@ -3,14 +3,15 @@
  * license at https://github.com/facebook/create-react-app/blob/master/LICENSE
  */
 import path from 'node:path';
-import { fse, JS_REGEX, CSS_REGEX, HTML_REGEX } from '@rsbuild/shared';
+import { JS_REGEX, fse } from '@rsbuild/shared';
 import { color, logger } from '@rsbuild/shared';
 import type {
-  Stats,
   MultiStats,
-  StatsAsset,
   PrintFileSizeOptions,
+  Stats,
+  StatsAsset,
 } from '@rsbuild/shared';
+import { CSS_REGEX, HTML_REGEX } from '../constants';
 import type { RsbuildPlugin } from '../types';
 
 /** Filter source map and license files */
@@ -106,6 +107,8 @@ async function printFileSizes(
       const origin = stats.toJson({
         all: false,
         assets: true,
+        // TODO: need supported in rspack
+        // @ts-expect-error
         cachedAssets: true,
         groupAssetsByInfo: false,
         groupAssetsByPath: false,
@@ -117,7 +120,8 @@ async function printFileSizes(
       const filteredAssets = origin.assets!.filter((asset) =>
         filterAsset(asset.name),
       );
-      const distFolder = distPath.replace(rootPath + path.sep, '');
+
+      const distFolder = path.relative(rootPath, distPath);
 
       return filteredAssets.map((asset) =>
         formatAsset(asset, distPath, distFolder),

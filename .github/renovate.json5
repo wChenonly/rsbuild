@@ -1,7 +1,7 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": ["config:recommended", "schedule:weekly"],
-	"ignorePaths": ["**/tests/**", "**/compiled/**", "**/node_modules/**"],
+	"ignorePaths": ["**/tests/**", "**/node_modules/**"],
 	"packageRules": [
 		// Use chore as semantic commit type for commit messages
 		{
@@ -49,6 +49,7 @@
 	],
 	"ignoreDeps": [
 		// manually update some packages
+		"pnpm",
 		"core-js",
 		"esbuild",
 		"typescript",
@@ -57,7 +58,8 @@
 		// plugin-vue2 depends on vue 2 and vue-loader v15
 		"vue",
 		"vue-loader",
-		"loader-utils2",
+		// some loaders still depend on loader-utils v2
+		"loader-utils",
 		// pure esm packages can not be used now
 		"gzip-size",
 		"globby",

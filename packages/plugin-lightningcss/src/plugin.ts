@@ -1,26 +1,24 @@
-import {
-  getBrowserslistWithDefault,
-  mergeChainedOptions,
-  parseMinifyOptions,
-} from '@rsbuild/shared';
-import type {
-  ModifyBundlerChainUtils,
-  RsbuildPlugin,
-  BundlerChain,
-  RsbuildContext,
-  NormalizedConfig,
-  RsbuildTarget,
-} from '@rsbuild/shared';
-import browserslist from '@rsbuild/shared/browserslist';
-import { browserslistToTargets as _browserslistToTargets } from 'lightningcss';
 import path from 'node:path';
 import type {
+  ChainIdentifier,
+  NormalizedConfig,
+  RsbuildContext,
+  RsbuildPlugin,
+  RsbuildTarget,
+  RspackChain,
+} from '@rsbuild/core';
+import { getBrowserslistWithDefault, reduceConfigs } from '@rsbuild/shared';
+import browserslist from '@rsbuild/shared/browserslist';
+import * as lightningcss from 'lightningcss';
+import type { Targets } from 'lightningcss';
+import type {
   LightningCSSLoaderOptions,
+  LightningCSSTransformOptions,
+  Lightningcss,
   PluginLightningcssOptions,
 } from './types';
-import type * as LightningCSS from 'lightningcss';
 
-const PLUGIN_NAME = 'rsbuild:lightningcss';
+export const PLUGIN_LIGHTNINGCSS_NAME = 'rsbuild:lightningcss';
 
 const getLightningCSSTargets = async ({
   context,
@@ -31,7 +29,7 @@ const getLightningCSSTargets = async ({
   context: RsbuildContext;
   config: NormalizedConfig;
   target: RsbuildTarget;
-  options: PluginLightningcssOptions | undefined;
+  options: PluginLightningcssOptions;
 }) => {
   const browserslistUserConfig = await getBrowserslistWithDefault(
     context.rootPath,
@@ -39,97 +37,69 @@ const getLightningCSSTargets = async ({
     target,
   );
 
-  const { implementation } = (options ?? {}) as any;
-  if (
-    implementation &&
-    typeof implementation.browserslistToTargets !== 'function'
-  ) {
-    throw new TypeError(
-      `[${PLUGIN_NAME}]: options.implementation.browserslistToTargets must be an 'lightningcss' browserslistToTargets function. Received ${typeof implementation.browserslistToTargets}`,
-    );
-  }
+  const implementation =
+    (options.implementation as Lightningcss) ?? lightningcss;
 
-  const browserslistToTargets: typeof _browserslistToTargets =
-    implementation?.browserslistToTargets ?? _browserslistToTargets;
+  const targets = implementation.browserslistToTargets(
+    browserslist(browserslistUserConfig),
+  );
 
-  const targets = browserslistToTargets(browserslist(browserslistUserConfig));
   return targets;
 };
 
 const applyLightningCSSLoader = ({
   chain,
-  utils: { CHAIN_ID },
+  CHAIN_ID,
   targets,
-  options,
+  options = {},
 }: {
-  chain: BundlerChain;
-  utils: ModifyBundlerChainUtils;
-  targets: LightningCSS.Targets;
+  chain: RspackChain;
+  CHAIN_ID: ChainIdentifier;
+  targets: Targets;
   options: PluginLightningcssOptions | undefined;
 }) => {
+  if (!chain.module.rules.has(CHAIN_ID.RULE.CSS)) {
+    return;
+  }
+
   const defaultOptions = {
     targets,
   } satisfies LightningCSSLoaderOptions;
 
-  const { implementation } = options ?? {};
+  const { implementation } = options;
 
-  if (options?.transform === true) {
+  if (options.transform === true) {
     options.transform = {};
   }
 
-  const mergedOptions: LightningCSSLoaderOptions = mergeChainedOptions({
-    defaults: defaultOptions,
-    options: {
+  const mergedOptions = reduceConfigs<LightningCSSTransformOptions>({
+    initial: defaultOptions,
+    config: {
       ...(implementation ? { implementation } : {}),
-      ...options?.transform,
+      ...options.transform,
     },
   });
 
-  const ruleIds = [
-    CHAIN_ID.RULE.CSS,
-    CHAIN_ID.RULE.SASS,
-    CHAIN_ID.RULE.LESS,
-    CHAIN_ID.RULE.STYLUS,
-  ];
+  const rule = chain.module.rule(CHAIN_ID.RULE.CSS);
 
-  for (const ruleId of ruleIds) {
-    const existRule = chain.module.rules.has(ruleId);
-    if (!existRule) {
-      continue;
-    }
+  rule
+    .use(CHAIN_ID.USE.LIGHTNINGCSS)
+    .loader(path.resolve(__dirname, './loader.cjs'))
+    .options(mergedOptions)
+    .after(CHAIN_ID.USE.CSS);
 
-    const rule = chain.module.rule(ruleId);
-    const use = rule.use(CHAIN_ID.USE.LIGHTNINGCSS);
-
-    use.loader(path.resolve(__dirname, './loader')).options(mergedOptions);
-
-    switch (ruleId) {
-      case CHAIN_ID.RULE.SASS:
-        use.before(CHAIN_ID.USE.RESOLVE_URL);
-        break;
-      case CHAIN_ID.RULE.LESS:
-        use.before(CHAIN_ID.USE.LESS);
-        break;
-      case CHAIN_ID.RULE.STYLUS:
-        use.before(CHAIN_ID.USE.STYLUS);
-        break;
-      case CHAIN_ID.RULE.CSS:
-        use.after(CHAIN_ID.USE.CSS);
-        break;
-    }
-    rule.uses.delete(CHAIN_ID.USE.POSTCSS);
-  }
+  rule.uses.delete(CHAIN_ID.USE.POSTCSS);
 };
 
 const applyLightningCSSMinifyPlugin = async ({
   chain,
-  utils: { CHAIN_ID },
+  CHAIN_ID,
   targets,
   options,
 }: {
-  chain: BundlerChain;
-  utils: ModifyBundlerChainUtils;
-  targets: LightningCSS.Targets;
+  chain: RspackChain;
+  CHAIN_ID: ChainIdentifier;
+  targets: Targets;
   options: PluginLightningcssOptions | undefined;
 }) => {
   const defaultOptions = {
@@ -142,9 +112,9 @@ const applyLightningCSSMinifyPlugin = async ({
     options.minify = {};
   }
 
-  const mergedOptions: LightningCSSLoaderOptions = mergeChainedOptions({
-    defaults: defaultOptions,
-    options: {
+  const mergedOptions = reduceConfigs<LightningCSSTransformOptions>({
+    initial: defaultOptions,
+    config: {
       ...(implementation ? { implementation } : {}),
       ...options?.minify,
     },
@@ -157,41 +127,80 @@ const applyLightningCSSMinifyPlugin = async ({
     .end();
 };
 
+const validateImplementation = (implementation: unknown) => {
+  if (!implementation) {
+    return;
+  }
+
+  const lightningcss = implementation as Lightningcss;
+
+  if (typeof implementation !== 'object') {
+    throw new TypeError(
+      `[${PLUGIN_LIGHTNINGCSS_NAME}]: implementation must be an 'lightningcss' object. Received ${typeof lightningcss}`,
+    );
+  }
+
+  if (typeof lightningcss.transform !== 'function') {
+    throw new TypeError(
+      `[${PLUGIN_LIGHTNINGCSS_NAME}]: implementation.transform must be an 'lightningcss' transform function. Received ${typeof lightningcss.transform}`,
+    );
+  }
+
+  if (typeof lightningcss.browserslistToTargets !== 'function') {
+    throw new TypeError(
+      `[${PLUGIN_LIGHTNINGCSS_NAME}]: options.implementation.browserslistToTargets must be an 'lightningcss' browserslistToTargets function. Received ${typeof lightningcss.browserslistToTargets}`,
+    );
+  }
+};
+
 export const pluginLightningcss = (
-  options?: PluginLightningcssOptions,
+  options: PluginLightningcssOptions = {},
 ): RsbuildPlugin => ({
-  name: PLUGIN_NAME,
+  name: PLUGIN_LIGHTNINGCSS_NAME,
 
   setup(api) {
-    api.modifyBundlerChain(async (chain, utils) => {
-      const { isServer, isWebWorker, isProd, target } = utils;
-      const { context } = api;
-      const config = api.getNormalizedConfig();
-      const targets = await getLightningCSSTargets({
-        context,
-        config,
-        target,
-        options,
-      });
+    let targets: Targets;
 
-      if (!isServer && !isWebWorker && options?.transform !== false) {
-        applyLightningCSSLoader({
-          chain,
-          utils,
-          targets,
+    if (options.implementation) {
+      validateImplementation(options.implementation);
+    }
+
+    api.modifyBundlerChain({
+      // ensure lightningcss-loader can be applied to sass/less/stylus rules
+      order: 'pre',
+
+      handler: async (chain, { CHAIN_ID, target }) => {
+        const config = api.getNormalizedConfig();
+
+        targets = await getLightningCSSTargets({
+          context: api.context,
+          config,
+          target,
           options,
         });
-      }
 
+        if (target === 'web' && options?.transform !== false) {
+          applyLightningCSSLoader({
+            chain,
+            CHAIN_ID,
+            targets,
+            options,
+          });
+        }
+      },
+    });
+
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, isProd }) => {
+      const config = api.getNormalizedConfig();
+      const { minify } = config.output;
       const isMinimize =
         isProd &&
-        config.output.minify !== false &&
-        parseMinifyOptions(config).minifyCss;
+        (minify === true || (typeof minify === 'object' && minify.css));
 
       if (isMinimize && options?.minify !== false) {
         await applyLightningCSSMinifyPlugin({
           chain,
-          utils,
+          CHAIN_ID,
           targets,
           options,
         });

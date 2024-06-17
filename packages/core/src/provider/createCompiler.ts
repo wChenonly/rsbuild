@@ -1,25 +1,28 @@
 import {
+  type MultiStats,
+  type Rspack,
+  type RspackConfig,
+  type Stats,
+  TARGET_ID_MAP,
+  color,
+  debug,
   isDev,
   isProd,
-  debug,
-  color,
   logger,
+  onCompileDone,
   prettyTime,
-  TARGET_ID_MAP,
-  isMultiCompiler,
-  type RspackConfig,
-  type RspackCompiler,
-  type RspackMultiCompiler,
-  type CreateDevMiddlewareReturns,
 } from '@rsbuild/shared';
-import { initConfigs, type InitConfigsOptions } from './initConfigs';
-import type { InternalContext } from '../types';
-import type { Stats, MultiStats, StatsCompilation } from '@rspack/core';
+import { rspack } from '@rspack/core';
+import type { StatsCompilation } from '@rspack/core';
 import {
   formatStats,
-  rspackMinVersion,
+  getStatsOptions,
   isSatisfyRspackVersion,
-} from './shared';
+  rspackMinVersion,
+} from '../helpers';
+import type { DevMiddlewareAPI } from '../server/devMiddleware';
+import type { DevConfig, InternalContext } from '../types';
+import { type InitConfigsOptions, initConfigs } from './initConfigs';
 
 export async function createCompiler({
   context,
@@ -27,13 +30,11 @@ export async function createCompiler({
 }: {
   context: InternalContext;
   rspackConfigs: RspackConfig[];
-}): Promise<RspackCompiler | RspackMultiCompiler> {
+}): Promise<Rspack.Compiler | Rspack.MultiCompiler> {
   debug('create compiler');
   await context.hooks.onBeforeCreateCompiler.call({
     bundlerConfigs: rspackConfigs,
   });
-
-  const { rspack } = await import('@rspack/core');
 
   if (!(await isSatisfyRspackVersion(rspack.rspackVersion))) {
     throw new Error(
@@ -96,7 +97,7 @@ export async function createCompiler({
       }
     }
 
-    const { message, level } = formatStats(stats);
+    const { message, level } = formatStats(stats, getStatsOptions(compiler));
 
     if (level === 'error') {
       logger.error(message);
@@ -116,12 +117,12 @@ export async function createCompiler({
     isFirstCompile = false;
   };
 
-  // MultiCompiler does not supports `done.tapPromise`
-  if (isMultiCompiler(compiler)) {
-    compiler.hooks.done.tap('rsbuild:done', done);
-  } else {
-    compiler.hooks.done.tapPromise('rsbuild:done', done);
-  }
+  onCompileDone(
+    compiler,
+    done,
+    // @ts-expect-error type mismatch
+    rspack.MultiStats,
+  );
 
   await context.hooks.onAfterCreateCompiler.call({ compiler });
   debug('create compiler done');
@@ -129,11 +130,44 @@ export async function createCompiler({
   return compiler;
 }
 
+export type MiddlewareCallbacks = {
+  onInvalid: () => void;
+  onDone: (stats: any) => void;
+};
+
+export type DevMiddlewareOptions = {
+  /** To ensure HMR works, the devMiddleware need inject the hmr client path into page when HMR enable. */
+  clientPaths?: string[];
+  clientConfig: DevConfig['client'];
+  publicPath?: string;
+
+  /** When liveReload is disabled, the page does not reload. */
+  liveReload?: boolean;
+
+  etag?: 'weak' | 'strong';
+
+  /** The options need by compiler middleware (like webpackMiddleware) */
+  headers?: Record<string, string | string[]>;
+  writeToDisk?: boolean | ((filename: string) => boolean);
+  stats?: boolean;
+
+  /** should trigger when compiler hook called */
+  callbacks: MiddlewareCallbacks;
+
+  /** whether use Server Side Render */
+  serverSideRender?: boolean;
+};
+
+export type CreateDevMiddlewareReturns = {
+  devMiddleware: (options: DevMiddlewareOptions) => DevMiddlewareAPI;
+  compiler: Rspack.Compiler | Rspack.MultiCompiler;
+};
+
 export async function createDevMiddleware(
   options: InitConfigsOptions,
-  customCompiler?: RspackCompiler | RspackMultiCompiler,
+  customCompiler?: Rspack.Compiler | Rspack.MultiCompiler,
 ): Promise<CreateDevMiddlewareReturns> {
-  let compiler: RspackCompiler | RspackMultiCompiler;
+  let compiler: Rspack.Compiler | Rspack.MultiCompiler;
   if (customCompiler) {
     compiler = customCompiler;
   } else {
@@ -144,9 +178,9 @@ export async function createDevMiddleware(
     });
   }
 
-  const { getDevMiddleware } = await import('./devMiddleware');
+  const { getDevMiddleware } = await import('../server/devMiddleware');
   return {
-    devMiddleware: getDevMiddleware(compiler),
+    devMiddleware: await getDevMiddleware(compiler),
     compiler,
   };
 }

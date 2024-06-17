@@ -1,5 +1,5 @@
+import type { RsbuildConfig, RspackConfig } from '@rsbuild/shared';
 import { mergeRsbuildConfig } from '../src/mergeConfig';
-import type { RspackConfig, RsbuildConfig } from '@rsbuild/shared';
 
 describe('mergeRsbuildConfig', () => {
   it('should use `false` to replace empty object', () => {
@@ -160,23 +160,23 @@ describe('mergeRsbuildConfig', () => {
     });
   });
 
-  test('should merge dev.startUrl correctly', async () => {
+  test('should merge server.open correctly', async () => {
     expect(
       mergeRsbuildConfig(
         {
-          dev: {
-            startUrl: ['http://localhost:8080'],
+          server: {
+            open: ['http://localhost:3000'],
           },
         },
         {
-          dev: {
-            startUrl: false,
+          server: {
+            open: false,
           },
         },
       ),
     ).toEqual({
-      dev: {
-        startUrl: false,
+      server: {
+        open: false,
       },
     });
   });

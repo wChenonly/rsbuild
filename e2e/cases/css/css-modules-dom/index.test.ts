@@ -1,49 +1,9 @@
-import { join, resolve } from 'node:path';
-import { fse } from '@rsbuild/shared';
+import { resolve } from 'node:path';
 import { build, gotoPage } from '@e2e/helper';
 import { expect, test } from '@playwright/test';
 import { pluginReact } from '@rsbuild/plugin-react';
 
 const fixtures = resolve(__dirname);
-
-test('enableCssModuleTSDeclaration', async () => {
-  fse.removeSync(join(fixtures, 'src/App.module.less.d.ts'));
-  fse.removeSync(join(fixtures, 'src/App.module.scss.d.ts'));
-
-  await build({
-    cwd: fixtures,
-    plugins: [pluginReact()],
-    rsbuildConfig: {
-      output: {
-        enableCssModuleTSDeclaration: true,
-      },
-    },
-  });
-
-  expect(
-    fse.existsSync(join(fixtures, 'src/App.module.less.d.ts')),
-  ).toBeTruthy();
-
-  expect(
-    fse
-      .readFileSync(join(fixtures, 'src/App.module.less.d.ts'), {
-        encoding: 'utf-8',
-      })
-      .includes('title: string;'),
-  ).toBeTruthy();
-
-  expect(
-    fse.existsSync(join(fixtures, 'src/App.module.scss.d.ts')),
-  ).toBeTruthy();
-
-  expect(
-    fse
-      .readFileSync(join(fixtures, 'src/App.module.scss.d.ts'), {
-        encoding: 'utf-8',
-      })
-      .includes('header: string;'),
-  ).toBeTruthy();
-});
 
 test('injectStyles', async ({ page }) => {
   const rsbuild = await build({

@@ -3,43 +3,35 @@
  * MIT License https://github.com/fz6m/lightningcss-loader/blob/main/LICENSE
  * Author @fz6m
  */
-import { transform as _transform } from 'lightningcss';
 import { Buffer } from 'node:buffer';
-import { CSS_REGEX } from '@rsbuild/shared';
-import type { Compilation, Compiler } from '@rspack/core';
-import type { LightningCSSMinifyPluginOptions } from './types';
+import type { Rspack } from '@rsbuild/core';
+import * as lightningcss from 'lightningcss';
+import type { LightningCSSMinifyPluginOptions, Lightningcss } from './types';
 
 const PLUGIN_NAME = 'lightningcss-minify-plugin';
+
+const CSS_REGEX = /\.css$/;
 
 export class LightningCSSMinifyPlugin {
   private readonly options: LightningCSSMinifyPluginOptions;
 
-  private readonly transform: typeof _transform;
+  private readonly transform: Lightningcss['transform'];
 
   constructor(opts: LightningCSSMinifyPluginOptions = {}) {
     const { implementation } = opts;
-
-    if (
-      implementation &&
-      typeof (implementation as any).transform !== 'function'
-    ) {
-      throw new TypeError(
-        `[${PLUGIN_NAME}]: implementation.transform must be an 'lightningcss' transform function. Received ${typeof (implementation as any).transform}`,
-      );
-    }
-
-    this.transform = (implementation as any)?.transform ?? _transform;
+    this.transform = implementation?.transform ?? lightningcss.transform;
     this.options = opts;
   }
 
-  apply(compiler: Compiler) {
+  apply(compiler: Rspack.Compiler) {
     compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
       compilation.hooks.processAssets.tapPromise(
         {
           name: PLUGIN_NAME,
-          stage: (compilation as any)?.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
+          stage:
+            compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_SIZE,
         },
-        async () => await this.transformAssets(compilation),
+        async () => this.transformAssets(compilation),
       );
 
       compilation.hooks.statsPrinter.tap(PLUGIN_NAME, (statsPrinter) => {
@@ -54,7 +46,9 @@ export class LightningCSSMinifyPlugin {
     });
   }
 
-  private async transformAssets(compilation: Compilation): Promise<void> {
+  private async transformAssets(
+    compilation: Rspack.Compilation,
+  ): Promise<void> {
     const {
       options: { devtool },
       webpack: {
@@ -101,7 +95,7 @@ export class LightningCSSMinifyPlugin {
                 asset.name,
                 JSON.parse(result.map!.toString()),
                 sourceAsString,
-                map as any,
+                map,
                 true,
               )
             : new RawSource(codeString),
@@ -114,5 +108,3 @@ export class LightningCSSMinifyPlugin {
     );
   }
 }
-
-export default LightningCSSMinifyPlugin;

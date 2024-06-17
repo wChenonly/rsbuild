@@ -1,8 +1,8 @@
 import type {
-  ArrayOrNot,
-  ChainedConfigWithUtils,
-  ChainedConfigCombineUtils,
-} from '../utils';
+  ConfigChainMergeContext,
+  ConfigChainWithContext,
+} from '../../reduceConfigs';
+import type { OneOrMany } from '../utils';
 
 export type CrossOrigin = 'anonymous' | 'use-credentials';
 
@@ -26,10 +26,13 @@ export type MetaOptions = {
   [name: string]: string | false | MetaAttrs;
 };
 
-export type HtmlTag = {
+export type HtmlBasicTag = {
   tag: string;
   attrs?: Record<string, string | boolean | null | undefined>;
   children?: string;
+};
+
+export type HtmlTag = HtmlBasicTag & {
   hash?: boolean | string | ((url: string, hash: string) => string);
   publicPath?: boolean | string | ((url: string, publicPath: string) => string);
   append?: boolean;
@@ -50,7 +53,7 @@ export type HtmlTagHandler = (
 
 export type HtmlTagDescriptor = HtmlTag | HtmlTagHandler;
 
-type ChainedHtmlOption<O> = ChainedConfigCombineUtils<O, { entryName: string }>;
+type ChainedHtmlOption<O> = ConfigChainMergeContext<O, { entryName: string }>;
 
 export interface HtmlConfig {
   /**
@@ -68,7 +71,7 @@ export interface HtmlConfig {
   /**
    * Inject custom html tags into the output html files.
    */
-  tags?: ArrayOrNot<HtmlTagDescriptor>;
+  tags?: OneOrMany<HtmlTagDescriptor>;
   /**
    * Set the favicon icon for all pages.
    */
@@ -99,7 +102,7 @@ export interface HtmlConfig {
    * Define the parameters in the HTML template,
    * corresponding to the `templateParameters` config of [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin).
    */
-  templateParameters?: ChainedConfigWithUtils<
+  templateParameters?: ConfigChainWithContext<
     Record<string, unknown>,
     { entryName: string }
   >;

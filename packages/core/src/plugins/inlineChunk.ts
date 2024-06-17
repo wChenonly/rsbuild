@@ -1,10 +1,10 @@
 import {
-  pick,
-  JS_REGEX,
-  CSS_REGEX,
-  isHtmlDisabled,
   type InlineChunkTest,
+  JS_REGEX,
+  isHtmlDisabled,
+  pick,
 } from '@rsbuild/shared';
+import { CSS_REGEX } from '../constants';
 import type { RsbuildPlugin } from '../types';
 
 export const pluginInlineChunk = (): RsbuildPlugin => ({
@@ -42,7 +42,7 @@ export const pluginInlineChunk = (): RsbuildPlugin => ({
       chain
         .plugin(CHAIN_ID.PLUGIN.INLINE_HTML)
         // ensure nonce can be applied to inlined style tags
-        .before(CHAIN_ID.PLUGIN.HTML_NONCE)
+        .before(CHAIN_ID.PLUGIN.HTML_BASIC)
         .use(InlineChunkHtmlPlugin, [
           {
             styleTests,

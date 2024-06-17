@@ -1,22 +1,21 @@
 import { isAbsolute, normalize, sep } from 'node:path';
-import {
-  castArray,
-  mergeChainedOptions,
-  type BundlerChain,
-  type ChainIdentifier,
-  type NormalizedConfig,
-} from '@rsbuild/shared';
+import type { PluginOptions as BabelPluginOptions } from '@babel/core';
+import type {
+  ChainIdentifier,
+  NormalizedConfig,
+  RspackChain,
+} from '@rsbuild/core';
+import { castArray, reduceConfigsWithContext } from '@rsbuild/shared';
 import upath from 'upath';
 import type {
-  BabelPlugin,
   BabelConfigUtils,
-  PresetEnvOptions,
-  PresetReactOptions,
+  BabelLoaderOptions,
+  BabelPlugin,
   BabelTransformOptions,
   PluginBabelOptions,
-  BabelLoaderOptions,
+  PresetEnvOptions,
+  PresetReactOptions,
 } from './types';
-import type { PluginOptions as BabelPluginOptions } from '@babel/core';
 
 export const BABEL_JS_RULE = 'babel-js';
 
@@ -160,10 +159,10 @@ export const applyUserBabelConfig = (
       ...extraBabelUtils,
     } as BabelConfigUtils;
 
-    return mergeChainedOptions({
-      defaults: defaultOptions,
-      options: userBabelConfig,
-      utils: babelUtils,
+    return reduceConfigsWithContext({
+      initial: defaultOptions,
+      config: userBabelConfig,
+      ctx: babelUtils,
     });
   }
 
@@ -172,7 +171,7 @@ export const applyUserBabelConfig = (
 
 export const getUseBuiltIns = (config: NormalizedConfig) => {
   const { polyfill } = config.output;
-  if (polyfill === 'ua' || polyfill === 'off') {
+  if (polyfill === 'off') {
     return false;
   }
   return polyfill;
@@ -183,7 +182,7 @@ export const modifyBabelLoaderOptions = ({
   CHAIN_ID,
   modifier,
 }: {
-  chain: BundlerChain;
+  chain: RspackChain;
   CHAIN_ID: ChainIdentifier;
   modifier: (config: BabelTransformOptions) => BabelTransformOptions;
 }) => {

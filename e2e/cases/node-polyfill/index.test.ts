@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
 import { build, gotoPage } from '@e2e/helper';
+import { expect, test } from '@playwright/test';
 
 test('should add node-polyfill when add node-polyfill plugin', async ({
   page,
@@ -14,7 +14,7 @@ test('should add node-polyfill when add node-polyfill plugin', async ({
   await expect(test).toHaveText('Hello Rsbuild!');
 
   const testBuffer = page.locator('#test-buffer');
-  await expect(testBuffer).toHaveText('120120120120');
+  await expect(testBuffer).toHaveText('979899');
 
   const testQueryString = page.locator('#test-querystring');
   await expect(testQueryString).toHaveText('foo=bar');

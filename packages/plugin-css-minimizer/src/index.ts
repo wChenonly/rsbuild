@@ -1,11 +1,10 @@
-import type { RsbuildPlugin } from '@rsbuild/core';
-import {
-  mergeChainedOptions,
-  type BundlerChain,
-  type ChainedConfig,
-  type ChainIdentifier,
-  parseMinifyOptions,
-} from '@rsbuild/shared';
+import type {
+  ChainIdentifier,
+  ConfigChain,
+  RsbuildPlugin,
+  RspackChain,
+} from '@rsbuild/core';
+import { reduceConfigs } from '@rsbuild/shared';
 import CssMinimizerWebpackPlugin from 'css-minimizer-webpack-plugin';
 import type CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 
@@ -17,7 +16,7 @@ export type PluginCssMinimizerOptions = {
    * Used to customize the options of css-minimizer-webpack-plugin.
    * @see https://github.com/webpack-contrib/css-minimizer-webpack-plugin
    */
-  pluginOptions?: ChainedConfig<CssMinimizerPluginOptions>;
+  pluginOptions?: ConfigChain<CssMinimizerPluginOptions>;
 };
 
 type CssNanoOptions = {
@@ -38,41 +37,40 @@ const getCssnanoDefaultOptions = (): CssNanoOptions => ({
 });
 
 export function applyCSSMinimizer(
-  chain: BundlerChain,
+  chain: RspackChain,
   CHAIN_ID: ChainIdentifier,
   options: PluginCssMinimizerOptions = {},
 ) {
-  const mergedOptions: CssMinimizerPluginOptions = mergeChainedOptions({
-    defaults: {
+  const mergedOptions: CssMinimizerPluginOptions = reduceConfigs({
+    initial: {
       minify: CssMinimizerWebpackPlugin.cssnanoMinify,
       minimizerOptions: getCssnanoDefaultOptions(),
     },
-    options: options.pluginOptions,
+    config: options.pluginOptions,
   });
 
   chain.optimization
     .minimizer(CHAIN_ID.MINIMIZER.CSS)
-    .use(CssMinimizerWebpackPlugin, [
-      // @ts-expect-error type mismatch
-      mergedOptions,
-    ])
+    .use(CssMinimizerWebpackPlugin, [mergedOptions])
     .end();
 }
+
+export const PLUGIN_CSS_MINIMIZER_NAME = 'rsbuild:css-minimizer';
 
 export const pluginCssMinimizer = (
   options?: PluginCssMinimizerOptions,
 ): RsbuildPlugin => ({
-  name: 'rsbuild:css-minimizer',
+  name: PLUGIN_CSS_MINIMIZER_NAME,
 
   setup(api) {
     api.modifyBundlerChain(async (chain, { CHAIN_ID, isProd }) => {
       const config = api.getNormalizedConfig();
-      const isMinimize =
-        isProd &&
-        config.output.minify !== false &&
-        parseMinifyOptions(config).minifyCss;
+      const { minify } = config.output;
 
-      if (isMinimize) {
+      if (
+        isProd &&
+        (minify === true || (typeof minify === 'object' && minify.css))
+      ) {
         applyCSSMinimizer(chain, CHAIN_ID, options);
       }
     });

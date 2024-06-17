@@ -1,7 +1,45 @@
+import type { NormalizedConfig } from '@rsbuild/shared';
+import autoprefixer from '@rsbuild/shared/autoprefixer';
 import { createStubRsbuild } from '@scripts/test-helper';
-import { pluginCss } from '../src/provider/plugins/css';
-import { pluginLess } from '../src/provider/plugins/less';
-import { pluginSass } from '../src/provider/plugins/sass';
+import {
+  applyAutoprefixer,
+  normalizeCssLoaderOptions,
+  pluginCss,
+} from '../src/plugins/css';
+
+describe('normalizeCssLoaderOptions', () => {
+  it('should enable exportOnlyLocals correctly', () => {
+    expect(normalizeCssLoaderOptions({ modules: false }, true)).toEqual({
+      modules: false,
+    });
+
+    expect(normalizeCssLoaderOptions({ modules: true }, true)).toEqual({
+      modules: {
+        exportOnlyLocals: true,
+      },
+    });
+
+    expect(normalizeCssLoaderOptions({ modules: true }, false)).toEqual({
+      modules: true,
+    });
+
+    expect(normalizeCssLoaderOptions({ modules: 'local' }, true)).toEqual({
+      modules: {
+        mode: 'local',
+        exportOnlyLocals: true,
+      },
+    });
+
+    expect(
+      normalizeCssLoaderOptions({ modules: { auto: true } }, true),
+    ).toEqual({
+      modules: {
+        auto: true,
+        exportOnlyLocals: true,
+      },
+    });
+  });
+});
 
 describe('plugin-css', () => {
   it('should override browserslist of autoprefixer when using output.overrideBrowserslist config', async () => {
@@ -85,25 +123,6 @@ describe('plugin-css', () => {
     );
   });
 
-  it('should ignore hashDigest when custom cssModules.localIdentName', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginCss()],
-      rsbuildConfig: {
-        output: {
-          cssModules: {
-            localIdentName: '[hash:base64:5]',
-          },
-        },
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-
-    expect(JSON.stringify(bundlerConfigs[0])).toContain(
-      '"localIdentName":"[hash:5]"',
-    );
-  });
-
   it('should use custom cssModules rule when using output.cssModules config', async () => {
     const rsbuild = await createStubRsbuild({
       plugins: [pluginCss()],
@@ -112,19 +131,6 @@ describe('plugin-css', () => {
           cssModules: {
             auto: (resourcePath) => resourcePath.includes('.module.'),
           },
-        },
-      },
-    });
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-
-  it('should apply custom css-modules-typescript-loader when enableCssModuleTSDeclarationg', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginCss()],
-      rsbuildConfig: {
-        output: {
-          enableCssModuleTSDeclaration: true,
         },
       },
     });
@@ -166,110 +172,21 @@ describe('plugin-css injectStyles', () => {
   });
 });
 
-describe('plugin-less', () => {
-  it('should add less-loader', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginLess()],
-      rsbuildConfig: {
-        tools: {
-          less: {},
-        },
-      },
-    });
+it('should not apply autoprefixer if user config contains autoprefixer', async () => {
+  const config = {
+    tools: {},
+  } as NormalizedConfig;
 
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
+  expect(
+    (await applyAutoprefixer([autoprefixer()], ['Chrome >= 100'], config))
+      .length,
+  ).toEqual(1);
 
-  it('should add less-loader and css-loader when injectStyles', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginLess()],
-      rsbuildConfig: {
-        output: {
-          injectStyles: true,
-        },
-      },
-    });
+  expect(
+    (await applyAutoprefixer([autoprefixer], ['Chrome >= 100'], config)).length,
+  ).toEqual(1);
 
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-
-  it('should add less-loader with tools.less', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginLess()],
-      rsbuildConfig: {
-        tools: {
-          less: {
-            lessOptions: {
-              javascriptEnabled: false,
-            },
-          },
-        },
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-
-  it('should add less-loader with excludes', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginLess()],
-      rsbuildConfig: {
-        tools: {
-          less(config, { addExcludes }) {
-            addExcludes(/node_modules/);
-          },
-        },
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-});
-
-describe('plugin-sass', () => {
-  it('should add sass-loader', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginSass()],
-      rsbuildConfig: {
-        tools: {},
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-
-  it('should add sass-loader and css-loader when injectStyles', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginSass()],
-      rsbuildConfig: {
-        output: {
-          injectStyles: true,
-        },
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
-
-  it('should add sass-loader with excludes', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginSass()],
-      rsbuildConfig: {
-        tools: {
-          sass(config, { addExcludes }) {
-            addExcludes(/node_modules/);
-          },
-        },
-      },
-    });
-
-    const bundlerConfigs = await rsbuild.initConfigs();
-    expect(bundlerConfigs[0]).toMatchSnapshot();
-  });
+  expect(
+    (await applyAutoprefixer([], ['Chrome >= 100'], config)).length,
+  ).toEqual(1);
 });

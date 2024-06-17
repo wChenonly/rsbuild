@@ -1,16 +1,17 @@
 import path from 'node:path';
+import type { RsbuildPlugin, Rspack } from '@rsbuild/core';
+import { PLUGIN_REACT_NAME } from '@rsbuild/plugin-react';
 import {
-  SVG_REGEX,
+  SCRIPT_REGEX,
   deepmerge,
   getDistPath,
   getFilename,
-  SCRIPT_REGEX,
 } from '@rsbuild/shared';
-import { PLUGIN_REACT_NAME } from '@rsbuild/plugin-react';
-import type { RsbuildPlugin } from '@rsbuild/core';
 import type { Config } from '@svgr/core';
 
 export type SvgDefaultExport = 'component' | 'url';
+
+export const SVG_REGEX = /\.svg$/;
 
 export type PluginSvgrOptions = {
   /**
@@ -30,6 +31,16 @@ export type PluginSvgrOptions = {
    * @default /react/
    */
   query?: RegExp;
+
+  /**
+   * Exclude some SVG files, they will not be transformed by SVGR.
+   */
+  exclude?: Rspack.RuleSetCondition;
+
+  /**
+   * Exclude some modules, the SVGs imported by these modules will not be transformed by SVGR.
+   */
+  excludeImporter?: Rspack.RuleSetCondition;
 };
 
 function getSvgoDefaultConfig() {
@@ -50,8 +61,10 @@ function getSvgoDefaultConfig() {
   };
 }
 
+export const PLUGIN_SVGR_NAME = 'rsbuild:svgr';
+
 export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
-  name: 'rsbuild:svgr',
+  name: PLUGIN_SVGR_NAME,
 
   pre: [PLUGIN_REACT_NAME],
 
@@ -65,8 +78,18 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
       const maxSize =
         typeof dataUriLimit === 'number' ? dataUriLimit : dataUriLimit.svg;
 
-      // delete Rsbuild builtin SVG rules
-      chain.module.rules.delete(CHAIN_ID.RULE.SVG);
+      let generatorOptions: Rspack.GeneratorOptionsByModuleType['asset/resource'] =
+        {};
+
+      if (chain.module.rules.has(CHAIN_ID.RULE.SVG)) {
+        generatorOptions = chain.module.rules
+          .get(CHAIN_ID.RULE.SVG)
+          .oneOfs.get(CHAIN_ID.ONE_OF.SVG_URL)
+          .get('generator');
+
+        // delete Rsbuild builtin SVG rules
+        chain.module.rules.delete(CHAIN_ID.RULE.SVG);
+      }
 
       const rule = chain.module.rule(CHAIN_ID.RULE.SVG).test(SVG_REGEX);
 
@@ -83,9 +106,7 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
         .oneOf(CHAIN_ID.ONE_OF.SVG_URL)
         .type('asset/resource')
         .resourceQuery(/(__inline=false|url)/)
-        .set('generator', {
-          filename: outputName,
-        });
+        .set('generator', generatorOptions);
 
       // force to inline: "foo.svg?inline"
       rule
@@ -99,7 +120,7 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
         .type('javascript/auto')
         .resourceQuery(options.query || /react/)
         .use(CHAIN_ID.USE.SVGR)
-        .loader(path.resolve(__dirname, './loader'))
+        .loader(path.resolve(__dirname, './loader.cjs'))
         .options({
           ...svgrOptions,
           exportType: 'default',
@@ -111,13 +132,23 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
       if (mixedImport || svgrOptions.exportType) {
         const { exportType = mixedImport ? 'named' : undefined } = svgrOptions;
 
-        const svgRule = rule
-          .oneOf(CHAIN_ID.ONE_OF.SVG)
+        const issuerInclude = [SCRIPT_REGEX, /\.mdx$/];
+        const issuer = options.excludeImporter
+          ? { and: [issuerInclude, { not: options.excludeImporter }] }
+          : issuerInclude;
+
+        const svgRule = rule.oneOf(CHAIN_ID.ONE_OF.SVG);
+
+        if (options.exclude) {
+          svgRule.exclude.add(options.exclude);
+        }
+
+        svgRule
           .type('javascript/auto')
           // The issuer option ensures that SVGR will only apply if the SVG is imported from a JS file.
-          .set('issuer', [SCRIPT_REGEX, /\.mdx$/])
+          .set('issuer', issuer)
           .use(CHAIN_ID.USE.SVGR)
-          .loader(path.resolve(__dirname, './loader'))
+          .loader(path.resolve(__dirname, './loader.cjs'))
           .options({
             ...svgrOptions,
             exportType,
@@ -131,7 +162,7 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
         if (mixedImport && exportType === 'named') {
           svgRule
             .use(CHAIN_ID.USE.URL)
-            .loader(path.join(__dirname, '../compiled', 'url-loader'))
+            .loader(path.join(__dirname, '../compiled', 'url-loader/index.js'))
             .options({
               limit: maxSize,
               name: outputName,
@@ -149,9 +180,7 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
             maxSize,
           },
         })
-        .set('generator', {
-          filename: outputName,
-        });
+        .set('generator', generatorOptions);
 
       // apply current JS transform rule to SVGR rules
       const jsRule = chain.module.rules.get(CHAIN_ID.RULE.JS);

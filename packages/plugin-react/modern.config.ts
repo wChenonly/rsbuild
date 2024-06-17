@@ -1,3 +1,3 @@
-import { configWithMjs } from '../../scripts/modern.base.config';
+import { configForDualPackage } from '@rsbuild/config/modern.config.ts';
 
-export default configWithMjs;
+export default configForDualPackage;

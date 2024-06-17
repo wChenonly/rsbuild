@@ -1,24 +1,34 @@
+import { isAbsolute, join } from 'node:path';
 import url from 'node:url';
 import type {
-  ServerAPIs,
-  Middlewares,
-  UpgradeEvent,
+  DevConfig,
   RequestHandler,
-  DevMiddlewaresConfig,
-  CompileMiddlewareAPI,
+  Rspack,
+  ServerAPIs,
+  ServerConfig,
 } from '@rsbuild/shared';
 import { isDebug } from '@rsbuild/shared';
+import { normalizePublicDirs } from '../config';
+import type { UpgradeEvent } from './helper';
 import {
   faviconFallbackMiddleware,
   getHtmlFallbackMiddleware,
   getRequestLoggerMiddleware,
 } from './middlewares';
-import { join, isAbsolute } from 'node:path';
+
+export type CompileMiddlewareAPI = {
+  middleware: RequestHandler;
+  sockWrite: ServerAPIs['sockWrite'];
+  onUpgrade: UpgradeEvent;
+  close: () => void;
+};
 
 export type RsbuildDevMiddlewareOptions = {
   pwd: string;
-  dev: DevMiddlewaresConfig;
+  dev: DevConfig;
+  server: ServerConfig;
   compileMiddlewareAPI?: CompileMiddlewareAPI;
+  outputFileSystem: Rspack.OutputFileSystem;
   output: {
     distPath: string;
   };
@@ -50,27 +60,24 @@ const applySetupMiddlewares = (
   return { before, after };
 };
 
+export type Middlewares = Array<RequestHandler | [string, RequestHandler]>;
+
 const applyDefaultMiddlewares = async ({
   middlewares,
-  dev,
+  server,
   compileMiddlewareAPI,
   output,
   pwd,
-}: {
-  output: RsbuildDevMiddlewareOptions['output'];
-  pwd: RsbuildDevMiddlewareOptions['pwd'];
+  outputFileSystem,
+}: RsbuildDevMiddlewareOptions & {
   middlewares: Middlewares;
-  dev: RsbuildDevMiddlewareOptions['dev'];
-  compileMiddlewareAPI?: CompileMiddlewareAPI;
 }): Promise<{
   onUpgrade: UpgradeEvent;
 }> => {
   const upgradeEvents: UpgradeEvent[] = [];
   // compression should be the first middleware
-  if (dev.compress) {
-    const { default: compression } = await import(
-      '../../compiled/http-compression'
-    );
+  if (server.compress) {
+    const { default: compression } = await import('http-compression');
     middlewares.push((req, res, next) => {
       compression({
         gzip: true,
@@ -88,7 +95,7 @@ const applyDefaultMiddlewares = async ({
     }
 
     // The headers configured by the user on devServer will not take effect on html requests. Add the following code to make the configured headers take effect on all requests.
-    const confHeaders = dev.headers;
+    const confHeaders = server.headers;
     if (confHeaders) {
       for (const [key, value] of Object.entries(confHeaders)) {
         res.setHeader(key, value);
@@ -98,10 +105,10 @@ const applyDefaultMiddlewares = async ({
   });
 
   // dev proxy handler, each proxy has own handler
-  if (dev.proxy) {
+  if (server.proxy) {
     const { createProxyMiddleware } = await import('./proxy');
     const { middlewares: proxyMiddlewares, upgrade } = createProxyMiddleware(
-      dev.proxy,
+      server.proxy,
     );
     upgradeEvents.push(upgrade);
 
@@ -111,7 +118,7 @@ const applyDefaultMiddlewares = async ({
   }
 
   const { default: launchEditorMiddleware } = await import(
-    '../../compiled/launch-editor-middleware'
+    'launch-editor-middleware'
   );
   middlewares.push(['/__open-in-editor', launchEditorMiddleware()]);
 
@@ -134,12 +141,13 @@ const applyDefaultMiddlewares = async ({
     });
   }
 
-  if (dev.publicDir !== false && dev.publicDir?.name) {
-    const { default: sirv } = await import('../../compiled/sirv');
-    const { name } = dev.publicDir;
-    const publicDir = isAbsolute(name) ? name : join(pwd, name);
+  const publicDirs = normalizePublicDirs(server?.publicDir);
+  for (const publicDir of publicDirs) {
+    const { default: sirv } = await import('sirv');
+    const { name } = publicDir;
+    const normalizedPath = isAbsolute(name) ? name : join(pwd, name);
 
-    const assetMiddleware = sirv(publicDir, {
+    const assetMiddleware = sirv(normalizedPath, {
       etag: true,
       dev: true,
     });
@@ -154,16 +162,17 @@ const applyDefaultMiddlewares = async ({
       getHtmlFallbackMiddleware({
         distPath: isAbsolute(distPath) ? distPath : join(pwd, distPath),
         callback: compileMiddlewareAPI.middleware,
-        htmlFallback: dev.htmlFallback,
+        htmlFallback: server.htmlFallback,
+        outputFileSystem,
       }),
     );
 
-  if (dev.historyApiFallback) {
+  if (server.historyApiFallback) {
     const { default: connectHistoryApiFallback } = await import(
-      '../../compiled/connect-history-api-fallback'
+      'connect-history-api-fallback'
     );
     const historyApiFallbackMiddleware = connectHistoryApiFallback(
-      dev.historyApiFallback === true ? {} : dev.historyApiFallback,
+      server.historyApiFallback === true ? {} : server.historyApiFallback,
     ) as RequestHandler;
 
     middlewares.push(historyApiFallbackMiddleware);
@@ -201,11 +210,8 @@ export const getMiddlewares = async (options: RsbuildDevMiddlewareOptions) => {
   middlewares.push(...before);
 
   const { onUpgrade } = await applyDefaultMiddlewares({
+    ...options,
     middlewares,
-    dev: options.dev,
-    compileMiddlewareAPI,
-    output: options.output,
-    pwd: options.pwd,
   });
 
   middlewares.push(...after);

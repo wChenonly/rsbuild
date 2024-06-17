@@ -1,24 +1,25 @@
 import type { IncomingMessage } from 'node:http';
 import type { Socket } from 'node:net';
-import ws from '../../compiled/ws';
-import { logger, type Stats, type DevMiddlewaresConfig } from '@rsbuild/shared';
+import { type DevConfig, type Stats, logger } from '@rsbuild/shared';
+import type Ws from 'ws';
+import { getAllStatsErrors, getAllStatsWarnings } from '../helpers';
 
-interface ExtWebSocket extends ws {
+interface ExtWebSocket extends Ws {
   isAlive: boolean;
 }
 
 export class SocketServer {
-  private wsServer!: ws.Server;
+  private wsServer!: Ws.Server;
 
-  private readonly sockets: ws[] = [];
+  private readonly sockets: Ws[] = [];
 
-  private readonly options: DevMiddlewaresConfig;
+  private readonly options: DevConfig;
 
   private stats?: Stats;
 
   private timer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(options: DevMiddlewaresConfig) {
+  constructor(options: DevConfig) {
     this.options = options;
   }
 
@@ -35,7 +36,8 @@ export class SocketServer {
   }
 
   // create socket, install socket handler, bind socket event
-  public prepare() {
+  public async prepare() {
+    const { default: ws } = await import('ws');
     this.wsServer = new ws.Server({
       noServer: true,
       path: this.options.client?.path,
@@ -81,7 +83,7 @@ export class SocketServer {
   }
 
   public singleWrite(
-    socket: ws,
+    socket: Ws,
     type: string,
     data?: Record<string, any> | string | boolean,
   ) {
@@ -99,7 +101,7 @@ export class SocketServer {
     }
   }
 
-  private onConnect(socket: ws) {
+  private onConnect(socket: Ws) {
     const connection = socket as ExtWebSocket;
 
     connection.isAlive = true;
@@ -144,8 +146,11 @@ export class SocketServer {
       hash: true,
       assets: true,
       warnings: true,
+      warningsCount: true,
       errors: true,
+      errorsCount: true,
       errorDetails: false,
+      children: true,
     };
 
     return curStats.toJson(defaultStats);
@@ -163,7 +168,7 @@ export class SocketServer {
     const shouldEmit =
       !force &&
       stats &&
-      (!stats.errors || stats.errors.length === 0) &&
+      !stats.errorsCount &&
       stats.assets &&
       stats.assets.every((asset: any) => !asset.emitted);
 
@@ -173,17 +178,17 @@ export class SocketServer {
 
     this.sockWrite('hash', stats.hash);
 
-    if (stats.errors && stats.errors.length > 0) {
-      return this.sockWrite('errors', stats.errors);
+    if (stats.errorsCount) {
+      return this.sockWrite('errors', getAllStatsErrors(stats));
     }
-    if (stats.warnings && stats.warnings.length > 0) {
-      return this.sockWrite('warnings', stats.warnings);
+    if (stats.warningsCount) {
+      return this.sockWrite('warnings', getAllStatsWarnings(stats));
     }
     return this.sockWrite('ok');
   }
 
   // send message to connecting socket
-  private send(connection: ws, message: string) {
+  private send(connection: Ws, message: string) {
     if (connection.readyState !== 1) {
       return;
     }

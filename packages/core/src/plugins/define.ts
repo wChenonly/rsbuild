@@ -1,8 +1,5 @@
-import {
-  getNodeEnv,
-  getPublicPathFromChain,
-  type Define,
-} from '@rsbuild/shared';
+import { type Define, getNodeEnv } from '@rsbuild/shared';
+import { getPublicPathFromChain } from '../helpers';
 import type { RsbuildPlugin } from '../types';
 
 export const pluginDefine = (): RsbuildPlugin => ({

@@ -1,15 +1,15 @@
+import path from 'node:path';
+import { parse } from 'node:url';
 import {
-  color,
-  debug,
-  logger,
-  isDebug,
   type HtmlFallback,
   type RequestHandler as Middleware,
+  type Rspack,
+  color,
+  debug,
+  isDebug,
+  logger,
 } from '@rsbuild/shared';
-import type { NextHandleFunction } from '@rsbuild/shared/connect';
-import { parse } from 'node:url';
-import path from 'node:path';
-import fs from 'node:fs';
+import type Connect from 'connect';
 
 export const faviconFallbackMiddleware: Middleware = (req, res, next) => {
   if (req.url === '/favicon.ico') {
@@ -36,9 +36,9 @@ const getStatusCodeColor = (status: number) => {
   return (res: number) => res;
 };
 
-export const getRequestLoggerMiddleware: () => Promise<NextHandleFunction> =
+export const getRequestLoggerMiddleware: () => Promise<Connect.NextHandleFunction> =
   async () => {
-    const { default: onFinished } = await import('../../compiled/on-finished');
+    const { default: onFinished } = await import('on-finished');
 
     return (req, res, next) => {
       const _startAt = process.hrtime();
@@ -79,11 +79,12 @@ export const getHtmlFallbackMiddleware: (params: {
   distPath: string;
   callback?: Middleware;
   htmlFallback?: HtmlFallback;
-}) => Middleware = ({ htmlFallback, distPath, callback }) => {
+  outputFileSystem: Rspack.OutputFileSystem;
+}) => Middleware = ({ htmlFallback, distPath, callback, outputFileSystem }) => {
   /**
    * support access page without suffix and support fallback in some edge cases
    */
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (
       // Only accept GET or HEAD
       (req.method !== 'GET' && req.method !== 'HEAD') ||
@@ -116,16 +117,13 @@ export const getHtmlFallbackMiddleware: (params: {
       return next();
     }
 
-    let outputFileSystem = fs;
-
-    // support memory fs
-    // @ts-expect-error
-    if (res.locals.webpack) {
-      // reference: https://github.com/webpack/webpack-dev-middleware#server-side-rendering
-      // @ts-expect-error
-      const { devMiddleware } = res.locals.webpack;
-      outputFileSystem = devMiddleware.outputFileSystem;
-    }
+    const isFileExists = async (filePath: string) => {
+      return new Promise((resolve) => {
+        outputFileSystem.stat(filePath, (_error, stats) => {
+          resolve(stats?.isFile());
+        });
+      });
+    };
 
     const rewrite = (newUrl: string, isFallback = false) => {
       if (isFallback && isDebug()) {
@@ -151,7 +149,7 @@ export const getHtmlFallbackMiddleware: (params: {
       const newUrl = `${pathname}index.html`;
       const filePath = path.join(distPath, pathname, 'index.html');
 
-      if (outputFileSystem.existsSync(filePath)) {
+      if (await isFileExists(filePath)) {
         return rewrite(newUrl);
       }
     } else if (
@@ -161,13 +159,13 @@ export const getHtmlFallbackMiddleware: (params: {
       const newUrl = `${pathname}.html`;
       const filePath = path.join(distPath, `${pathname}.html`);
 
-      if (outputFileSystem.existsSync(filePath)) {
+      if (await isFileExists(filePath)) {
         return rewrite(newUrl);
       }
     }
 
     if (htmlFallback === 'index') {
-      if (outputFileSystem.existsSync(path.join(distPath, 'index.html'))) {
+      if (await isFileExists(path.join(distPath, 'index.html'))) {
         return rewrite('/index.html', true);
       }
     }

@@ -1,5 +1,5 @@
-import type { RsbuildPlugin } from '@rsbuild/core';
-import { getDistPath, type PostCSSPlugin } from '@rsbuild/shared';
+import type { PostCSSPlugin, RsbuildPlugin } from '@rsbuild/core';
+import { getDistPath } from '@rsbuild/shared';
 import { cloneDeep } from '@rsbuild/shared';
 import type { PluginRemOptions, PxToRemOptions } from './types';
 
@@ -10,8 +10,10 @@ const defaultOptions: PluginRemOptions = {
 
 export type { PluginRemOptions };
 
+export const PLUGIN_REM_NAME = 'rsbuild:rem';
+
 export const pluginRem = (options: PluginRemOptions = {}): RsbuildPlugin => ({
-  name: 'rsbuild:rem',
+  name: PLUGIN_REM_NAME,
 
   setup(api) {
     const userOptions = {
@@ -60,8 +62,6 @@ export const pluginRem = (options: PluginRemOptions = {}): RsbuildPlugin => ({
 
       chain
         .plugin(CHAIN_ID.PLUGIN.AUTO_SET_ROOT_SIZE)
-        // apply crossorigin to the rem runtime script
-        .before(CHAIN_ID.PLUGIN.HTML_CROSS_ORIGIN)
         .use(AutoSetRootFontSizePlugin, [
           userOptions,
           entries,

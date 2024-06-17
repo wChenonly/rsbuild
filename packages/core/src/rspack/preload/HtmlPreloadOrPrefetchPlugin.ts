@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-import type { Compiler, RspackPluginInstance, Compilation } from '@rspack/core';
-import type HtmlWebpackPlugin from 'html-webpack-plugin';
 import {
-  upperFirst,
-  withPublicPath,
-  getPublicPathFromCompiler,
   type PreloadOrPreFetchOption,
+  getPublicPathFromCompiler,
+  upperFirst,
 } from '@rsbuild/shared';
+import type { Compilation, Compiler, RspackPluginInstance } from '@rspack/core';
+import type HtmlWebpackPlugin from 'html-webpack-plugin';
+import { ensureAssetPrefix } from '../../helpers';
+import { getHTMLPlugin } from '../../pluginHelper';
 import {
-  extractChunks,
-  doesChunkBelongToHtml,
-  determineAsValue,
-  type BeforeAssetTagGenerationHtmlPluginData,
   type As,
+  type BeforeAssetTagGenerationHtmlPluginData,
+  determineAsValue,
+  doesChunkBelongToHtml,
+  extractChunks,
 } from './helpers';
-import { getHTMLPlugin } from '../../provider/htmlPluginUtil';
 
 const defaultOptions = {
   type: 'async-chunks' as const,
@@ -67,7 +67,6 @@ function generateLinks(
 ): HtmlWebpackPlugin.HtmlTagObject[] {
   // get all chunks
   const extractedChunks = extractChunks({
-    // @ts-expect-error compilation type mismatch
     compilation,
     includeType: options.type,
   });
@@ -122,7 +121,7 @@ function generateLinks(
   const { crossOriginLoading } = compilation.compiler.options.output;
 
   for (const file of sortedFilteredFiles) {
-    const href = withPublicPath(file, publicPath);
+    const href = ensureAssetPrefix(file, publicPath);
     const attributes: Attributes = {
       href,
       rel: type,

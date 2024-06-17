@@ -1,5 +1,5 @@
 import type { Configuration } from '@rspack/core';
-import type { BundleAnalyzerPlugin } from '../../../compiled/webpack-bundle-analyzer';
+import type { BundleAnalyzerPlugin } from '../../../compiled/webpack-bundle-analyzer/index.js';
 
 export type ConsoleType = 'log' | 'info' | 'warn' | 'error' | 'table' | 'group';
 
@@ -44,7 +44,7 @@ export interface PreloadOrPreFetchOption {
 
 export interface PerformanceConfig {
   /**
-   * Whether to remove `console.xx` in production build.
+   * Whether to remove `console.[methodName]` in production build.
    */
   removeConsole?: boolean | ConsoleType[];
 

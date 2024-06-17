@@ -1,8 +1,8 @@
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
 import { build } from '@e2e/helper';
+import { expect, test } from '@playwright/test';
 
-test('should compile CSS modules composes correctly', async () => {
+test('should compile CSS Modules composes correctly', async () => {
   const rsbuild = await build({
     cwd: __dirname,
   });
@@ -16,7 +16,7 @@ test('should compile CSS modules composes correctly', async () => {
   );
 });
 
-test('should compile CSS modules composes with external correctly', async () => {
+test('should compile CSS Modules composes with external correctly', async () => {
   const rsbuild = await build({
     cwd: __dirname,
     rsbuildConfig: {

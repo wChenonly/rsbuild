@@ -1,5 +1,6 @@
-import type { ArrayOrNot } from '../utils';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { WatchOptions } from '../../../compiled/chokidar/index.js';
+import type { Rspack } from '../rspack';
 
 export type ProgressBarConfig = {
   id?: string;
@@ -20,6 +21,22 @@ export type ServerAPIs = {
   ) => void;
 };
 
+export type ClientConfig = {
+  path?: string;
+  port?: string;
+  host?: string;
+  protocol?: 'ws' | 'wss';
+  /** Shows an overlay in the browser when there are compiler errors. */
+  overlay?: boolean;
+};
+
+export type ChokidarWatchOptions = WatchOptions;
+
+export type WatchFiles = {
+  paths: string | string[];
+  options?: WatchOptions;
+};
+
 export interface DevConfig {
   /**
    * Whether to enable Hot Module Replacement.
@@ -30,32 +47,26 @@ export interface DevConfig {
    */
   liveReload?: boolean;
   /**
-   * Used to set the page URL to open automatically when the Dev Server starts.
-   * By default, no page will be opened.
+   * Set the page URL to open when the server starts.
+   * @deprecated use `server.open` instead
    */
   startUrl?: boolean | string | string[];
   /**
-   * Used to execute a callback function before opening the `startUrl`.
-   * This config needs to be used together with `dev.startUrl`.
+   * Execute a callback function before opening the `startUrl`.
+   * @deprecated use `server.open.before` instead.
    */
-  beforeStartUrl?: ArrayOrNot<() => Promise<void> | void>;
+  beforeStartUrl?: () => Promise<void> | void;
   /**
    * Set the URL prefix of static assets during development,
-   * similar to the [output.publicPath](https://webpack.js.org/guides/public-path/) config of webpack.
+   * similar to the [output.publicPath](https://rspack.dev/config/output#outputpublicpath) config of webpack.
    */
   assetPrefix?: string | boolean;
   /**
    * Whether to display progress bar during compilation.
    */
   progressBar?: boolean | ProgressBarConfig;
-
-  /** config of hmr client. */
-  client?: {
-    path?: string;
-    port?: string;
-    host?: string;
-    protocol?: 'ws' | 'wss';
-  };
+  /** config of Rsbuild client code. */
+  client?: ClientConfig;
   /** Provides the ability to execute a custom function and apply custom middlewares */
   setupMiddlewares?: Array<
     (
@@ -73,6 +84,14 @@ export interface DevConfig {
    * Used to control whether the build artifacts of the development environment are written to the disk.
    */
   writeToDisk?: boolean | ((filename: string) => boolean);
+  /**
+   * This option allows you to configure a list of globs/directories/files to watch for file changes.
+   */
+  watchFiles?: WatchFiles;
+  /**
+   * Enable lazy compilation.
+   */
+  lazyCompilation?: boolean | Rspack.LazyCompilationOptions;
 }
 
 export type NormalizedDevConfig = DevConfig &

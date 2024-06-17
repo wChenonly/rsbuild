@@ -1,7 +1,7 @@
 import { createStubRsbuild } from '@scripts/test-helper';
 import { pluginCache } from '../src/plugins/cache';
 
-vi.mock('@rsbuild/shared', async (importOriginal) => {
+vi.mock('../src/helpers.js', async (importOriginal) => {
   const mod = await importOriginal<any>();
   return {
     ...mod,
@@ -14,7 +14,8 @@ vi.mock('@rsbuild/shared', async (importOriginal) => {
   };
 });
 
-describe('plugin-cache', () => {
+// TODO: Rspack does not supports cache yet
+describe.skip('plugin-cache', () => {
   const cases = [
     {
       name: 'should add cache config correctly',

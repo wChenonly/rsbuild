@@ -1,22 +1,37 @@
+import type { IncomingMessage } from 'node:http';
 import net from 'node:net';
-import {
-  color,
-  logger,
-  deepmerge,
-  isFunction,
-  getUrlLabel,
-  normalizeUrl,
-  DEFAULT_PORT,
-  DEFAULT_DEV_HOST,
-} from '@rsbuild/shared';
+import type { Socket } from 'node:net';
+import os from 'node:os';
+import { color, deepmerge, isFunction, logger } from '@rsbuild/shared';
 import type {
-  Routes,
   DevConfig,
-  PrintUrls,
-  RsbuildEntry,
-  RsbuildConfig,
+  NormalizedConfig,
   OutputStructure,
+  PrintUrls,
+  Routes,
+  RsbuildEntry,
 } from '@rsbuild/shared';
+import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
+
+/**
+ * It used to subscribe http upgrade event
+ */
+export type UpgradeEvent = (
+  req: IncomingMessage,
+  socket: Socket,
+  head: any,
+) => void;
+
+export type StartServerResult = {
+  urls: string[];
+  port: number;
+  server: {
+    close: () => Promise<void>;
+  };
+};
+
+// remove repeat '/'
+export const normalizeUrl = (url: string) => url.replace(/([^:]\/)\/+/g, '$1');
 
 /**
  * Make sure there is slash before and after prefix
@@ -148,32 +163,6 @@ export function printServerURLs({
  */
 export const HMR_SOCK_PATH = '/rsbuild-hmr';
 
-export const mergeDevOptions = ({
-  rsbuildConfig,
-  port,
-}: {
-  rsbuildConfig: RsbuildConfig;
-  port: number;
-}) => {
-  const defaultDevConfig: DevConfig = {
-    client: {
-      path: HMR_SOCK_PATH,
-      port: port.toString(),
-      // By default it is set to "location.hostname"
-      host: '',
-      // By default it is set to "location.protocol === 'https:' ? 'wss' : 'ws'""
-      protocol: undefined,
-    },
-    writeToDisk: false,
-  };
-
-  const devConfig = rsbuildConfig.dev
-    ? deepmerge(defaultDevConfig, rsbuildConfig.dev)
-    : defaultDevConfig;
-
-  return devConfig;
-};
-
 /**
  * Get available free port.
  * @param port - Current port want to use.
@@ -242,47 +231,159 @@ export const getPort = async ({
   return port;
 };
 
-export const getServerOptions = async ({
-  rsbuildConfig,
+export const getServerConfig = async ({
+  config,
   getPortSilently,
 }: {
-  rsbuildConfig: RsbuildConfig;
+  config: NormalizedConfig;
   getPortSilently?: boolean;
 }) => {
-  const host = rsbuildConfig.server?.host || DEFAULT_DEV_HOST;
+  const host = config.server.host || DEFAULT_DEV_HOST;
   const port = await getPort({
     host,
-    port: rsbuildConfig.server?.port || DEFAULT_PORT,
-    strictPort: rsbuildConfig.server?.strictPort || false,
+    port: config.server.port || DEFAULT_PORT,
+    strictPort: config.server.strictPort || false,
     silent: getPortSilently,
   });
-
-  const https = Boolean(rsbuildConfig.server?.https) || false;
-
-  return { port, host, https, serverConfig: rsbuildConfig.server || {} };
+  const https = Boolean(config.server.https) || false;
+  return { port, host, https };
 };
 
-export const getDevOptions = async ({
-  rsbuildConfig,
-  getPortSilently,
+export const getDevConfig = ({
+  config,
+  port,
 }: {
-  rsbuildConfig: RsbuildConfig;
-  getPortSilently?: boolean;
-}) => {
-  const { port, host, https, serverConfig } = await getServerOptions({
-    rsbuildConfig,
-    getPortSilently,
-  });
-
-  const devConfig = mergeDevOptions({ rsbuildConfig, port });
-
-  return {
-    devServerConfig: {
-      ...serverConfig,
-      ...devConfig,
+  config: NormalizedConfig;
+  port: number;
+}): DevConfig => {
+  const defaultDevConfig: DevConfig = {
+    client: {
+      path: HMR_SOCK_PATH,
+      port: port.toString(),
+      // By default it is set to "location.hostname"
+      host: '',
+      // By default it is set to "location.protocol === 'https:' ? 'wss' : 'ws'""
+      protocol: undefined,
     },
-    port,
-    host,
-    https,
+    writeToDisk: false,
+    liveReload: true,
   };
+
+  const devConfig = config.dev
+    ? deepmerge(defaultDevConfig, config.dev)
+    : defaultDevConfig;
+
+  return devConfig;
+};
+
+const getIpv4Interfaces = () => {
+  const interfaces = os.networkInterfaces();
+  const ipv4Interfaces: Map<string, os.NetworkInterfaceInfo> = new Map();
+
+  for (const key of Object.keys(interfaces)) {
+    for (const detail of interfaces[key]!) {
+      // 'IPv4' is in Node <= 17, from 18 it's a number 4 or 6
+      const familyV4Value = typeof detail.family === 'string' ? 'IPv4' : 4;
+
+      if (
+        detail.family === familyV4Value &&
+        !ipv4Interfaces.has(detail.address)
+      ) {
+        ipv4Interfaces.set(detail.address, detail);
+      }
+    }
+  }
+
+  return Array.from(ipv4Interfaces.values());
+};
+
+const isLoopbackHost = (host: string) => {
+  const loopbackHosts = [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    '0000:0000:0000:0000:0000:0000:0000:0001',
+  ];
+  return loopbackHosts.includes(host);
+};
+
+const getHostInUrl = (host: string) => {
+  if (net.isIPv6(host)) {
+    return host === '::' ? '[::1]' : `[${host}]`;
+  }
+  return host;
+};
+
+const concatUrl = ({
+  host,
+  port,
+  protocol,
+}: {
+  host: string;
+  port: number;
+  protocol: string;
+}) => `${protocol}://${host}:${port}`;
+
+const LOCAL_LABEL = 'Local:  ';
+const NETWORK_LABEL = 'Network:  ';
+
+export const getUrlLabel = (url: string) => {
+  try {
+    const { host } = new URL(url);
+    return isLoopbackHost(host) ? LOCAL_LABEL : NETWORK_LABEL;
+  } catch (err) {
+    return NETWORK_LABEL;
+  }
+};
+
+type AddressUrl = { label: string; url: string };
+
+export const getAddressUrls = ({
+  protocol = 'http',
+  port,
+  host,
+}: {
+  protocol?: string;
+  port: number;
+  host?: string;
+}): AddressUrl[] => {
+  if (host && host !== DEFAULT_DEV_HOST) {
+    return [
+      {
+        label: isLoopbackHost(host) ? LOCAL_LABEL : NETWORK_LABEL,
+        url: concatUrl({
+          port,
+          host: getHostInUrl(host),
+          protocol,
+        }),
+      },
+    ];
+  }
+
+  const ipv4Interfaces = getIpv4Interfaces();
+  const addressUrls: AddressUrl[] = [];
+  let hasLocalUrl = false;
+
+  for (const detail of ipv4Interfaces) {
+    if (isLoopbackHost(detail.address) || detail.internal) {
+      // avoid multiple prints of localhost
+      // https://github.com/web-infra-dev/rsbuild/discussions/1543
+      if (hasLocalUrl) {
+        continue;
+      }
+
+      addressUrls.push({
+        label: LOCAL_LABEL,
+        url: concatUrl({ host: 'localhost', port, protocol }),
+      });
+      hasLocalUrl = true;
+    } else {
+      addressUrls.push({
+        label: NETWORK_LABEL,
+        url: concatUrl({ host: detail.address, port, protocol }),
+      });
+    }
+  }
+
+  return addressUrls;
 };

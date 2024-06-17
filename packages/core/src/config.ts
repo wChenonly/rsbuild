@@ -1,14 +1,233 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import {
+  DEFAULT_ASSET_PREFIX,
+  RspackChain,
   color,
-  logger,
-  isObject,
   debounce,
+  fse,
   getNodeEnv,
-  type RsbuildConfig,
+  isObject,
+  logger,
+  upperFirst,
 } from '@rsbuild/shared';
+import type {
+  InspectConfigOptions,
+  NormalizedConfig,
+  NormalizedDevConfig,
+  NormalizedHtmlConfig,
+  NormalizedOutputConfig,
+  NormalizedPerformanceConfig,
+  NormalizedSecurityConfig,
+  NormalizedServerConfig,
+  NormalizedSourceConfig,
+  NormalizedToolsConfig,
+  PublicDir,
+  PublicDirOptions,
+  RsbuildConfig,
+  RsbuildEntry,
+} from '@rsbuild/shared';
+import {
+  CSS_DIST_DIR,
+  DEFAULT_DATA_URL_SIZE,
+  DEFAULT_DEV_HOST,
+  DEFAULT_MOUNT_ID,
+  DEFAULT_PORT,
+  FONT_DIST_DIR,
+  HTML_DIST_DIR,
+  IMAGE_DIST_DIR,
+  JS_DIST_DIR,
+  MEDIA_DIST_DIR,
+  ROOT_DIST_DIR,
+  SERVER_DIST_DIR,
+  SERVICE_WORKER_DIST_DIR,
+  SVG_DIST_DIR,
+  TS_CONFIG_FILE,
+  WASM_DIST_DIR,
+} from './constants';
+import { findExists, isFileExists } from './helpers';
+import { mergeRsbuildConfig } from './mergeConfig';
 import { restartDevServer } from './server/restart';
+
+const getDefaultDevConfig = (): NormalizedDevConfig => ({
+  hmr: true,
+  liveReload: true,
+  assetPrefix: DEFAULT_ASSET_PREFIX,
+  startUrl: false,
+  client: {
+    overlay: true,
+  },
+});
+
+const getDefaultServerConfig = (): NormalizedServerConfig => ({
+  port: DEFAULT_PORT,
+  host: DEFAULT_DEV_HOST,
+  open: false,
+  htmlFallback: 'index',
+  compress: true,
+  printUrls: true,
+  strictPort: false,
+});
+
+const getDefaultSourceConfig = (): NormalizedSourceConfig => ({
+  alias: {},
+  define: {},
+  aliasStrategy: 'prefer-tsconfig',
+  preEntry: [],
+  decorators: {
+    version: 'legacy',
+  },
+});
+
+const getDefaultHtmlConfig = (): NormalizedHtmlConfig => ({
+  meta: {
+    charset: { charset: 'UTF-8' },
+    viewport: 'width=device-width, initial-scale=1.0',
+  },
+  title: 'Rsbuild App',
+  inject: 'head',
+  mountId: DEFAULT_MOUNT_ID,
+  crossorigin: false,
+  outputStructure: 'flat',
+  scriptLoading: 'defer',
+});
+
+const getDefaultSecurityConfig = (): NormalizedSecurityConfig => ({
+  nonce: '',
+  sri: {
+    enable: false,
+  },
+});
+
+const getDefaultToolsConfig = (): NormalizedToolsConfig => ({
+  cssExtract: {
+    loaderOptions: {},
+    pluginOptions: {
+      ignoreOrder: true,
+    },
+  },
+});
+
+const getDefaultPerformanceConfig = (): NormalizedPerformanceConfig => ({
+  profile: false,
+  buildCache: true,
+  printFileSize: true,
+  removeConsole: false,
+  removeMomentLocale: false,
+  chunkSplit: {
+    strategy: 'split-by-experience',
+  },
+});
+
+const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
+  targets: ['web'],
+  distPath: {
+    root: ROOT_DIST_DIR,
+    js: JS_DIST_DIR,
+    css: CSS_DIST_DIR,
+    svg: SVG_DIST_DIR,
+    font: FONT_DIST_DIR,
+    html: HTML_DIST_DIR,
+    wasm: WASM_DIST_DIR,
+    image: IMAGE_DIST_DIR,
+    media: MEDIA_DIST_DIR,
+    server: SERVER_DIST_DIR,
+    worker: SERVICE_WORKER_DIST_DIR,
+  },
+  assetPrefix: DEFAULT_ASSET_PREFIX,
+  filename: {},
+  charset: 'ascii',
+  polyfill: 'usage',
+  dataUriLimit: {
+    svg: DEFAULT_DATA_URL_SIZE,
+    font: DEFAULT_DATA_URL_SIZE,
+    image: DEFAULT_DATA_URL_SIZE,
+    media: DEFAULT_DATA_URL_SIZE,
+  },
+  legalComments: 'linked',
+  injectStyles: false,
+  minify: true,
+  manifest: false,
+  sourceMap: {
+    js: undefined,
+    css: false,
+  },
+  filenameHash: true,
+  inlineScripts: false,
+  inlineStyles: false,
+  cssModules: {
+    auto: true,
+    namedExport: false,
+    exportGlobals: false,
+    exportLocalsConvention: 'camelCase',
+  },
+  emitAssets: () => true,
+});
+
+const createDefaultConfig = (): RsbuildConfig => ({
+  dev: getDefaultDevConfig(),
+  server: getDefaultServerConfig(),
+  html: getDefaultHtmlConfig(),
+  source: getDefaultSourceConfig(),
+  output: getDefaultOutputConfig(),
+  tools: getDefaultToolsConfig(),
+  security: getDefaultSecurityConfig(),
+  performance: getDefaultPerformanceConfig(),
+});
+
+function getDefaultEntry(root: string): RsbuildEntry {
+  const files = [
+    // Most projects are using typescript now.
+    // So we put `.ts` as the first one to improve performance.
+    'ts',
+    'js',
+    'tsx',
+    'jsx',
+    'mjs',
+    'cjs',
+  ].map((ext) => join(root, `src/index.${ext}`));
+
+  const entryFile = findExists(files);
+
+  if (entryFile) {
+    return {
+      index: entryFile,
+    };
+  }
+
+  return {};
+}
+
+export const withDefaultConfig = async (
+  rootPath: string,
+  config: RsbuildConfig,
+) => {
+  const merged = mergeRsbuildConfig(createDefaultConfig(), config);
+
+  merged.source ||= {};
+
+  if (!merged.source.entry) {
+    merged.source.entry = getDefaultEntry(rootPath);
+  }
+
+  if (!merged.source.tsconfigPath) {
+    const tsconfigPath = join(rootPath, TS_CONFIG_FILE);
+
+    if (await isFileExists(tsconfigPath)) {
+      merged.source.tsconfigPath = tsconfigPath;
+    }
+  }
+
+  return merged;
+};
+
+/** #__PURE__
+ * 1. May used by multiple plugins.
+ * 2. Object value that should not be empty.
+ * 3. Meaningful and can be filled by constant value.
+ */
+export const normalizeConfig = (config: RsbuildConfig): NormalizedConfig =>
+  mergeRsbuildConfig(createDefaultConfig(), config) as NormalizedConfig;
 
 export type ConfigParams = {
   env: string;
@@ -123,7 +342,7 @@ export async function loadConfig({
   };
 
   try {
-    const { default: jiti } = await import('@rsbuild/shared/jiti');
+    const { default: jiti } = await import('jiti');
     const loadConfig = jiti(__filename, {
       esmResolve: true,
       // disable require cache to support restart CLI and read the new config
@@ -170,3 +389,107 @@ export async function loadConfig({
     throw err;
   }
 }
+
+export async function outputInspectConfigFiles({
+  rsbuildConfig,
+  rawRsbuildConfig,
+  bundlerConfigs,
+  inspectOptions,
+  configType,
+}: {
+  configType: string;
+  rsbuildConfig: NormalizedConfig;
+  rawRsbuildConfig: string;
+  bundlerConfigs: string[];
+  inspectOptions: InspectConfigOptions & {
+    outputPath: string;
+  };
+}) {
+  const { outputPath } = inspectOptions;
+
+  const files = [
+    {
+      path: join(outputPath, 'rsbuild.config.mjs'),
+      label: 'Rsbuild Config',
+      content: rawRsbuildConfig,
+    },
+    ...bundlerConfigs.map((content, index) => {
+      const suffix = rsbuildConfig.output.targets[index];
+      const outputFile = `${configType}.config.${suffix}.mjs`;
+      let outputFilePath = join(outputPath, outputFile);
+
+      // if filename is conflict, add a random id to the filename.
+      if (fse.existsSync(outputFilePath)) {
+        outputFilePath = outputFilePath.replace(/\.mjs$/, `.${Date.now()}.mjs`);
+      }
+
+      return {
+        path: outputFilePath,
+        label: `${upperFirst(configType)} Config (${suffix})`,
+        content,
+      };
+    }),
+  ];
+
+  await Promise.all(
+    files.map((item) =>
+      fse.outputFile(item.path, `export default ${item.content}`),
+    ),
+  );
+
+  const fileInfos = files
+    .map(
+      (item) =>
+        `  - ${color.bold(color.yellow(item.label))}: ${color.underline(
+          item.path,
+        )}`,
+    )
+    .join('\n');
+
+  logger.success(
+    `Inspect config succeed, open following files to view the content: \n\n${fileInfos}\n`,
+  );
+}
+
+export async function stringifyConfig(config: unknown, verbose?: boolean) {
+  // webpackChain.toString can be used as a common stringify method
+  const stringify = RspackChain.toString as (
+    config: unknown,
+    options: { verbose?: boolean },
+  ) => string;
+
+  return stringify(config as any, { verbose });
+}
+
+export const normalizePublicDirs = (
+  publicDir?: PublicDir,
+): Required<PublicDirOptions>[] => {
+  if (publicDir === false) {
+    return [];
+  }
+
+  const defaultConfig: Required<PublicDirOptions> = {
+    name: 'public',
+    copyOnBuild: true,
+    watch: false,
+  };
+
+  // enable public dir by default
+  if (publicDir === undefined) {
+    return [defaultConfig];
+  }
+
+  if (Array.isArray(publicDir)) {
+    return publicDir.map((options) => ({
+      ...defaultConfig,
+      ...options,
+    }));
+  }
+
+  return [
+    {
+      ...defaultConfig,
+      ...publicDir,
+    },
+  ];
+};

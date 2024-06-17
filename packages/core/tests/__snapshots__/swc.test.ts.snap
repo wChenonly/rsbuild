@@ -21,6 +21,11 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
+        "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
+        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -44,7 +49,7 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -53,7 +58,6 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -66,6 +70,9 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
           ],
         },
         "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
           "fullySpecified": false,
         },
         "use": [
@@ -89,7 +96,7 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -98,7 +105,6 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -108,7 +114,6 @@ exports[`plugin-swc > should add antd pluginImport 1`] = `
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
     },
   },
 }
@@ -136,6 +141,11 @@ exports[`plugin-swc > should add browserslist 1`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -156,7 +166,7 @@ exports[`plugin-swc > should add browserslist 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -165,7 +175,6 @@ exports[`plugin-swc > should add browserslist 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -178,6 +187,9 @@ exports[`plugin-swc > should add browserslist 1`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -198,7 +210,7 @@ exports[`plugin-swc > should add browserslist 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -207,7 +219,6 @@ exports[`plugin-swc > should add browserslist 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -217,7 +228,6 @@ exports[`plugin-swc > should add browserslist 1`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -246,6 +256,11 @@ exports[`plugin-swc > should add browserslist 2`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -266,7 +281,7 @@ exports[`plugin-swc > should add browserslist 2`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -275,7 +290,6 @@ exports[`plugin-swc > should add browserslist 2`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -288,6 +302,9 @@ exports[`plugin-swc > should add browserslist 2`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -308,7 +325,7 @@ exports[`plugin-swc > should add browserslist 2`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -317,7 +334,6 @@ exports[`plugin-swc > should add browserslist 2`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -327,7 +343,6 @@ exports[`plugin-swc > should add browserslist 2`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -356,6 +371,11 @@ exports[`plugin-swc > should add pluginImport 1`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -379,7 +399,7 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -395,7 +415,6 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                     },
                   ],
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -408,6 +427,9 @@ exports[`plugin-swc > should add pluginImport 1`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -431,7 +453,7 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -447,7 +469,6 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                     },
                   ],
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -457,7 +478,6 @@ exports[`plugin-swc > should add pluginImport 1`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -478,6 +498,11 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to be function type 1`] 
       },
       /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
     ],
+    "resolve": {
+      "alias": {
+        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+      },
+    },
     "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
     "type": "javascript/auto",
     "use": [
@@ -499,6 +524,9 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to be function type 1`] 
       ],
     },
     "resolve": {
+      "alias": {
+        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+      },
       "fullySpecified": false,
     },
     "use": [
@@ -529,6 +557,11 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
       },
       /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
     ],
+    "resolve": {
+      "alias": {
+        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+      },
+    },
     "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
     "type": "javascript/auto",
     "use": [
@@ -552,7 +585,7 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
             "parser": {
               "decorators": true,
               "syntax": "typescript",
-              "tsx": true,
+              "tsx": false,
             },
             "preserveAllComments": true,
             "transform": {
@@ -561,7 +594,6 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
               "useDefineForClassFields": false,
             },
           },
-          "sourceMaps": true,
         },
       },
     ],
@@ -574,6 +606,9 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
       ],
     },
     "resolve": {
+      "alias": {
+        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+      },
       "fullySpecified": false,
     },
     "use": [
@@ -597,7 +632,7 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
             "parser": {
               "decorators": true,
               "syntax": "typescript",
-              "tsx": true,
+              "tsx": false,
             },
             "preserveAllComments": true,
             "transform": {
@@ -606,7 +641,6 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
               "useDefineForClassFields": false,
             },
           },
-          "sourceMaps": true,
         },
       },
     ],
@@ -635,6 +669,11 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
+        "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
+        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -658,7 +697,7 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -667,7 +706,6 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -680,6 +718,9 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
           ],
         },
         "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
           "fullySpecified": false,
         },
         "use": [
@@ -703,7 +744,7 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -712,7 +753,6 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -722,7 +762,6 @@ exports[`plugin-swc > should disable all pluginImport 1`] = `
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
     },
   },
 }
@@ -767,7 +806,7 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -776,7 +815,6 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -806,7 +844,7 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -815,7 +853,6 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -874,7 +911,7 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -883,7 +920,6 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -917,7 +953,7 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -926,7 +962,6 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -965,6 +1000,11 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -987,7 +1027,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -996,7 +1036,6 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1009,6 +1048,9 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -1031,7 +1073,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1040,7 +1082,6 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1050,7 +1091,6 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -1079,6 +1119,11 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -1102,7 +1147,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1111,7 +1156,6 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1124,6 +1168,9 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -1147,7 +1194,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1156,7 +1203,6 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1166,7 +1212,6 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -1196,6 +1241,11 @@ exports[`plugin-swc > should has correct core-js 1`] = `
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -1218,7 +1268,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1227,7 +1277,6 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1240,6 +1289,9 @@ exports[`plugin-swc > should has correct core-js 1`] = `
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -1262,7 +1314,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1271,7 +1323,6 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1281,7 +1332,6 @@ exports[`plugin-swc > should has correct core-js 1`] = `
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },
@@ -1327,7 +1377,7 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1336,7 +1386,6 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1366,7 +1415,7 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1375,7 +1424,6 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1413,6 +1461,11 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
           ],
+          "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
+          },
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
           "use": [
@@ -1436,7 +1489,7 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1445,7 +1498,6 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1458,6 +1510,9 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
             ],
           },
           "resolve": {
+            "alias": {
+              "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+            },
             "fullySpecified": false,
           },
           "use": [
@@ -1481,7 +1536,7 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
                   "parser": {
                     "decorators": true,
                     "syntax": "typescript",
-                    "tsx": true,
+                    "tsx": false,
                   },
                   "preserveAllComments": true,
                   "transform": {
@@ -1490,7 +1545,6 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
                     "useDefineForClassFields": false,
                   },
                 },
-                "sourceMaps": true,
               },
             },
           ],
@@ -1500,7 +1554,6 @@ exports[`plugin-swc > should'n override browserslist when target platform is not
     "resolve": {
       "alias": {
         "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-        "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
       },
     },
   },

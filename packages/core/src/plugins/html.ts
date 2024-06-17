@@ -1,44 +1,120 @@
 import path, { isAbsolute } from 'node:path';
 import {
-  fse,
-  color,
-  isNil,
-  isURL,
+  type MinifyJSOptions,
   castArray,
-  getHtmlMinifyOptions,
+  color,
+  deepmerge,
+  fse,
   getDistPath,
-  isFileExists,
-  isPlainObject,
   isHtmlDisabled,
-  mergeChainedOptions,
-  getPublicPathFromChain,
+  isPlainObject,
+  isURL,
+  reduceConfigsMergeContext,
+  reduceConfigsWithContext,
+} from '@rsbuild/shared';
+import type {
+  HTMLPluginOptions,
+  HtmlConfig,
+  ModifyHTMLTagsFn,
+  NormalizedConfig,
+  RsbuildPluginAPI,
 } from '@rsbuild/shared';
 import type { EntryDescription } from '@rspack/core';
-import type {
-  HtmlConfig,
-  RsbuildPluginAPI,
-  NormalizedConfig,
-  HTMLPluginOptions,
-} from '@rsbuild/shared';
+import { STATIC_PATH } from '../constants';
+import { getPublicPathFromChain, isFileExists } from '../helpers';
 import type { HtmlInfo, TagConfig } from '../rspack/HtmlBasicPlugin';
 import type { RsbuildPlugin } from '../types';
+import { parseMinifyOptions } from './minimize';
+
+function applyRemoveConsole(
+  options: MinifyJSOptions,
+  config: NormalizedConfig,
+) {
+  const { removeConsole } = config.performance;
+  const compressOptions =
+    typeof options.compress === 'boolean' ? {} : options.compress || {};
+
+  if (removeConsole === true) {
+    options.compress = {
+      ...compressOptions,
+      drop_console: true,
+    };
+  } else if (Array.isArray(removeConsole)) {
+    const pureFuncs = removeConsole.map((method) => `console.${method}`);
+    options.compress = {
+      ...compressOptions,
+      pure_funcs: pureFuncs,
+    };
+  }
+
+  return options;
+}
+
+function getTerserMinifyOptions(config: NormalizedConfig) {
+  const options: MinifyJSOptions = {
+    mangle: {
+      safari10: true,
+    },
+    format: {
+      ascii_only: config.output.charset === 'ascii',
+    },
+  };
+
+  if (config.output.legalComments === 'none') {
+    options.format!.comments = false;
+  }
+
+  const finalOptions = applyRemoveConsole(options, config);
+  return finalOptions;
+}
+
+export async function getHtmlMinifyOptions(
+  isProd: boolean,
+  config: NormalizedConfig,
+) {
+  if (
+    !isProd ||
+    !config.output.minify ||
+    !parseMinifyOptions(config).minifyHtml
+  ) {
+    return false;
+  }
+
+  const minifyJS: MinifyJSOptions = getTerserMinifyOptions(config);
+
+  const htmlMinifyDefaultOptions = {
+    removeComments: false,
+    useShortDoctype: true,
+    keepClosingSlash: true,
+    collapseWhitespace: true,
+    removeRedundantAttributes: true,
+    removeScriptTypeAttributes: true,
+    removeStyleLinkTypeAttributes: true,
+    removeEmptyAttributes: true,
+    minifyJS,
+    minifyCSS: true,
+    minifyURLs: true,
+  };
+
+  const htmlMinifyOptions = parseMinifyOptions(config).htmlOptions;
+  return typeof htmlMinifyOptions === 'object'
+    ? deepmerge(htmlMinifyDefaultOptions, htmlMinifyOptions)
+    : htmlMinifyDefaultOptions;
+}
 
 export function getTitle(entryName: string, config: NormalizedConfig) {
-  return mergeChainedOptions({
-    defaults: '',
-    options: config.html.title,
-    utils: { entryName },
-    useObjectParam: true,
+  return reduceConfigsMergeContext({
+    initial: '',
+    config: config.html.title,
+    ctx: { entryName },
   });
 }
 
 export function getInject(entryName: string, config: NormalizedConfig) {
-  return mergeChainedOptions({
-    defaults: 'head',
-    options: config.html.inject,
-    utils: { entryName },
-    useObjectParam: true,
-    isFalsy: isNil,
+  return reduceConfigsMergeContext({
+    initial: 'head',
+    config: config.html.inject,
+    ctx: { entryName },
   });
 }
 
@@ -49,16 +125,12 @@ export async function getTemplate(
   config: NormalizedConfig,
   rootPath: string,
 ): Promise<{ templatePath: string; templateContent?: string }> {
-  const DEFAULT_TEMPLATE = path.resolve(
-    __dirname,
-    '../../static/template.html',
-  );
+  const DEFAULT_TEMPLATE = path.resolve(STATIC_PATH, 'template.html');
 
-  const templatePath = mergeChainedOptions({
-    defaults: DEFAULT_TEMPLATE,
-    options: config.html.template,
-    utils: { entryName },
-    useObjectParam: true,
+  const templatePath = reduceConfigsMergeContext({
+    initial: DEFAULT_TEMPLATE,
+    config: config.html.template,
+    ctx: { entryName },
   });
 
   if (templatePath === DEFAULT_TEMPLATE) {
@@ -97,11 +169,10 @@ export function getFavicon(
     html: HtmlConfig;
   },
 ) {
-  return mergeChainedOptions({
-    defaults: '',
-    options: config.html.favicon,
-    utils: { entryName },
-    useObjectParam: true,
+  return reduceConfigsMergeContext({
+    initial: '',
+    config: config.html.favicon,
+    ctx: { entryName },
   });
 }
 
@@ -110,11 +181,10 @@ export function getMetaTags(
   config: { html: HtmlConfig },
   templateContent?: string,
 ) {
-  const metaTags = mergeChainedOptions({
-    defaults: {},
-    options: config.html.meta,
-    utils: { entryName },
-    useObjectParam: true,
+  const metaTags = reduceConfigsMergeContext({
+    initial: {},
+    config: config.html.meta,
+    ctx: { entryName },
   });
 
   // `html.meta` will add charset meta by default.
@@ -148,27 +218,38 @@ function getTemplateParameters(
         options: pluginOptions,
       },
     };
-    return mergeChainedOptions({
-      defaults: defaultOptions,
-      options: templateParameters,
-      utils: { entryName },
+    return reduceConfigsWithContext({
+      initial: defaultOptions,
+      config: templateParameters,
+      ctx: { entryName },
     });
   };
 }
 
 function getChunks(
   entryName: string,
-  entryValue: string | string[] | EntryDescription,
+  entryValue: Array<string | string[] | EntryDescription>,
 ): string[] {
-  if (isPlainObject(entryValue)) {
-    // @ts-expect-error Rspack do not support dependOn yet
-    const { dependOn } = entryValue as EntryDescription;
-    if (Array.isArray(dependOn)) {
-      return [...dependOn, entryName];
+  const chunks = [entryName];
+
+  for (const item of entryValue) {
+    if (!isPlainObject(item)) {
+      continue;
+    }
+
+    const { dependOn } = item as EntryDescription;
+    if (!dependOn) {
+      continue;
+    }
+
+    if (typeof dependOn === 'string') {
+      chunks.unshift(dependOn);
+    } else {
+      chunks.unshift(...dependOn);
     }
   }
 
-  return [entryName];
+  return chunks;
 }
 
 const getTagConfig = (api: RsbuildPluginAPI): TagConfig | undefined => {
@@ -188,7 +269,7 @@ const getTagConfig = (api: RsbuildPluginAPI): TagConfig | undefined => {
   };
 };
 
-export const pluginHtml = (): RsbuildPlugin => ({
+export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
   name: 'rsbuild:html',
 
   setup(api) {
@@ -210,12 +291,14 @@ export const pluginHtml = (): RsbuildPlugin => ({
 
         const finalOptions = await Promise.all(
           entryNames.map(async (entryName) => {
-            const entryValue = entries[entryName].values();
-            const chunks = getChunks(
-              entryName,
-              // @ts-expect-error EntryDescription type mismatch
-              entryValue,
-            );
+            // EntryDescription type is different between webpack and Rspack
+            const entryValue = entries[entryName].values() as (
+              | string
+              | string[]
+              | EntryDescription
+            )[];
+
+            const chunks = getChunks(entryName, entryValue);
             const inject = getInject(entryName, config);
             const filename = htmlPaths[entryName];
             const { templatePath, templateContent } = await getTemplate(
@@ -243,6 +326,11 @@ export const pluginHtml = (): RsbuildPlugin => ({
               scriptLoading: config.html.scriptLoading,
             };
 
+            if (chunks.length > 1) {
+              // load entires by the order of `chunks`
+              pluginOptions.chunksSortMode = 'manual';
+            }
+
             const htmlInfo: HtmlInfo = {};
             htmlInfoMap[entryName] = htmlInfo;
 
@@ -267,16 +355,13 @@ export const pluginHtml = (): RsbuildPlugin => ({
               }
             }
 
-            const finalOptions = mergeChainedOptions({
-              defaults: pluginOptions,
-              options:
+            const finalOptions = reduceConfigsWithContext({
+              initial: pluginOptions,
+              config:
                 typeof config.tools.htmlPlugin === 'boolean'
                   ? {}
                   : config.tools.htmlPlugin,
-              utils: {
-                entryName,
-                entryValue,
-              },
+              ctx: { entryName, entryValue },
             });
 
             return finalOptions;
@@ -294,39 +379,14 @@ export const pluginHtml = (): RsbuildPlugin => ({
 
         chain
           .plugin(CHAIN_ID.PLUGIN.HTML_BASIC)
-          .use(HtmlBasicPlugin, [htmlInfoMap]);
-
-        if (config.security) {
-          const { nonce } = config.security;
-
-          if (nonce) {
-            const { HtmlNoncePlugin } = await import(
-              '../rspack/HtmlNoncePlugin'
-            );
-
-            chain
-              .plugin(CHAIN_ID.PLUGIN.HTML_NONCE)
-              .use(HtmlNoncePlugin, [{ nonce }]);
-          }
-        }
+          .use(HtmlBasicPlugin, [htmlInfoMap, modifyTagsFn]);
 
         if (config.html) {
           const { appIcon, crossorigin } = config.html;
 
           if (crossorigin) {
-            const { HtmlCrossOriginPlugin } = await import(
-              '../rspack/HtmlCrossOriginPlugin'
-            );
-
             const formattedCrossorigin =
               crossorigin === true ? 'anonymous' : crossorigin;
-
-            chain
-              .plugin(CHAIN_ID.PLUGIN.HTML_CROSS_ORIGIN)
-              .use(HtmlCrossOriginPlugin, [
-                { crossOrigin: formattedCrossorigin },
-              ]);
-
             chain.output.crossOriginLoading(formattedCrossorigin);
           }
 
@@ -347,5 +407,31 @@ export const pluginHtml = (): RsbuildPlugin => ({
         }
       },
     );
+
+    api.modifyHTMLTags({
+      // ensure `crossorigin` and `nonce` can be applied to all tags
+      order: 'post',
+      handler: ({ headTags, bodyTags }) => {
+        const config = api.getNormalizedConfig();
+        const { crossorigin } = config.html;
+        const allTags = [...headTags, ...bodyTags];
+
+        if (crossorigin) {
+          const formattedCrossorigin =
+            crossorigin === true ? 'anonymous' : crossorigin;
+
+          for (const tag of allTags) {
+            if (
+              (tag.tag === 'script' && tag.attrs?.src) ||
+              (tag.tag === 'link' && tag.attrs?.rel === 'stylesheet')
+            ) {
+              tag.attrs.crossorigin ??= formattedCrossorigin;
+            }
+          }
+        }
+
+        return { headTags, bodyTags };
+      },
+    });
   },
 });

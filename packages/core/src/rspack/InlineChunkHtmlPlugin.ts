@@ -7,14 +7,14 @@
  */
 import { join } from 'node:path';
 import {
-  isFunction,
+  type InlineChunkTest,
   addTrailingSlash,
   getPublicPathFromCompiler,
-  type InlineChunkTest,
+  isFunction,
 } from '@rsbuild/shared';
-import type { Compiler, Compilation } from '@rspack/core';
+import type { Compilation, Compiler } from '@rspack/core';
 import type { HtmlTagObject } from 'html-webpack-plugin';
-import { getHTMLPlugin } from '../provider/htmlPluginUtil';
+import { getHTMLPlugin } from '../pluginHelper';
 
 export type InlineChunkHtmlPluginOptions = {
   styleTests: InlineChunkTest[];

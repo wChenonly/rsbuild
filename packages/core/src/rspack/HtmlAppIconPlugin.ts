@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import { posix, basename } from 'node:path';
-import type { Compiler, Compilation } from '@rspack/core';
-import WebpackSources from '@rsbuild/shared/webpack-sources';
-import { withPublicPath, getPublicPathFromCompiler } from '@rsbuild/shared';
-import { getHTMLPlugin } from '../provider/htmlPluginUtil';
+import { basename, posix } from 'node:path';
+import { getPublicPathFromCompiler } from '@rsbuild/shared';
+import type { Compilation, Compiler } from '@rspack/core';
+import { ensureAssetPrefix } from '../helpers';
+import { getHTMLPlugin } from '../pluginHelper';
 
 type AppIconOptions = {
   distDir: string;
@@ -45,7 +45,7 @@ export class HtmlAppIconPlugin {
             attributes: {
               rel: 'apple-touch-icon',
               sizes: '180*180',
-              href: withPublicPath(iconRelativePath, publicPath),
+              href: ensureAssetPrefix(iconRelativePath, publicPath),
             },
             meta: {},
           });
@@ -64,11 +64,11 @@ export class HtmlAppIconPlugin {
             stage:
               compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_PRE_PROCESS,
           },
-          (assets) => {
+          () => {
             const source = fs.readFileSync(this.iconPath);
-            assets[iconRelativePath] = new WebpackSources.RawSource(
-              source,
-              false,
+            compilation.emitAsset(
+              iconRelativePath,
+              new compiler.webpack.sources.RawSource(source, false),
             );
           },
         );

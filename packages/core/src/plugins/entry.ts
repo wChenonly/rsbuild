@@ -1,13 +1,13 @@
 import {
-  color,
-  castArray,
-  createVirtualModule,
-  mergeChainedOptions,
   type RsbuildEntry,
   type RsbuildTarget,
+  castArray,
+  color,
+  createVirtualModule,
+  reduceConfigsMergeContext,
 } from '@rsbuild/shared';
-import type { NormalizedConfig, RsbuildConfig, RsbuildPlugin } from '../types';
 import type { EntryDescription } from '@rspack/core';
+import type { NormalizedConfig, RsbuildConfig, RsbuildPlugin } from '../types';
 
 export function getEntryObject(
   config: RsbuildConfig | NormalizedConfig,
@@ -17,11 +17,10 @@ export function getEntryObject(
     return {};
   }
 
-  return mergeChainedOptions({
-    defaults: {},
-    options: config.source?.entry,
-    utils: { target },
-    useObjectParam: true,
+  return reduceConfigsMergeContext({
+    initial: {},
+    config: config.source?.entry,
+    ctx: { target },
   });
 }
 

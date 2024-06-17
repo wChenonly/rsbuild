@@ -1,7 +1,7 @@
 import type { RsbuildConfig } from '@rsbuild/shared';
-import { pluginEntry } from '../src/plugins/entry';
 import { createStubRsbuild } from '@scripts/test-helper';
-import { pluginSwc } from '../src/provider/plugins/swc';
+import { pluginEntry } from '../src/plugins/entry';
+import { pluginSwc } from '../src/plugins/swc';
 
 describe('plugin-swc', () => {
   it('should disable preset_env in target other than web', async () => {

@@ -1,12 +1,12 @@
 import path from 'node:path';
 import { logger } from '@rsbuild/core';
-import { deepmerge } from '@rsbuild/shared';
 import type { RsbuildPlugin } from '@rsbuild/core';
-import type { CompileOptions } from 'svelte/compiler';
+import { deepmerge } from '@rsbuild/shared';
 import type {
   AutoPreprocessOptions,
   Transformer,
 } from 'svelte-preprocess/dist/types';
+import type { CompileOptions } from 'svelte/compiler';
 
 export type { AutoPreprocessOptions, Transformer };
 
@@ -37,9 +37,11 @@ export type PluginSvelteOptions = {
   preprocessOptions?: AutoPreprocessOptions;
 };
 
+export const PLUGIN_SVELTE_NAME = 'rsbuild:svelte';
+
 export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
   return {
-    name: 'rsbuild:svelte',
+    name: PLUGIN_SVELTE_NAME,
 
     setup(api) {
       let sveltePath = '';

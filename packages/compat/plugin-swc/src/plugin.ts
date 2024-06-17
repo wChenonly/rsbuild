@@ -1,22 +1,21 @@
 import path from 'node:path';
+import type { RsbuildPlugin } from '@rsbuild/core';
 import {
-  SCRIPT_REGEX,
   DEFAULT_BROWSERSLIST,
+  SCRIPT_REGEX,
   applyScriptCondition,
-  type RsbuildPlugin,
-  parseMinifyOptions,
 } from '@rsbuild/shared';
+import { SwcMinimizerPlugin } from './minimizer';
 import type {
-  TransformConfig,
-  PluginSwcOptions,
   ObjPluginSwcOptions,
+  PluginSwcOptions,
+  TransformConfig,
 } from './types';
 import {
   applyPluginConfig,
   checkUseMinify,
   removeUselessOptions,
 } from './utils';
-import { SwcMinimizerPlugin } from './minimizer';
 
 /**
  * In this plugin, we do:
@@ -58,6 +57,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
         } else {
           applyScriptCondition({
             rule: chain.module.rule(CHAIN_ID.RULE.JS),
+            chain,
             config: rsbuildConfig,
             context: api.context,
             includes: [],
@@ -76,7 +76,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
           rule
             .test(test || SCRIPT_REGEX)
             .use(CHAIN_ID.USE.SWC)
-            .loader(path.resolve(__dirname, './loader'))
+            .loader(path.resolve(__dirname, './loader.cjs'))
             .options(removeUselessOptions(swcConfig) satisfies TransformConfig);
 
           if (include) {
@@ -112,7 +112,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
           .resolve.set('fullySpecified', false)
           .end()
           .use(CHAIN_ID.USE.SWC)
-          .loader(path.resolve(__dirname, './loader'))
+          .loader(path.resolve(__dirname, './loader.cjs'))
           .options(removeUselessOptions(mainConfig) satisfies TransformConfig);
       },
     });
@@ -121,32 +121,33 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
       const rsbuildConfig = api.getNormalizedConfig();
 
       if (checkUseMinify(mainConfig, rsbuildConfig, isProd)) {
-        // Insert swc minify plugin
-        // @ts-expect-error webpack-chain missing minimizers type
-        const minimizersChain = chain.optimization.minimizers;
+        const { minify } = rsbuildConfig.output;
+        const minifyJs =
+          minify === true || (typeof minify === 'object' && minify.js);
+        const minifyCss =
+          minify === true || (typeof minify === 'object' && minify.css);
 
-        if (mainConfig.jsMinify !== false) {
-          minimizersChain.delete(CHAIN_ID.MINIMIZER.JS).end();
+        if (minifyJs) {
+          chain.optimization
+            .minimizer(CHAIN_ID.MINIMIZER.JS)
+            .use(SwcMinimizerPlugin, [
+              {
+                jsMinify: mainConfig.jsMinify ?? mainConfig.jsc?.minify ?? true,
+                rsbuildConfig,
+              },
+            ]);
         }
 
-        if (mainConfig.cssMinify !== false) {
-          minimizersChain.delete(CHAIN_ID.MINIMIZER.CSS).end();
+        if (minifyCss) {
+          chain.optimization
+            .minimizer(CHAIN_ID.MINIMIZER.CSS)
+            .use(SwcMinimizerPlugin, [
+              {
+                cssMinify: minifyCss ? mainConfig.cssMinify ?? true : false,
+                rsbuildConfig,
+              },
+            ]);
         }
-
-        const { minifyJs, minifyCss } = parseMinifyOptions(rsbuildConfig);
-
-        minimizersChain
-          .end()
-          .minimizer(CHAIN_ID.MINIMIZER.SWC)
-          .use(SwcMinimizerPlugin, [
-            {
-              jsMinify: minifyJs
-                ? mainConfig.jsMinify ?? mainConfig.jsc?.minify
-                : false,
-              cssMinify: minifyCss ? mainConfig.cssMinify : false,
-              rsbuildConfig,
-            },
-          ]);
       }
     });
   },
@@ -173,7 +174,6 @@ export function getDefaultSwcConfig(): TransformConfig {
       // https://github.com/swc-project/swc/issues/6403
       preserveAllComments: true,
     },
-    sourceMaps: true,
     env: {
       targets: DEFAULT_BROWSERSLIST.web.join(', '),
     },

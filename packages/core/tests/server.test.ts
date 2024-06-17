@@ -1,10 +1,11 @@
+import { type NormalizedConfig, isClientCompiler } from '@rsbuild/shared';
 import { rspack } from '@rspack/core';
+import { setupServerHooks } from '../src/server/devMiddleware';
 import {
-  mergeDevOptions,
   formatRoutes,
+  getDevConfig,
   printServerURLs,
 } from '../src/server/helper';
-import { isClientCompiler, setupServerHooks } from '@rsbuild/shared';
 
 test('formatRoutes', () => {
   expect(
@@ -157,15 +158,15 @@ test('printServerURLs', () => {
   let message: string | undefined;
 
   message = printServerURLs({
-    port: 8080,
+    port: 3000,
     protocol: 'http',
     urls: [
       {
-        url: 'http://localhost:8080',
+        url: 'http://localhost:3000',
         label: 'local',
       },
       {
-        url: 'http://10.94.62.193:8080/',
+        url: 'http://10.94.62.193:3000/',
         label: 'network',
       },
     ],
@@ -178,21 +179,21 @@ test('printServerURLs', () => {
   });
 
   expect(message!).toMatchInlineSnapshot(`
-    "  > local     http:/localhost:8080/
-      > network   http:/10.94.62.193:8080/
+    "  > local     http:/localhost:3000/
+      > network   http:/10.94.62.193:3000/
     "
   `);
 
   message = printServerURLs({
-    port: 8080,
+    port: 3000,
     protocol: 'http',
     urls: [
       {
-        url: 'http://localhost:8080',
+        url: 'http://localhost:3000',
         label: 'local',
       },
       {
-        url: 'http://10.94.62.193:8080/',
+        url: 'http://10.94.62.193:3000/',
         label: 'network',
       },
     ],
@@ -214,21 +215,23 @@ test('printServerURLs', () => {
 
   expect(message!).toMatchInlineSnapshot(`
     "  > local
-      - index    http:/localhost:8080/
-      - foo      http:/localhost:8080/html/foo
-      - bar      http:/localhost:8080/bar
+      - index    http:/localhost:3000/
+      - foo      http:/localhost:3000/html/foo
+      - bar      http:/localhost:3000/bar
 
       > network
-      - index    http:/10.94.62.193:8080/
-      - foo      http:/10.94.62.193:8080/html/foo
-      - bar      http:/10.94.62.193:8080/bar
+      - index    http:/10.94.62.193:3000/
+      - foo      http:/10.94.62.193:3000/html/foo
+      - bar      http:/10.94.62.193:3000/bar
     "
   `);
 });
 
 describe('test dev server', () => {
   test('should setupServerHooks correctly', () => {
-    const compiler = rspack({});
+    const compiler = rspack({
+      target: 'web',
+    });
     const onDoneFn = vi.fn();
     const onInvalidFn = vi.fn();
 
@@ -257,7 +260,7 @@ describe('test dev server', () => {
   });
   test('should not setupServerHooks when compiler is server', () => {
     const compiler = rspack({
-      name: 'server',
+      target: 'node',
     });
     const onDoneFn = vi.fn();
     const onInvalidFn = vi.fn();
@@ -304,25 +307,26 @@ describe('test dev server', () => {
 
   test('getDevServerOptions', async () => {
     expect(
-      mergeDevOptions({
-        rsbuildConfig: {},
-        port: 8080,
+      getDevConfig({
+        config: {} as NormalizedConfig,
+        port: 3000,
       }),
     ).toMatchInlineSnapshot(`
       {
         "client": {
           "host": "",
           "path": "/rsbuild-hmr",
-          "port": "8080",
+          "port": "3000",
           "protocol": undefined,
         },
+        "liveReload": true,
         "writeToDisk": false,
       }
     `);
 
     expect(
-      mergeDevOptions({
-        rsbuildConfig: {
+      getDevConfig({
+        config: {
           dev: {
             hmr: false,
             client: {
@@ -330,18 +334,19 @@ describe('test dev server', () => {
               path: '',
             },
           },
-        },
-        port: 8081,
+        } as NormalizedConfig,
+        port: 3001,
       }),
     ).toMatchInlineSnapshot(`
       {
         "client": {
           "host": "",
           "path": "",
-          "port": "8081",
+          "port": "3001",
           "protocol": undefined,
         },
         "hmr": false,
+        "liveReload": true,
         "writeToDisk": false,
       }
     `);

@@ -1,17 +1,16 @@
-import { join } from 'node:path';
 import type { RsbuildPlugin } from '@rsbuild/core';
 
-export const pluginToml = (): RsbuildPlugin => ({
-  name: 'rsbuild:toml',
+export const PLUGIN_TOML_NAME = 'rsbuild:toml';
 
-  setup(api) {
-    api.modifyBundlerChain((chain, { CHAIN_ID }) => {
-      chain.module
-        .rule(CHAIN_ID.RULE.TOML)
-        .type('javascript/auto')
-        .test(/\.toml$/)
-        .use(CHAIN_ID.USE.TOML)
-        .loader(join(__dirname, '../compiled', 'toml-loader'));
+export const pluginToml = (): RsbuildPlugin => ({
+  name: PLUGIN_TOML_NAME,
+
+  async setup(api) {
+    const { parse } = await import('toml');
+
+    api.transform({ test: /\.toml$/ }, ({ code }) => {
+      const parsed = parse(code);
+      return `module.exports = ${JSON.stringify(parsed, undefined, '\t')};`;
     });
   },
 });

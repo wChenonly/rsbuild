@@ -1,16 +1,9 @@
+import { type NormalizedConfig, __internalHelper, logger } from '@rsbuild/core';
+import { color, deepmerge } from '@rsbuild/shared';
 import type { webpack } from '@rsbuild/webpack';
-import { merge } from 'lodash';
-import { logger } from '@rsbuild/core';
-import {
-  color,
-  CSS_REGEX,
-  getSwcMinimizerOptions,
-  parseMinifyOptions,
-  type NormalizedConfig,
-} from '@rsbuild/shared';
-import type { Output, JsMinifyOptions, CssMinifyOptions } from './types';
 import { minify, minifyCss } from './binding';
 import { JS_REGEX } from './constants';
+import type { CssMinifyOptions, JsMinifyOptions, Output } from './types';
 
 export interface NormalizedSwcMinifyOption {
   jsMinify?: JsMinifyOptions;
@@ -30,6 +23,8 @@ const normalize = <T>(
   return v;
 };
 
+const CSS_REGEX = /\.css$/;
+
 export class SwcMinimizerPlugin {
   private readonly minifyOptions: NormalizedSwcMinifyOption;
 
@@ -40,21 +35,22 @@ export class SwcMinimizerPlugin {
     cssMinify?: boolean | CssMinifyOptions;
     rsbuildConfig: NormalizedConfig;
   }) {
-    const { minifyJs, minifyCss } = parseMinifyOptions(options.rsbuildConfig);
     this.minifyOptions = {
-      jsMinify: minifyJs
-        ? merge(
+      jsMinify: options.jsMinify
+        ? deepmerge(
             this.getDefaultJsMinifyOptions(options.rsbuildConfig),
             normalize(options.jsMinify, {}),
           )
         : undefined,
-      cssMinify: minifyCss ? normalize(options.cssMinify, {}) : undefined,
+      cssMinify: options.cssMinify
+        ? normalize(options.cssMinify, {})
+        : undefined,
     };
   }
 
   getDefaultJsMinifyOptions(rsbuildConfig: NormalizedConfig): JsMinifyOptions {
     const options = {
-      ...getSwcMinimizerOptions(rsbuildConfig),
+      ...__internalHelper.getSwcMinimizerOptions(rsbuildConfig),
       mangle: true,
     };
 

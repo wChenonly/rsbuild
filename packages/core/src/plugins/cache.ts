@@ -1,12 +1,8 @@
 import crypto from 'node:crypto';
 import { isAbsolute, join } from 'node:path';
 import { fse } from '@rsbuild/shared';
-import {
-  findExists,
-  isFileExists,
-  type RsbuildContext,
-  type BuildCacheOptions,
-} from '@rsbuild/shared';
+import type { BuildCacheOptions, RsbuildContext } from '@rsbuild/shared';
+import { findExists, isFileExists } from '../helpers';
 import type { NormalizedConfig, RsbuildPlugin } from '../types';
 
 async function validateCache(
@@ -99,6 +95,11 @@ export const pluginCache = (): RsbuildPlugin => ({
   name: 'rsbuild:cache',
 
   setup(api) {
+    // Rspack does not support persistent cache yet
+    if (api.context.bundlerType === 'rspack') {
+      return;
+    }
+
     api.modifyBundlerChain(async (chain, { target, env }) => {
       const config = api.getNormalizedConfig();
       const { buildCache } = config.performance;

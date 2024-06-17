@@ -151,7 +151,7 @@ pnpm e2e:rspack -g vue
 
 ## Linting
 
-To help maintain consistency and readability of the codebase, we use [Biome](https://github.com/biomejs/biome) to lint the codes, [ls-lint](https://github.com/loeffel-io/ls-lint) to lint the directory and filename.
+To help maintain consistency and readability of the codebase, we use [Biome](https://github.com/biomejs/biome) to lint the codes.
 
 You can run the linters by executing the following command:
 
@@ -165,17 +165,7 @@ For VS Code users, you can install the [Biome VS Code extension](https://marketp
 
 ## Documentation
 
-Currently Rsbuild provides documentation in English and Chinese. If you can use Chinese, please update both documents at the same time. Otherwise, just update the English documentation.
-
-You can find all the documentation in the `packages/document` folder:
-
-```bash
-root
-└─ packages
-   └─ document
-```
-
-This website is built with [Rspress](https://github.com/web-infra-dev/rspress), the document content can be written using markdown or mdx syntax. You can refer to the [Rspress Website](https://rspress.dev/) for detailed usage.
+You can find the Rsbuild documentation in the [website](./website) folder.
 
 ---
 
@@ -192,7 +182,7 @@ The format of PR titles follow Conventional Commits.
 An example:
 
 ```
-feat(plugin-swc): Add `xxx` config
+feat(plugin-swc): Add `myOption` config
 ^    ^    ^
 |    |    |__ Subject
 |    |_______ Scope

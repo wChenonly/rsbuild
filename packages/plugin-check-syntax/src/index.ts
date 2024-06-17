@@ -1,9 +1,9 @@
-import {
-  getBrowserslistWithDefault,
-  type RsbuildTarget,
-  type NormalizedConfig,
-} from '@rsbuild/shared';
-import type { RsbuildPlugin } from '@rsbuild/core';
+import type {
+  NormalizedConfig,
+  RsbuildPlugin,
+  RsbuildTarget,
+} from '@rsbuild/core';
+import { getBrowserslistWithDefault } from '@rsbuild/shared';
 import type { CheckSyntaxOptions } from './types';
 
 export type PluginCheckSyntaxOptions = CheckSyntaxOptions;
@@ -20,11 +20,13 @@ async function getTargets(
   );
 }
 
+export const PLUGIN_CHECK_SYNTAX_NAME = 'rsbuild:check-syntax';
+
 export function pluginCheckSyntax(
   options: PluginCheckSyntaxOptions = {},
 ): RsbuildPlugin {
   return {
-    name: 'rsbuild:check-syntax',
+    name: PLUGIN_CHECK_SYNTAX_NAME,
 
     setup(api) {
       api.modifyBundlerChain(async (chain, { isDev, target }) => {

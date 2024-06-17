@@ -1,34 +1,39 @@
-import type { Falsy, WebpackChain } from './utils';
-import type {
-  OnExitFn,
-  OnAfterBuildFn,
-  OnBeforeBuildFn,
-  OnCloseDevServerFn,
-  OnDevCompileDoneFn,
-  OnAfterStartDevServerFn,
-  OnBeforeStartDevServerFn,
-  OnAfterStartProdServerFn,
-  OnBeforeStartProdServerFn,
-  OnAfterCreateCompilerFn,
-  OnBeforeCreateCompilerFn,
-  ModifyRsbuildConfigFn,
-  ModifyBundlerChainFn,
-  ModifyChainUtils,
-} from './hooks';
-import type { RsbuildContext } from './context';
-import type {
-  RsbuildConfig,
-  NormalizedConfig,
-  ModifyRspackConfigUtils,
-} from './config';
-import type { PromiseOrNot } from './utils';
-import type { RspackConfig } from './rspack';
+import type { RuleSetCondition } from '@rspack/core';
+import type HtmlWebpackPlugin from 'html-webpack-plugin';
 import type {
   RuleSetRule,
-  WebpackPluginInstance,
   Configuration as WebpackConfig,
+  WebpackPluginInstance,
 } from 'webpack';
 import type { ChainIdentifier } from '../chain';
+import type { RspackChain } from '../chain';
+import type {
+  ModifyRspackConfigUtils,
+  NormalizedConfig,
+  RsbuildConfig,
+} from './config';
+import type { RsbuildContext } from './context';
+import type {
+  ModifyBundlerChainFn,
+  ModifyChainUtils,
+  ModifyHTMLTagsFn,
+  ModifyRsbuildConfigFn,
+  OnAfterBuildFn,
+  OnAfterCreateCompilerFn,
+  OnAfterStartDevServerFn,
+  OnAfterStartProdServerFn,
+  OnBeforeBuildFn,
+  OnBeforeCreateCompilerFn,
+  OnBeforeStartDevServerFn,
+  OnBeforeStartProdServerFn,
+  OnCloseDevServerFn,
+  OnDevCompileDoneFn,
+  OnExitFn,
+} from './hooks';
+import type { RsbuildTarget } from './rsbuild';
+import type { RspackConfig, RspackSourceMap } from './rspack';
+import type { Falsy } from './utils';
+import type { MaybePromise } from './utils';
 
 type HookOrder = 'pre' | 'post' | 'default';
 
@@ -57,7 +62,7 @@ export type ModifyWebpackChainUtils = ModifyChainUtils & {
   /**
    * @deprecated Use HtmlPlugin instead.
    */
-  HtmlWebpackPlugin: typeof import('html-webpack-plugin');
+  HtmlWebpackPlugin: typeof HtmlWebpackPlugin;
 };
 
 export type ModifyWebpackConfigUtils = ModifyWebpackChainUtils & {
@@ -69,11 +74,11 @@ export type ModifyWebpackConfigUtils = ModifyWebpackChainUtils & {
     plugins: WebpackPluginInstance | WebpackPluginInstance[],
   ) => void;
   removePlugin: (pluginName: string) => void;
-  mergeConfig: typeof import('../../compiled/webpack-merge').merge;
+  mergeConfig: typeof import('../../compiled/webpack-merge/index.js').merge;
 };
 
 export type ModifyWebpackChainFn = (
-  chain: WebpackChain,
+  chain: RspackChain,
   utils: ModifyWebpackChainUtils,
 ) => Promise<void> | void;
 
@@ -83,7 +88,7 @@ export type ModifyWebpackConfigFn = (
 ) => Promise<WebpackConfig | void> | WebpackConfig | void;
 
 export type PluginManager = {
-  readonly plugins: RsbuildPlugin[];
+  getPlugins: () => RsbuildPlugin[];
   addPlugins: (
     plugins: Array<RsbuildPlugin | Falsy>,
     options?: { before?: string },
@@ -107,7 +112,7 @@ export type RsbuildPlugin = {
    * This function is called once when the plugin is initialized.
    * @param api provides the context info, utility functions and lifecycle hooks.
    */
-  setup: (api: RsbuildPluginAPI) => PromiseOrNot<void>;
+  setup: (api: RsbuildPluginAPI) => MaybePromise<void>;
   /**
    * Declare the names of pre-plugins, which will be executed before the current plugin.
    */
@@ -128,36 +133,6 @@ export type RsbuildPlugins = (
   | Promise<RsbuildPlugin | Falsy>
 )[];
 
-type PluginsFn<T = undefined> = T extends undefined
-  ? () => Promise<RsbuildPlugin>
-  : (arg: T) => Promise<RsbuildPlugin>;
-
-export type Plugins = {
-  basic: PluginsFn;
-  cleanOutput: PluginsFn;
-  startUrl: PluginsFn;
-  fileSize: PluginsFn;
-  target: PluginsFn;
-  entry: PluginsFn;
-  cache: PluginsFn;
-  splitChunks: PluginsFn;
-  inlineChunk: PluginsFn;
-  bundleAnalyzer: PluginsFn;
-  rsdoctor: PluginsFn;
-  asset: PluginsFn;
-  html: PluginsFn;
-  wasm: PluginsFn;
-  moment: PluginsFn;
-  nodeAddons: PluginsFn;
-  externals: PluginsFn;
-  networkPerformance: PluginsFn;
-  preloadOrPrefetch: PluginsFn;
-  performance: PluginsFn;
-  define: PluginsFn;
-  server: PluginsFn;
-  moduleFederation: PluginsFn;
-};
-
 export type GetRsbuildConfig = {
   (): Readonly<RsbuildConfig>;
   (type: 'original' | 'current'): Readonly<RsbuildConfig>;
@@ -168,10 +143,90 @@ type PluginHook<T extends (...args: any[]) => any> = (
   options: T | HookDescriptor<T>,
 ) => void;
 
+type TransformResult =
+  | string
+  | {
+      code: string;
+      map?: string | RspackSourceMap | null;
+    };
+
+export type TransformContext = {
+  /**
+   * The code of the module.
+   */
+  code: string;
+  /**
+   * The absolute path of the module, including the query.
+   * @example '/home/user/project/src/index.js?foo=123'
+   */
+  resource: string;
+  /**
+   * The absolute path of the module, without the query.
+   * @example '/home/user/project/src/index.js'
+   */
+  resourcePath: string;
+  /**
+   * The query of the module.
+   * @example '?foo=123'
+   */
+  resourceQuery: string;
+  /**
+   * Add an additional file as the dependency.
+   * The file will be watched and changes to the file will trigger rebuild.
+   * @param file The absolute path of the module
+   */
+  addDependency: (file: string) => void;
+  /**
+   * Emits a file to the build output.
+   * @param name file name of the asset
+   * @param content the source of the asset
+   * @param sourceMap source map of the asset
+   * @param assetInfo additional asset information
+   */
+  emitFile: (
+    name: string,
+    content: string | Buffer,
+    sourceMap?: string,
+    assetInfo?: Record<string, any>,
+  ) => void;
+};
+
+export type TransformHandler = (
+  context: TransformContext,
+) => MaybePromise<TransformResult>;
+
+export type TransformDescriptor = {
+  /**
+   * Include modules that match the test assertion, the same as `rule.test`
+   * @see https://rspack.dev/config/module#ruletest
+   */
+  test?: RuleSetCondition;
+  /**
+   * A condition that matches the resource query.
+   * @see https://rspack.dev/config/module#ruleresourcequery
+   */
+  resourceQuery?: RuleSetCondition;
+  /**
+   * Match based on the Rsbuild targets and only apply the transform to certain targets.
+   * @see https://rsbuild.dev/config/output/targets
+   */
+  targets?: RsbuildTarget[];
+  /**
+   * If raw is `true`, the transform handler will receive the Buffer type code instead of the string type.
+   * @see https://rspack.dev/api/loader-api#raw-loader
+   */
+  raw?: boolean;
+};
+
+export type TransformFn = (
+  descriptor: TransformDescriptor,
+  handler: TransformHandler,
+) => void;
+
 /**
  * Define a generic Rsbuild plugin API that provider can extend as needed.
  */
-export type RsbuildPluginAPI = {
+export type RsbuildPluginAPI = Readonly<{
   context: Readonly<RsbuildContext>;
   isPluginExists: PluginManager['isPluginExists'];
 
@@ -187,6 +242,7 @@ export type RsbuildPluginAPI = {
   onAfterCreateCompiler: PluginHook<OnAfterCreateCompilerFn>;
   onBeforeCreateCompiler: PluginHook<OnBeforeCreateCompilerFn>;
 
+  modifyHTMLTags: PluginHook<ModifyHTMLTagsFn>;
   modifyRsbuildConfig: PluginHook<ModifyRsbuildConfigFn>;
   modifyBundlerChain: PluginHook<ModifyBundlerChainFn>;
   /** Only works when bundler is Rspack */
@@ -203,4 +259,15 @@ export type RsbuildPluginAPI = {
   getHTMLPaths: () => Record<string, string>;
   getRsbuildConfig: GetRsbuildConfig;
   getNormalizedConfig: () => NormalizedConfig;
-};
+
+  /**
+   * For plugin communication
+   */
+  expose: <T = any>(id: string | symbol, api: T) => void;
+  useExposed: <T = any>(id: string | symbol) => T | undefined;
+
+  /**
+   * Used to transform the code of modules.
+   */
+  transform: TransformFn;
+}>;

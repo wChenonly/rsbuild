@@ -1,5 +1,5 @@
-import type { RsbuildPlugin } from '@rsbuild/core';
 import assert from 'node:assert';
+import type { RsbuildPlugin } from '@rsbuild/core';
 import { ImageMinimizerPlugin } from './minimizer';
 import { withDefaultOptions } from './shared/utils';
 import type { Codecs, Options } from './types';
@@ -33,11 +33,13 @@ const normalizeOptions = (options: Options[]) => {
   return normalized;
 };
 
+export const PLUGIN_IMAGE_COMPRESS_NAME = 'rsbuild:image-compress';
+
 /** Options enable by default: {@link DEFAULT_OPTIONS} */
 export const pluginImageCompress: IPluginImageCompress = (
   ...args
 ): RsbuildPlugin => ({
-  name: 'rsbuild:image-compress',
+  name: PLUGIN_IMAGE_COMPRESS_NAME,
 
   setup(api) {
     const opts = normalizeOptions(castOptions(args));

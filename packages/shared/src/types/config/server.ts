@@ -1,9 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { SecureServerSessionOptions } from 'node:http2';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type {
   Options as BaseProxyOptions,
   Filter as ProxyFilter,
-} from '../../../compiled/http-proxy-middleware';
+} from '../../../compiled/http-proxy-middleware/index.js';
 import type { Routes } from '../hooks';
 
 export type HtmlFallback = false | 'index';
@@ -13,7 +14,7 @@ export type ProxyDetail = BaseProxyOptions & {
     req: IncomingMessage,
     res: ServerResponse,
     proxyOptions: ProxyOptions,
-  ) => string | undefined | null | false;
+  ) => string | undefined | null | boolean;
   context?: ProxyFilter;
 };
 
@@ -25,7 +26,7 @@ export type ProxyOptions =
 
 export type HistoryApiFallbackContext = {
   match: RegExpMatchArray;
-  parsedUrl: import('url').Url;
+  parsedUrl: import('node:url').Url;
   request: Request;
 };
 
@@ -50,20 +51,25 @@ export type PrintUrls =
       protocol: string;
     }) => string[] | void);
 
-export type PublicDir =
-  | false
-  | {
-      /**
-       * The name of the public directory, can be set as a relative path or an absolute path.
-       * @default 'public'
-       */
-      name?: string;
-      /**
-       * Whether to copy files from the publicDir to the distDir on production build
-       * @default true
-       */
-      copyOnBuild?: boolean;
-    };
+export type PublicDirOptions = {
+  /**
+   * The name of the public directory, can be set as a relative path or an absolute path.
+   * @default 'public'
+   */
+  name?: string;
+  /**
+   * Whether to copy files from the publicDir to the distDir on production build
+   * @default true
+   */
+  copyOnBuild?: boolean;
+  /**
+   * whether to watch the public directory and reload the page when the files change
+   * @default false
+   */
+  watch?: boolean;
+};
+
+export type PublicDir = false | PublicDirOptions | PublicDirOptions[];
 
 export interface ServerConfig {
   /**
@@ -81,7 +87,7 @@ export interface ServerConfig {
   /**
    * After configuring this option, you can enable HTTPS Server, and disabling the HTTP Server.
    */
-  https?: HttpsServerOptions;
+  https?: HttpsServerOptions | SecureServerSessionOptions;
   /**
    * Used to set the host of Rsbuild Server.
    */
@@ -99,6 +105,17 @@ export interface ServerConfig {
    * see https://github.com/bripkens/connect-history-api-fallback
    */
   historyApiFallback?: boolean | HistoryApiFallbackOptions;
+  /**
+   * Set the page URL to open when the server starts.
+   */
+  open?:
+    | boolean
+    | string
+    | string[]
+    | {
+        target?: string | string[];
+        before?: () => Promise<void> | void;
+      };
   /**
    * Configure proxy rules for the dev server or preview server to proxy requests to the specified service.
    */
@@ -121,8 +138,8 @@ export type NormalizedServerConfig = ServerConfig &
       | 'port'
       | 'host'
       | 'compress'
-      | 'publicDir'
       | 'strictPort'
       | 'printUrls'
+      | 'open'
     >
   >;

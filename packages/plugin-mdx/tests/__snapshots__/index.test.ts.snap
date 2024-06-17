@@ -24,7 +24,7 @@ exports[`plugin-mdx > should allow to configure mdx loader 1`] = `
           "parser": {
             "decorators": true,
             "syntax": "typescript",
-            "tsx": true,
+            "tsx": false,
           },
           "preserveAllComments": true,
           "transform": {
@@ -33,7 +33,6 @@ exports[`plugin-mdx > should allow to configure mdx loader 1`] = `
             "useDefineForClassFields": false,
           },
         },
-        "sourceMaps": true,
       },
     },
     {
@@ -70,7 +69,7 @@ exports[`plugin-mdx > should register mdx loader correctly 1`] = `
           "parser": {
             "decorators": true,
             "syntax": "typescript",
-            "tsx": true,
+            "tsx": false,
           },
           "preserveAllComments": true,
           "transform": {
@@ -79,7 +78,6 @@ exports[`plugin-mdx > should register mdx loader correctly 1`] = `
             "useDefineForClassFields": false,
           },
         },
-        "sourceMaps": true,
       },
     },
     {

@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-import type { Chunk, Compilation } from 'webpack';
 import type { PreloadIncludeType } from '@rsbuild/shared';
-
-export type ChunkGroup = Compilation['chunkGroups'][0];
+import type { Chunk, ChunkGroup, Compilation } from '@rspack/core';
 
 interface ExtractChunks {
   compilation: Compilation;
@@ -30,6 +28,8 @@ function isAsync(chunk: Chunk | ChunkGroup): boolean {
     return !chunk.canBeInitial();
   }
   if ('isInitial' in chunk) {
+    // compat webpack
+    // @ts-expect-error
     return !chunk.isInitial();
   }
   // compat rspack
@@ -45,7 +45,7 @@ export function extractChunks({
 
   // 'asyncChunks' are chunks intended for lazy/async loading usually generated as
   // part of code-splitting with import() or require.ensure(). By default, asyncChunks
-  // get wired up using link rel=preload when using this plugin. This behaviour can be
+  // get wired up using link rel=preload when using this plugin. This behavior can be
   // configured to preload all types of chunks or just prefetch chunks as needed.
   if (includeType === undefined || includeType === 'async-chunks') {
     return chunks.filter(isAsync);
@@ -62,9 +62,10 @@ export function extractChunks({
 
   if (includeType === 'all-assets') {
     // Every asset, regardless of which chunk it's in.
-    // Wrap it in a single, "psuedo-chunk" return value.
+    // Wrap it in a single, "pseudo-chunk" return value.
     // Note: webpack5 will extract license default, we do not need to preload them
-    const licenseAssets = [...compilation.assetsInfo.values()]
+    // @ts-expect-error
+    const licenseAssets = [...(compilation.assetsInfo?.values() || [])]
       .map((info) => {
         if (info.related?.license) {
           return info.related.license;
@@ -72,13 +73,13 @@ export function extractChunks({
         return false;
       })
       .filter(Boolean);
+
     return [
       {
-        // @ts-expect-error ignore ts check for files
         files: Object.keys(compilation.assets).filter(
           (t) => !licenseAssets.includes(t),
         ),
-      },
+      } as Chunk,
     ];
   }
 

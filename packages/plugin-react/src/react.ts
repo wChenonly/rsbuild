@@ -1,12 +1,34 @@
 import path from 'node:path';
-import {
-  isUsingHMR,
-  SCRIPT_REGEX,
-  modifySwcLoaderOptions,
-  type SwcReactConfig,
-} from '@rsbuild/shared';
-import type { RsbuildPluginAPI } from '@rsbuild/core';
+import type {
+  ChainIdentifier,
+  RsbuildConfig,
+  RsbuildPluginAPI,
+  Rspack,
+  RspackChain,
+} from '@rsbuild/core';
+import { SCRIPT_REGEX, deepmerge, isUsingHMR } from '@rsbuild/shared';
 import type { PluginReactOptions } from '.';
+
+const modifySwcLoaderOptions = ({
+  chain,
+  CHAIN_ID,
+  modifier,
+}: {
+  chain: RspackChain;
+  CHAIN_ID: ChainIdentifier;
+  modifier: (config: Rspack.SwcLoaderOptions) => Rspack.SwcLoaderOptions;
+}) => {
+  const ruleIds = [CHAIN_ID.RULE.JS, CHAIN_ID.RULE.JS_DATA_URI];
+
+  for (const ruleId of ruleIds) {
+    if (chain.module.rules.has(ruleId)) {
+      const rule = chain.module.rule(ruleId);
+      if (rule.uses.has(CHAIN_ID.USE.SWC)) {
+        rule.use(CHAIN_ID.USE.SWC).tap(modifier);
+      }
+    }
+  }
+};
 
 export const applyBasicReactSupport = (
   api: RsbuildPluginAPI,
@@ -17,7 +39,7 @@ export const applyBasicReactSupport = (
   api.modifyBundlerChain(async (chain, { CHAIN_ID, isDev, isProd, target }) => {
     const config = api.getNormalizedConfig();
     const usingHMR = isUsingHMR(config, { isProd, target });
-    const reactOptions: SwcReactConfig = {
+    const reactOptions: Rspack.SwcLoaderTransformConfig['react'] = {
       development: isDev,
       refresh: usingHMR,
       runtime: 'automatic',
@@ -26,14 +48,22 @@ export const applyBasicReactSupport = (
 
     modifySwcLoaderOptions({
       chain,
+      CHAIN_ID,
       modifier: (opts) => {
-        opts.jsc ??= {};
-        opts.jsc.transform ??= {};
-        opts.jsc.transform.react = {
-          ...opts.jsc.transform.react,
-          ...reactOptions,
+        const extraOptions: Rspack.SwcLoaderOptions = {
+          jsc: {
+            parser: {
+              syntax: 'typescript',
+              // enable supports for React JSX/TSX compilation
+              tsx: true,
+            },
+            transform: {
+              react: reactOptions,
+            },
+          },
         };
-        return opts;
+
+        return deepmerge(opts, extraOptions);
       },
     });
 
@@ -49,6 +79,37 @@ export const applyBasicReactSupport = (
 
     chain
       .plugin(CHAIN_ID.PLUGIN.REACT_FAST_REFRESH)
-      .use(ReactRefreshRspackPlugin, [{ include: [SCRIPT_REGEX] }]);
+      .use(ReactRefreshRspackPlugin, [
+        {
+          include: [SCRIPT_REGEX],
+          ...options.reactRefreshOptions,
+        },
+      ]);
+  });
+};
+
+export const applyReactProfiler = (api: RsbuildPluginAPI) => {
+  api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) => {
+    const enableProfilerConfig: RsbuildConfig = {
+      output: {
+        minify: {
+          jsOptions: {
+            // Need to keep classnames and function names like Components for debugging purposes.
+            mangle: {
+              keep_classnames: true,
+              keep_fnames: true,
+            },
+          },
+        },
+      },
+    };
+    return mergeRsbuildConfig(config, enableProfilerConfig);
+  });
+
+  api.modifyBundlerChain((chain) => {
+    // Replace react-dom with the profiling version.
+    // Reference: https://gist.github.com/bvaughn/25e6233aeb1b4f0cdb8d8366e54a3977
+    chain.resolve.alias.set('react-dom$', 'react-dom/profiling');
+    chain.resolve.alias.set('scheduler/tracing', 'scheduler/tracing-profiling');
   });
 };

@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-yaml",
-  "version": "0.5.4",
+  "version": "0.7.7",
   "description": "YAML plugin for Rsbuild",
   "homepage": "https://rsbuild.dev",
   "repository": {
@@ -9,15 +9,15 @@
     "directory": "packages/plugin-yaml"
   },
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
@@ -25,18 +25,18 @@
   ],
   "scripts": {
     "build": "modern build",
-    "dev": "modern build --watch"
-  },
-  "dependencies": {
-    "@rsbuild/shared": "workspace:*"
+    "dev": "modern build --watch",
+    "prebundle": "prebundle"
   },
   "devDependencies": {
     "@rsbuild/core": "workspace:*",
     "@scripts/test-helper": "workspace:*",
-    "typescript": "^5.4.2"
+    "prebundle": "1.1.0",
+    "typescript": "^5.4.2",
+    "yaml-loader": "^0.8.1"
   },
   "peerDependencies": {
-    "@rsbuild/core": "workspace:^0.5.4"
+    "@rsbuild/core": "workspace:^0.7.7"
   },
   "publishConfig": {
     "access": "public",

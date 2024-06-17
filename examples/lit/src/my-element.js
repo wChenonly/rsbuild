@@ -1,4 +1,5 @@
-import { html, css, LitElement } from 'lit';
+// biome-ignore lint/style/useFilenamingConvention: lint components use kebab-case
+import { LitElement, css, html } from 'lit';
 
 export class MyElement extends LitElement {
   static styles = css`

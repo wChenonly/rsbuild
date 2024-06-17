@@ -1,18 +1,21 @@
 import {
-  debug,
-  isDebug,
+  type InspectConfigOptions,
   type PluginManager,
   type RspackConfig,
-  type InspectConfigOptions,
-  type CreateRsbuildOptions,
+  debug,
+  isDebug,
 } from '@rsbuild/shared';
+import { normalizeConfig } from '../config';
+import { updateContextByNormalizedConfig } from '../createContext';
 import { mergeRsbuildConfig } from '../mergeConfig';
-import { updateContextByNormalizedConfig } from './createContext';
+import { initPlugins } from '../pluginManager';
+import type {
+  CreateRsbuildOptions,
+  InternalContext,
+  NormalizedConfig,
+} from '../types';
 import { inspectConfig } from './inspectConfig';
 import { generateRspackConfig } from './rspackConfig';
-import { normalizeConfig } from './config';
-import { initPlugins } from '../pluginManager';
-import type { InternalContext, NormalizedConfig } from '../types';
 
 async function modifyRsbuildConfig(context: InternalContext) {
   debug('modify Rsbuild config');
@@ -38,7 +41,7 @@ export async function initRsbuildConfig({
   InitConfigsOptions,
   'context' | 'pluginManager'
 >): Promise<NormalizedConfig> {
-  // inited
+  // initialized
   if (context.normalizedConfig) {
     return context.normalizedConfig;
   }

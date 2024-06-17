@@ -1,6 +1,5 @@
-import { createStubRsbuild } from '@scripts/test-helper';
 import type { RsbuildPlugin } from '@rsbuild/shared';
-import { BUILTIN_LOADER } from '../src/provider/shared';
+import { createStubRsbuild } from '@scripts/test-helper';
 
 describe('applyDefaultPlugins', () => {
   it('should apply default plugins correctly', async () => {
@@ -158,7 +157,7 @@ describe('bundlerApi', () => {
             .type('javascript/auto')
             .test(/\.ya?ml$/)
             .use('yaml')
-            .loader(`${BUILTIN_LOADER}yaml-loader`);
+            .loader('builtin:yaml-loader');
         });
       },
     };

@@ -1,34 +1,43 @@
 import path from 'node:path';
+import { type RspackChain, getDistPath, getFilename } from '@rsbuild/shared';
+import type { GeneratorOptionsByModuleType } from '@rspack/core';
 import {
-  getDistPath,
-  getFilename,
+  AUDIO_EXTENSIONS,
   FONT_EXTENSIONS,
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
-  AUDIO_EXTENSIONS,
-  type BundlerChainRule,
-} from '@rsbuild/shared';
+} from '../constants';
 import type { RsbuildPlugin } from '../types';
 
 const chainStaticAssetRule = ({
+  emit,
   rule,
   maxSize,
   filename,
   assetType,
 }: {
-  rule: BundlerChainRule;
+  emit: boolean;
+  rule: RspackChain.Rule;
   maxSize: number;
   filename: string;
   assetType: string;
 }) => {
+  const generatorOptions:
+    | GeneratorOptionsByModuleType['asset']
+    | GeneratorOptionsByModuleType['asset/resource'] = {
+    filename,
+  };
+
+  if (emit === false) {
+    generatorOptions.emit = false;
+  }
+
   // force to url: "foo.png?url" or "foo.png?__inline=false"
   rule
     .oneOf(`${assetType}-asset-url`)
     .type('asset/resource')
     .resourceQuery(/(__inline=false|url)/)
-    .set('generator', {
-      filename,
-    });
+    .set('generator', generatorOptions);
 
   // force to inline: "foo.png?inline"
   rule
@@ -45,9 +54,7 @@ const chainStaticAssetRule = ({
         maxSize,
       },
     })
-    .set('generator', {
-      filename,
-    });
+    .set('generator', generatorOptions);
 };
 
 export function getRegExpForExts(exts: string[]): RegExp {
@@ -66,12 +73,13 @@ export const pluginAsset = (): RsbuildPlugin => ({
   name: 'rsbuild:asset',
 
   setup(api) {
-    api.modifyBundlerChain((chain, { isProd }) => {
+    api.modifyBundlerChain((chain, { isProd, target }) => {
       const config = api.getNormalizedConfig();
 
       const createAssetRule = (
         assetType: 'image' | 'media' | 'font' | 'svg',
         exts: string[],
+        emit: boolean,
       ) => {
         const regExp = getRegExpForExts(exts);
         const distDir = getDistPath(config, assetType);
@@ -84,6 +92,7 @@ export const pluginAsset = (): RsbuildPlugin => ({
         const rule = chain.module.rule(assetType).test(regExp);
 
         chainStaticAssetRule({
+          emit,
           rule,
           maxSize,
           filename: path.posix.join(distDir, filename),
@@ -91,10 +100,16 @@ export const pluginAsset = (): RsbuildPlugin => ({
         });
       };
 
-      createAssetRule('image', IMAGE_EXTENSIONS);
-      createAssetRule('svg', ['svg']);
-      createAssetRule('media', [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS]);
-      createAssetRule('font', FONT_EXTENSIONS);
+      const emit = config.output.emitAssets({ target });
+
+      createAssetRule('image', IMAGE_EXTENSIONS, emit);
+      createAssetRule('svg', ['svg'], emit);
+      createAssetRule(
+        'media',
+        [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS],
+        emit,
+      );
+      createAssetRule('font', FONT_EXTENSIONS, emit);
     });
   },
 });

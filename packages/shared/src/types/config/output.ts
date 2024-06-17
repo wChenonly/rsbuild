@@ -1,11 +1,11 @@
-import type { RspackConfig } from '../rspack';
-import type { RsbuildTarget } from '../rsbuild';
 import type {
   CopyRspackPluginOptions,
   Externals,
   SwcJsMinimizerRspackPluginOptions,
 } from '@rspack/core';
-import type { HTMLPluginOptions } from '../../types';
+import type { CSSLoaderModulesOptions, HTMLPluginOptions } from '../../types';
+import type { RsbuildTarget } from '../rsbuild';
+import type { Rspack, RspackConfig } from '../rspack';
 
 export type DistPathConfig = {
   /**
@@ -82,7 +82,7 @@ export type FilenameConfig = {
    * - dev: '[name].js'
    * - prod: '[name].[contenthash:8].js'
    */
-  js?: string;
+  js?: NonNullable<Rspack.Configuration['output']>['filename'];
   /**
    * The name of the CSS files.
    * @default
@@ -129,27 +129,45 @@ export type LegalComments = 'none' | 'inline' | 'linked';
 
 export type NormalizedDataUriLimit = Required<DataUriLimit>;
 
-export type Polyfill = 'usage' | 'entry' | 'ua' | 'off';
+export type Polyfill = 'usage' | 'entry' | 'off';
 
 export type SourceMap = {
   js?: RspackConfig['devtool'];
   css?: boolean;
 };
 
-export type CssModuleLocalsConvention =
+export type CSSModulesLocalsConvention =
   | 'asIs'
   | 'camelCase'
   | 'camelCaseOnly'
   | 'dashes'
   | 'dashesOnly';
 
-export type CssModules = {
-  auto?: boolean | RegExp | ((resourcePath: string) => boolean);
+export type CSSModules = {
   /**
-   * Set the local ident name of CSS modules.
+   * Allows CSS Modules to be automatically enabled based on their filenames.
+   */
+  auto?: CSSLoaderModulesOptions['auto'];
+  /**
+   * Allows exporting names from global class names, so you can use them via import.
+   */
+  exportGlobals?: boolean;
+  /**
+   * Style of exported class names.
+   */
+  exportLocalsConvention?: CSSModulesLocalsConvention;
+  /**
+   * Set the local ident name of CSS Modules.
    */
   localIdentName?: string;
-  exportLocalsConvention?: CssModuleLocalsConvention;
+  /**
+   * Controls the level of compilation applied to the input styles.
+   */
+  mode?: CSSLoaderModulesOptions['mode'];
+  /**
+   * Whether to enable ES modules named export for locals.
+   */
+  namedExport?: boolean;
 };
 
 export type Minify =
@@ -186,6 +204,8 @@ export type InlineChunkTestFunction = (params: {
 
 export type InlineChunkTest = RegExp | InlineChunkTestFunction;
 
+export type EmitAssets = (params: { target: RsbuildTarget }) => boolean;
+
 export interface OutputConfig {
   /**
    * Specify build targets to run in different target environments.
@@ -193,7 +213,7 @@ export interface OutputConfig {
   targets?: RsbuildTarget[];
   /**
    * At build time, prevent some `import` dependencies from being packed into bundles in your code, and instead fetch them externally at runtime.
-   * For more information, please see: [webpack Externals](https://webpack.js.org/configuration/externals/)
+   * For more information, please see: [Rspack Externals](https://rspack.dev/config/externals)
    */
   externals?: Externals;
   /**
@@ -223,7 +243,7 @@ export interface OutputConfig {
   assetPrefix?: string;
   /**
    * Set the size threshold to inline static assets such as images and fonts.
-   * By default, static assets will be Base64 encoded and inline into the page if the size is less than 10KB.
+   * By default, static assets will be Base64 encoded and inline into the page if the size is less than 4KiB.
    */
   dataUriLimit?: number | DataUriLimit;
   /**
@@ -241,11 +261,15 @@ export interface OutputConfig {
   /**
    * Allow to custom CSS Modules options.
    */
-  cssModules?: CssModules;
+  cssModules?: CSSModules;
   /**
    * Whether to disable code minification in production build.
    */
   minify?: Minify;
+  /**
+   * Whether to generate manifest file.
+   */
+  manifest?: string | boolean;
   /**
    * Whether to generate source map files, and which format of source map to generate
    */
@@ -254,10 +278,6 @@ export interface OutputConfig {
    * Whether to add filename hash after production build.
    */
   filenameHash?: boolean | string;
-  /**
-   * Whether to generate a TypeScript declaration file for CSS modules.
-   */
-  enableCssModuleTSDeclaration?: boolean;
   /**
    * Whether to inline output scripts files (.js files) into HTML with `<script>` tags.
    */
@@ -272,7 +292,7 @@ export interface OutputConfig {
   injectStyles?: boolean;
   /**
    * Specifies the range of target browsers that the project is compatible with.
-   * This value will be used by [@babel/preset-env](https://babeljs.io/docs/en/babel-preset-env) and
+   * This value will be used by [SWC](https://github.com/swc-project/swc) and
    * [autoprefixer](https://github.com/postcss/autoprefixer) to identify the JavaScript syntax that
    * need to be transformed and the CSS browser prefixes that need to be added.
    */
@@ -281,6 +301,11 @@ export interface OutputConfig {
    * Copies the specified file or directory to the dist directory.
    */
   copy?: CopyPluginOptions | CopyPluginOptions['patterns'];
+  /**
+   * Whether to emit static assets such as image, font, etc.
+   * Return `false` to avoid outputting unnecessary assets for some scenarios such as SSR.
+   */
+  emitAssets?: EmitAssets;
 }
 
 export type OverrideBrowserslist =
@@ -300,13 +325,16 @@ export interface NormalizedOutputConfig extends OutputConfig {
   assetPrefix: string;
   dataUriLimit: number | NormalizedDataUriLimit;
   minify: Minify;
-  enableCssModuleTSDeclaration: boolean;
   inlineScripts: boolean | InlineChunkTest;
   inlineStyles: boolean | InlineChunkTest;
   injectStyles: boolean;
   cssModules: {
+    auto: CSSModules['auto'];
+    namedExport: boolean;
+    exportGlobals: boolean;
+    exportLocalsConvention: CSSModulesLocalsConvention;
     localIdentName?: string;
-    exportLocalsConvention: CssModuleLocalsConvention;
-    auto?: CssModules['auto'];
+    mode?: CSSModules['mode'];
   };
+  emitAssets: EmitAssets;
 }

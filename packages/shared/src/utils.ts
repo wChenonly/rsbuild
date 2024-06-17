@@ -1,22 +1,22 @@
 import path from 'node:path';
 import type { Compiler, MultiCompiler } from '@rspack/core';
 import type {
-  NodeEnv,
-  CacheGroups,
-  CompilerTapFn,
-  RsbuildTarget,
-  ModifyChainUtils,
-  NormalizedConfig,
-  SharedCompiledPkgNames,
-} from './types';
-import fse from '../compiled/fs-extra';
-import deepmerge from '../compiled/deepmerge';
-import color from '../compiled/picocolors';
-import { DEFAULT_ASSET_PREFIX } from './constants';
-import type {
   Compiler as WebpackCompiler,
   MultiCompiler as WebpackMultiCompiler,
 } from 'webpack';
+import deepmerge from '../compiled/deepmerge/index.js';
+import fse from '../compiled/fs-extra/index.js';
+import color from '../compiled/picocolors/index.js';
+import { DEFAULT_ASSET_PREFIX } from './constants';
+import type {
+  CacheGroups,
+  ModifyChainUtils,
+  MultiStats,
+  NodeEnv,
+  NormalizedConfig,
+  RsbuildTarget,
+  Stats,
+} from './types';
 
 export { color, deepmerge };
 
@@ -70,17 +70,6 @@ export interface AwaitableGetter<T> extends PromiseLike<T[]> {
   promises: Promise<T>[];
 }
 
-/**
- * Make Awaitable.
- */
-export const awaitableGetter = <T>(
-  promises: Promise<T>[],
-): AwaitableGetter<T> => {
-  const then: PromiseLike<T[]>['then'] = (...args) =>
-    Promise.all(promises).then(...args);
-  return { then, promises };
-};
-
 export const getJsSourceMap = (config: NormalizedConfig) => {
   const { sourceMap } = config.output;
   if (sourceMap.js === undefined) {
@@ -88,6 +77,8 @@ export const getJsSourceMap = (config: NormalizedConfig) => {
   }
   return sourceMap.js;
 };
+
+export type SharedCompiledPkgNames = 'autoprefixer';
 
 export const getSharedPkgCompiledPath = (packageName: SharedCompiledPkgNames) =>
   path.join(__dirname, '../compiled', packageName);
@@ -108,13 +99,6 @@ export function isServerTarget(target: RsbuildTarget[]) {
   );
 }
 
-export function resolvePackage(loader: string, dirname: string) {
-  // Vitest do not support require.resolve to source file
-  return process.env.VITEST
-    ? loader
-    : require.resolve(loader, { paths: [dirname] });
-}
-
 export const getCoreJsVersion = (corejsPkgPath: string) => {
   try {
     const { version } = fse.readJSONSync(corejsPkgPath);
@@ -124,15 +108,6 @@ export const getCoreJsVersion = (corejsPkgPath: string) => {
     return '3';
   }
 };
-
-/**
- * ensure absolute file path.
- * @param base - Base path to resolve relative from.
- * @param filePath - Absolute or relative file path.
- * @returns Resolved absolute file path.
- */
-export const ensureAbsolutePath = (base: string, filePath: string): string =>
-  path.isAbsolute(filePath) ? filePath : path.resolve(base, filePath);
 
 export const castArray = <T>(arr?: T | T[]): T[] => {
   if (arr === undefined) {
@@ -144,7 +119,18 @@ export const castArray = <T>(arr?: T | T[]): T[] => {
 export const camelCase = (input: string): string =>
   input.replace(/[-_](\w)/g, (_, c) => c.toUpperCase());
 
-export const cloneDeep = <T>(value: T): T => deepmerge({}, value);
+export const kebabCase = (str: string) =>
+  str
+    .replace(/([A-Z])/g, '-$1')
+    .toLowerCase()
+    .replace(/^-/, '');
+
+export const cloneDeep = <T>(value: T): T => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  return deepmerge({}, value);
+};
 
 const DEP_MATCH_TEMPLATE = /[\\/]node_modules[\\/](<SOURCES>)[\\/]/.source;
 
@@ -268,21 +254,6 @@ export const prettyTime = (seconds: number) => {
   return `${format(minutes.toFixed(2))} m`;
 };
 
-const colorList: Colors[] = ['green', 'cyan', 'yellow', 'blue', 'magenta'];
-
-export const getProgressColor = (index: number) =>
-  colorList[index % colorList.length];
-
-export function onExitProcess(listener: NodeJS.ExitListener) {
-  process.on('exit', listener);
-
-  // listen to 'SIGINT' and trigger a exit
-  // 'SIGINT' from the terminal is supported on all platforms, and can usually be generated with Ctrl + C
-  process.on('SIGINT', () => {
-    process.exit(0);
-  });
-}
-
 export const isHtmlDisabled = (
   config: NormalizedConfig,
   target: RsbuildTarget,
@@ -301,13 +272,7 @@ export function isUsingHMR(
   config: NormalizedConfig,
   { isProd, target }: Pick<ModifyChainUtils, 'isProd' | 'target'>,
 ) {
-  return (
-    !isProd &&
-    target !== 'node' &&
-    target !== 'web-worker' &&
-    target !== 'service-worker' &&
-    config.dev.hmr
-  );
+  return !isProd && config.dev.hmr && target === 'web';
 }
 
 export const isClientCompiler = (compiler: {
@@ -324,31 +289,18 @@ export const isClientCompiler = (compiler: {
   return false;
 };
 
-type ServerCallbacks = {
-  onInvalid: () => void;
-  onDone: (stats: any) => void;
-};
+export const isNodeCompiler = (compiler: {
+  options: {
+    target?: Compiler['options']['target'];
+  };
+}) => {
+  const { target } = compiler.options;
 
-export const setupServerHooks = (
-  compiler: {
-    name?: Compiler['name'];
-    hooks: {
-      compile: CompilerTapFn<ServerCallbacks['onInvalid']>;
-      invalid: CompilerTapFn<ServerCallbacks['onInvalid']>;
-      done: CompilerTapFn<ServerCallbacks['onDone']>;
-    };
-  },
-  hookCallbacks: ServerCallbacks,
-) => {
-  if (compiler.name === 'server') {
-    return;
+  if (target) {
+    return Array.isArray(target) ? target.includes('node') : target === 'node';
   }
 
-  const { compile, invalid, done } = compiler.hooks;
-
-  compile.tap('rsbuild-dev-server', hookCallbacks.onInvalid);
-  invalid.tap('rsbuild-dev-server', hookCallbacks.onInvalid);
-  done.tap('rsbuild-dev-server', hookCallbacks.onDone);
+  return false;
 };
 
 export const isMultiCompiler = <
@@ -358,4 +310,57 @@ export const isMultiCompiler = <
   compiler: C | M,
 ): compiler is M => {
   return compiler.constructor.name === 'MultiCompiler';
+};
+
+export const applyToCompiler = (
+  compiler: Compiler | MultiCompiler,
+  apply: (c: Compiler) => void,
+) => {
+  if (isMultiCompiler(compiler)) {
+    compiler.compilers.forEach(apply);
+  } else {
+    apply(compiler);
+  }
+};
+
+export const onCompileDone = (
+  compiler: Compiler | MultiCompiler,
+  onDone: (stats: Stats | MultiStats) => Promise<void>,
+  MultiStatsCtor: new (stats: Stats[]) => MultiStats,
+) => {
+  // The MultiCompiler of Rspack does not supports `done.tapPromise`,
+  // so we need to use the `done` hook of `MultiCompiler.compilers` to implement it.
+  if (isMultiCompiler(compiler)) {
+    const { compilers } = compiler;
+    const compilerStats: Stats[] = [];
+    let doneCompilers = 0;
+
+    for (let index = 0; index < compilers.length; index++) {
+      const compiler = compilers[index];
+      const compilerIndex = index;
+      let compilerDone = false;
+
+      compiler.hooks.done.tapPromise('rsbuild:done', async (stats) => {
+        if (!compilerDone) {
+          compilerDone = true;
+          doneCompilers++;
+        }
+
+        compilerStats[compilerIndex] = stats;
+
+        if (doneCompilers === compilers.length) {
+          await onDone(new MultiStatsCtor(compilerStats));
+        }
+      });
+
+      compiler.hooks.invalid.tap('rsbuild:done', () => {
+        if (compilerDone) {
+          compilerDone = false;
+          doneCompilers--;
+        }
+      });
+    }
+  } else {
+    compiler.hooks.done.tapPromise('rsbuild:done', onDone);
+  }
 };

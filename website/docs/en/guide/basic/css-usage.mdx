@@ -1,0 +1,107 @@
+# Import CSS Files
+
+Rsbuild provides out-of-the-box support for CSS, including PostCSS, CSS Modules, CSS preprocessors, CSS inlining, and CSS compression.
+
+In addition, Rsbuild also provides multiple configs to customize the compile rules of style resources.
+
+## Using PostCSS
+
+Rsbuild has built-in [PostCSS](https://postcss.org/) to transform the CSS code. You can configure PostCSS in the following ways:
+
+1. Rsbuild uses [postcss-load-config](https://github.com/postcss/postcss-load-config) to load the PostCSS configuration file in the root directory of the current project, such as `postcss.config.js`:
+
+```js
+module.exports = {
+  'postcss-px-to-viewport': {
+    viewportWidth: 375,
+  },
+};
+```
+
+2. Configure the postcss-loader through Rsbuild's [tools.postcss](/config/tools/postcss) option, which supports modifying the built-in configuration through a function, for example:
+
+```ts
+export default {
+  tools: {
+    postcss: (opts) => {
+      const viewportPlugin = require('postcss-px-to-viewport')({
+        viewportWidth: 375,
+      });
+      opts.postcssOptions.plugins.push(viewportPlugin);
+    },
+  },
+};
+```
+
+When you configure both the `postcss.config.js` file and the `tools.postcss` option, both will take effect, and the `tools.postcss` option will take precedence.
+
+### Builtin PostCSS plugins
+
+Rsbuild has built-in [autoprefixer](https://github.com/postcss/autoprefixer) plugin, which is used to add vendor prefixes to CSS rules. If you need to configure the target browser, you can use [browserslist](/guide/advanced/browserslist).
+
+:::tip
+If the autoprefixer plugin is already registered in your project, Rsbuild will not register the autoprefixer plugin again.
+:::
+
+## Using CSS Modules
+
+Rsbuild supports CSS Modules by default, please read the [Using CSS Modules](/guide/basic/css-modules) chapter for the complete usage of CSS Modules.
+
+## Using CSS preprocessors
+
+Rsbuild supports popular CSS preprocessors through plugins, including Sass, Less and Stylus. See how to use them:
+
+- [Sass Plugin](/plugins/list/plugin-sass)
+- [Less Plugin](/plugins/list/plugin-less)
+- [Stylus Plugin](/plugins/list/plugin-stylus)
+
+## CSS-in-JS
+
+Please read the [React - CSS-in-JS](/guide/framework/react#css-in-js) section to learn how to use common CSS-in-JS libraries in Rsbuild.
+
+## CSS Minify
+
+During the production build, Rsbuild compresses static assets such as CSS and JS to provide better transmission efficiency.
+
+Rsbuild by default uses the built-in `SwcCssMinimizerRspackPlugin` plugin from Rspack to automatically compress CSS code during production builds.
+
+You can customize the CSS minimizer by using the [CSS Minimizer plugin](/plugins/list/plugin-css-minimizer) to switch to cssnano or other tools for CSS compression.
+
+## Inline CSS Files
+
+By default, Rsbuild will extract CSS into a separate `.css` file and output it to the dist directory.
+
+If you want to inline styles into your JS file, you can set [output.injectStyles](/config/output/inject-styles) to true to disable CSS extraction logic. When the JS file is requested by the browser, JS dynamically inserts the `<style>` tag into the Html to load the CSS styles.
+
+```ts
+export default {
+  output: {
+    injectStyles: true,
+  },
+};
+```
+
+This will increase the size of your JS Bundle, so it is usually not recommended to disable the CSS extraction.
+
+## Import CSS in node_modules
+
+You can directly import CSS files in node_modules.
+
+- Import in a component:
+
+```ts title="src/App.tsx"
+// Import the Arco Design style:
+import '@arco-design/web-react/dist/css/arco.css';
+```
+
+- Import in a style file:
+
+```css title="src/App.css"
+/* reference normalize.css */
+/* https://github.com/necolas/normalize.css */
+@import 'normalize.css';
+
+body {
+  /* */
+}
+```

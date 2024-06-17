@@ -23,7 +23,7 @@ exports[`plugin-swc > should apply source.include and source.exclude correctly 1
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "use": [
           {
-            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
             "options": {
               "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
               "env": {
@@ -67,7 +67,6 @@ exports[`plugin-swc > should apply source.include and source.exclude correctly 1
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -84,7 +83,7 @@ exports[`plugin-swc > should apply source.include and source.exclude correctly 1
         },
         "use": [
           {
-            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
             "options": {
               "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
               "env": {
@@ -128,7 +127,6 @@ exports[`plugin-swc > should apply source.include and source.exclude correctly 1
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -156,7 +154,7 @@ exports[`plugin-swc > should disable react refresh when dev.hmr is false 1`] = `
       "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -200,7 +198,6 @@ exports[`plugin-swc > should disable react refresh when dev.hmr is false 1`] = `
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -217,7 +214,7 @@ exports[`plugin-swc > should disable react refresh when dev.hmr is false 1`] = `
       },
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -261,7 +258,6 @@ exports[`plugin-swc > should disable react refresh when dev.hmr is false 1`] = `
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -288,7 +284,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 1`] = 
       "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -329,7 +325,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 1`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -346,7 +341,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 1`] = 
       },
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -387,7 +382,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 1`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -414,7 +408,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 2`] = 
       "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -458,7 +452,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 2`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -475,7 +468,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 2`] = 
       },
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -519,7 +512,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 2`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -546,7 +538,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 3`] = 
       "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -590,7 +582,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 3`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -607,7 +598,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 3`] = 
       },
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -651,7 +642,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 3`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -678,7 +668,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 4`] = 
       "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -722,7 +712,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 4`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -739,7 +728,7 @@ exports[`plugin-swc > should disable react refresh when target is not web 4`] = 
       },
       "use": [
         {
-          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+          "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
           "options": {
             "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
             "env": {
@@ -783,7 +772,6 @@ exports[`plugin-swc > should disable react refresh when target is not web 4`] = 
                 "useDefineForClassFields": false,
               },
             },
-            "sourceMaps": true,
           },
         },
       ],
@@ -797,7 +785,7 @@ exports[`plugin-swc > should set correct swc minimizer options in production 1`]
   "minimizer": [
     SwcMinimizerPlugin {
       "minifyOptions": {
-        "cssMinify": {},
+        "cssMinify": undefined,
         "jsMinify": {
           "compress": false,
           "format": {
@@ -805,6 +793,13 @@ exports[`plugin-swc > should set correct swc minimizer options in production 1`]
           },
           "mangle": false,
         },
+      },
+      "name": "swc-minimizer-plugin",
+    },
+    SwcMinimizerPlugin {
+      "minifyOptions": {
+        "cssMinify": {},
+        "jsMinify": undefined,
       },
       "name": "swc-minimizer-plugin",
     },
@@ -817,7 +812,7 @@ exports[`plugin-swc > should set correct swc minimizer options using raw swc con
   "minimizer": [
     SwcMinimizerPlugin {
       "minifyOptions": {
-        "cssMinify": {},
+        "cssMinify": undefined,
         "jsMinify": {
           "compress": false,
           "format": {
@@ -825,6 +820,13 @@ exports[`plugin-swc > should set correct swc minimizer options using raw swc con
           },
           "mangle": false,
         },
+      },
+      "name": "swc-minimizer-plugin",
+    },
+    SwcMinimizerPlugin {
+      "minifyOptions": {
+        "cssMinify": {},
+        "jsMinify": undefined,
       },
       "name": "swc-minimizer-plugin",
     },
@@ -849,7 +851,7 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
     "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
     "use": [
       {
-        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
         "options": {
           "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
           "env": {
@@ -893,7 +895,6 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
               "useDefineForClassFields": true,
             },
           },
-          "sourceMaps": true,
         },
       },
     ],
@@ -902,7 +903,7 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
     "test": /override\\.ts/,
     "use": [
       {
-        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
         "options": {
           "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
           "env": {
@@ -946,7 +947,6 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
               "useDefineForClassFields": false,
             },
           },
-          "sourceMaps": true,
         },
       },
     ],
@@ -963,7 +963,7 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
     },
     "use": [
       {
-        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+        "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
         "options": {
           "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
           "env": {
@@ -1007,7 +1007,6 @@ exports[`plugin-swc > should set multiple swc-loader 1`] = `
               "useDefineForClassFields": true,
             },
           },
-          "sourceMaps": true,
         },
       },
     ],
@@ -1020,13 +1019,20 @@ exports[`plugin-swc > should set swc minimizer in production 1`] = `
   "minimizer": [
     SwcMinimizerPlugin {
       "minifyOptions": {
-        "cssMinify": {},
+        "cssMinify": undefined,
         "jsMinify": {
           "format": {
             "asciiOnly": true,
           },
           "mangle": true,
         },
+      },
+      "name": "swc-minimizer-plugin",
+    },
+    SwcMinimizerPlugin {
+      "minifyOptions": {
+        "cssMinify": {},
+        "jsMinify": undefined,
       },
       "name": "swc-minimizer-plugin",
     },
@@ -1053,7 +1059,7 @@ exports[`plugin-swc > should set swc-loader 1`] = `
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "use": [
           {
-            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
             "options": {
               "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
               "env": {
@@ -1097,7 +1103,6 @@ exports[`plugin-swc > should set swc-loader 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -1114,7 +1119,7 @@ exports[`plugin-swc > should set swc-loader 1`] = `
         },
         "use": [
           {
-            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader",
+            "loader": "<ROOT>/packages/compat/plugin-swc/src/loader.cjs",
             "options": {
               "cwd": "<ROOT>/packages/compat/plugin-swc/tests",
               "env": {
@@ -1158,7 +1163,6 @@ exports[`plugin-swc > should set swc-loader 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],

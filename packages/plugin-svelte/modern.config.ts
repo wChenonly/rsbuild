@@ -1,3 +1,14 @@
-import { configWithMjs } from '../../scripts/modern.base.config';
+import { moduleTools } from '@modern-js/module-tools';
+import { dualBuildConfigs } from '@rsbuild/config/modern.config.ts';
 
-export default configWithMjs;
+export default {
+  plugins: [moduleTools()],
+  buildConfig: dualBuildConfigs.map((config) => {
+    config.externals = [
+      ...(config.externals || []),
+      'svelte/compiler',
+      'svelte-preprocess/dist/types',
+    ];
+    return config;
+  }),
+};

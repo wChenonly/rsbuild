@@ -1,23 +1,47 @@
-import _ from 'lodash';
 import fs from 'node:fs';
+import path from 'node:path';
+import { __internalHelper } from '@rsbuild/core';
+import type { ModifyChainUtils, NormalizedConfig } from '@rsbuild/core';
 import {
-  findUp,
-  isUsingHMR,
-  getCoreJsVersion,
   getBrowserslistWithDefault,
-  getDefaultStyledComponentsConfig,
-  type ModifyChainUtils,
-  type NormalizedConfig,
+  getCoreJsVersion,
+  isUsingHMR,
 } from '@rsbuild/shared';
-import semver from '@rsbuild/shared/semver';
+import _ from 'lodash';
+import semver from 'semver';
+import { CORE_JS_DIR, CORE_JS_PKG_PATH, SWC_HELPERS_DIR } from './constants';
 import { getDefaultSwcConfig } from './plugin';
 import type {
   ObjPluginSwcOptions,
   PluginSwcOptions,
   TransformConfig,
 } from './types';
-import { CORE_JS_DIR, CORE_JS_PKG_PATH, SWC_HELPERS_DIR } from './constants';
-import { applySwcDecoratorConfig } from '@rsbuild/core/provider';
+
+const { applySwcDecoratorConfig } = __internalHelper;
+
+async function findUp({
+  filename,
+  cwd = process.cwd(),
+}: {
+  filename: string;
+  cwd?: string;
+}) {
+  const { root } = path.parse(cwd);
+
+  let dir = cwd;
+  while (dir && dir !== root) {
+    const filePath = path.join(dir, filename);
+
+    try {
+      const stats = await fs.promises.stat(filePath);
+      if (stats?.isFile()) {
+        return filePath;
+      }
+    } catch {}
+
+    dir = path.dirname(dir);
+  }
+}
 
 const isBeyondReact17 = async (cwd: string) => {
   const pkgPath = await findUp({ cwd, filename: 'package.json' });
@@ -140,6 +164,17 @@ export async function finalizeConfig(
   return finalized;
 }
 
+const getDefaultStyledComponentsConfig = (isProd: boolean, ssr: boolean) => {
+  return {
+    ssr,
+    // "pure" is used to improve dead code elimination in production.
+    // we don't need to enable it in development because it will slow down the build process.
+    pure: isProd,
+    displayName: true,
+    transpileTemplateLiterals: true,
+  };
+};
+
 export async function applyPluginConfig(
   rawOptions: PluginSwcOptions,
   utils: ModifyChainUtils,
@@ -176,7 +211,7 @@ export async function applyPluginConfig(
   }
 
   const { polyfill } = rsbuildConfig.output;
-  if (swc.env.mode === undefined && polyfill !== 'ua' && polyfill !== 'off') {
+  if (swc.env.mode === undefined && polyfill !== 'off') {
     swc.env.mode = polyfill;
   }
 

@@ -1,10 +1,10 @@
-import { color, debug, logger, isFunction } from '@rsbuild/shared';
+import { color, debug, isFunction, logger } from '@rsbuild/shared';
 import type {
+  BundlerPluginInstance,
   Falsy,
   PluginManager,
   RsbuildPlugin,
   RsbuildPluginAPI,
-  BundlerPluginInstance,
 } from '@rsbuild/shared';
 
 function validatePlugin(plugin: unknown) {
@@ -92,9 +92,7 @@ export function createPluginManager(): PluginManager {
     Boolean(plugins.find((plugin) => plugin.name === pluginName));
 
   return {
-    get plugins() {
-      return plugins;
-    },
+    getPlugins: () => plugins,
     addPlugins,
     removePlugins,
     isPluginExists,
@@ -177,7 +175,7 @@ export async function initPlugins({
 }) {
   debug('init plugins');
 
-  const plugins = pluginDagSort(pluginManager.plugins);
+  const plugins = pluginDagSort(pluginManager.getPlugins());
 
   const removedPlugins = plugins.reduce<string[]>((ret, plugin) => {
     if (plugin.remove) {

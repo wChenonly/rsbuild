@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
 import { build, gotoPage } from '@e2e/helper';
+import { expect, test } from '@playwright/test';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginRem } from '@rsbuild/plugin-rem';
 
@@ -89,7 +89,7 @@ test('should apply crossorigin to rem runtime script', async ({ page }) => {
 
   expect(htmlFile).toBeTruthy();
   expect(files[htmlFile!]).toMatch(
-    /<script src="\/static\/js\/convert-rem.\w+.\w+.\w+.js" defer="" crossorigin="use-credentials">/,
+    /<script src="\/static\/js\/convert-rem.\d+\.\d+\.\d+(?:-(beta|alpha|rc)\.\d+)?.js" defer="" crossorigin="use-credentials">/,
   );
   expect(files[htmlFile!].includes('function setRootPixel')).toBeFalsy();
 
@@ -126,7 +126,7 @@ test('should apply html.scriptLoading to rem runtime script', async ({
 
   expect(htmlFile).toBeTruthy();
   expect(files[htmlFile!]).toMatch(
-    /<script type="module" src="\/static\/js\/convert-rem.\w+.\w+.\w+.js">/,
+    /<script type="module" src="\/static\/js\/convert-rem.\d+\.\d+\.\d+(?:-(beta|alpha|rc)\.\d+)?.js">/,
   );
   expect(files[htmlFile!].includes('function setRootPixel')).toBeFalsy();
 

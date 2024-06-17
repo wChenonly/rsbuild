@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
 import { build, proxyConsole } from '@e2e/helper';
+import { expect, test } from '@playwright/test';
 
 const cwd = __dirname;
 
@@ -9,9 +9,9 @@ test.describe('should print file size correctly', async () => {
   let restore: () => void;
 
   test.beforeEach(() => {
-    const proxied = proxyConsole();
-    logs = proxied.logs;
-    restore = proxied.restore;
+    const result = proxyConsole();
+    logs = result.logs;
+    restore = result.restore;
   });
 
   test.afterEach(() => {
@@ -133,5 +133,27 @@ test.describe('should print file size correctly', async () => {
     expect(logs.some((log) => log.includes('index.html'))).toBeTruthy();
     expect(logs.some((log) => log.includes('Total size:'))).toBeFalsy();
     expect(logs.some((log) => log.includes('Gzipped size:'))).toBeFalsy();
+  });
+
+  test('should print dist folder correctly if it is not a subdir of root', async () => {
+    await build({
+      cwd,
+      rsbuildConfig: {
+        performance: {
+          printFileSize: true,
+        },
+        output: {
+          distPath: {
+            root: '../test-temp-folder/dist',
+          },
+        },
+      },
+    });
+
+    expect(
+      logs.some((log) =>
+        log.includes(`..${path.sep}test-temp-folder${path.sep}dist`),
+      ),
+    ).toBeTruthy();
   });
 });

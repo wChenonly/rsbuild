@@ -17,6 +17,11 @@ exports[`plugins/babel > babel-loader should works with builtin:swc-loader 1`] =
     /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
     /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]query-string\\[\\\\\\\\/\\]/,
   ],
+  "resolve": {
+    "alias": {
+      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+    },
+  },
   "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
   "type": "javascript/auto",
   "use": [
@@ -40,7 +45,7 @@ exports[`plugins/babel > babel-loader should works with builtin:swc-loader 1`] =
           "parser": {
             "decorators": true,
             "syntax": "typescript",
-            "tsx": true,
+            "tsx": false,
           },
           "preserveAllComments": true,
           "transform": {
@@ -49,7 +54,6 @@ exports[`plugins/babel > babel-loader should works with builtin:swc-loader 1`] =
             "useDefineForClassFields": false,
           },
         },
-        "sourceMaps": true,
       },
     },
     {
@@ -156,7 +160,7 @@ exports[`plugins/babel > should set babel-loader when config is add 1`] = `
                   "babel-plugin-import",
                   {
                     "libraryDirectory": "es",
-                    "libraryName": "xxx-components",
+                    "libraryName": "my-components",
                     "style": true,
                   },
                 ],

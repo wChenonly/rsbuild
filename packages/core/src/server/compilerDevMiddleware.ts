@@ -1,16 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Socket } from 'node:net';
+import type { DevConfig, NextFunction, ServerConfig } from '@rsbuild/shared';
 import type {
-  DevMiddlewaresConfig,
-  DevMiddlewareAPI,
-  NextFunction,
   DevMiddleware as CustomDevMiddleware,
-} from '@rsbuild/shared';
+  DevMiddlewareAPI,
+} from './devMiddleware';
 import { SocketServer } from './socketServer';
 
 type Options = {
   publicPaths: string[];
-  dev: DevMiddlewaresConfig;
+  dev: DevConfig;
+  server: ServerConfig;
   devMiddleware: CustomDevMiddleware;
 };
 
@@ -18,18 +18,20 @@ const noop = () => {
   // noop
 };
 
-function getHMRClientPath(client: DevMiddlewaresConfig['client']) {
-  const protocol = client?.protocol ? `&protocol=${client.protocol}` : '';
-  const host = client?.host ? `&host=${client.host}` : '';
-  const path = client?.path ? `&path=${client.path}` : '';
-  const port = client?.port ? `&port=${client.port}` : '';
+function getClientPaths(devConfig: DevConfig) {
+  const clientPaths: string[] = [];
 
-  const clientEntry = `${require.resolve(
-    '@rsbuild/core/client/hmr',
-  )}?${host}${path}${port}${protocol}`;
+  if (!devConfig.hmr && !devConfig.liveReload) {
+    return clientPaths;
+  }
 
-  // replace cjs with esm because we want to use the es5 version
-  return clientEntry;
+  clientPaths.push(require.resolve('@rsbuild/core/client/hmr'));
+
+  if (devConfig.client?.overlay) {
+    clientPaths.push(`${require.resolve('@rsbuild/core/client/overlay')}`);
+  }
+
+  return clientPaths;
 }
 
 /**
@@ -40,7 +42,9 @@ function getHMRClientPath(client: DevMiddlewaresConfig['client']) {
 export class CompilerDevMiddleware {
   public middleware!: DevMiddlewareAPI;
 
-  private devOptions: DevMiddlewaresConfig;
+  private devConfig: DevConfig;
+
+  private serverConfig: ServerConfig;
 
   private devMiddleware: CustomDevMiddleware;
 
@@ -48,8 +52,9 @@ export class CompilerDevMiddleware {
 
   private socketServer: SocketServer;
 
-  constructor({ dev, devMiddleware, publicPaths }: Options) {
-    this.devOptions = dev;
+  constructor({ dev, server, devMiddleware, publicPaths }: Options) {
+    this.devConfig = dev;
+    this.serverConfig = server;
     this.publicPaths = publicPaths;
 
     // init socket server
@@ -58,14 +63,14 @@ export class CompilerDevMiddleware {
     this.devMiddleware = devMiddleware;
   }
 
-  public init() {
+  public async init() {
     // start compiling
     this.middleware = this.setupDevMiddleware(
       this.devMiddleware,
       this.publicPaths,
     );
 
-    this.socketServer.prepare();
+    await this.socketServer.prepare();
   }
 
   public upgrade(req: IncomingMessage, sock: Socket, head: any) {
@@ -89,7 +94,7 @@ export class CompilerDevMiddleware {
     devMiddleware: CustomDevMiddleware,
     publicPaths: string[],
   ): DevMiddlewareAPI {
-    const { devOptions } = this;
+    const { devConfig, serverConfig } = this;
 
     const callbacks = {
       onInvalid: () => {
@@ -100,18 +105,21 @@ export class CompilerDevMiddleware {
       },
     };
 
-    const injectClient = this.devOptions.hmr || this.devOptions.liveReload;
+    const clientPaths = getClientPaths(devConfig);
 
     const middleware = devMiddleware({
-      headers: devOptions.headers,
+      headers: serverConfig.headers,
       publicPath: '/',
       stats: false,
       callbacks,
-      hmrClientPath: injectClient
-        ? getHMRClientPath(devOptions.client)
-        : undefined,
+      clientPaths: clientPaths,
+      clientConfig: devConfig.client,
+      liveReload: devConfig.liveReload,
+      writeToDisk: devConfig.writeToDisk,
       serverSideRender: true,
-      writeToDisk: devOptions.writeToDisk,
+      // weak is enough in dev
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Conditional_requests#weak_validation
+      etag: 'weak',
     });
 
     const warp = async (

@@ -1,14 +1,8 @@
-import type { RsbuildConfig, RsbuildPlugin } from '@rsbuild/core';
-import {
-  getNodeEnv,
-  isServerTarget,
-  mergeChainedOptions,
-  getDefaultStyledComponentsConfig,
-  type ChainedConfig,
-} from '@rsbuild/shared';
+import type { ConfigChain, RsbuildConfig, RsbuildPlugin } from '@rsbuild/core';
+import { getNodeEnv, isServerTarget, reduceConfigs } from '@rsbuild/shared';
 
 /**
- * the options of [babel-plugin-styled-components](https://github.com/styled-components/babel-plugin-styled-components) or [rspackExperiments.styledComponents](https://rspack.dev/guide/loader#optionsrspackexperimentsstyledcomponents).
+ * the options of [rspackExperiments.styledComponents](https://rspack.dev/guide/features/builtin-swc-loader#rspackexperimentsstyledcomponents).
  */
 export type PluginStyledComponentsOptions = {
   displayName?: boolean;
@@ -23,10 +17,23 @@ export type PluginStyledComponentsOptions = {
   cssProps?: boolean;
 };
 
+const getDefaultStyledComponentsConfig = (isProd: boolean, ssr: boolean) => {
+  return {
+    ssr,
+    // "pure" is used to improve dead code elimination in production.
+    // we don't need to enable it in development because it will slow down the build process.
+    pure: isProd,
+    displayName: true,
+    transpileTemplateLiterals: true,
+  };
+};
+
+export const PLUGIN_STYLED_COMPONENTS_NAME = 'rsbuild:styled-components';
+
 export const pluginStyledComponents = (
-  pluginOptions: ChainedConfig<PluginStyledComponentsOptions> = {},
+  pluginOptions: ConfigChain<PluginStyledComponentsOptions> = {},
 ): RsbuildPlugin => ({
-  name: 'rsbuild:styled-components',
+  name: PLUGIN_STYLED_COMPONENTS_NAME,
 
   setup(api) {
     if (api.context.bundlerType === 'webpack') {
@@ -37,9 +44,9 @@ export const pluginStyledComponents = (
       const useSSR = isServerTarget(api.context.targets);
       const isProd = getNodeEnv() === 'production';
 
-      return mergeChainedOptions({
-        defaults: getDefaultStyledComponentsConfig(isProd, useSSR),
-        options: pluginOptions,
+      return reduceConfigs({
+        initial: getDefaultStyledComponentsConfig(isProd, useSSR),
+        config: pluginOptions,
       });
     };
 

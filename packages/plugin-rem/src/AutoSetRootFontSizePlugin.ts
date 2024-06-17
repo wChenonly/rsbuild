@@ -1,14 +1,15 @@
 import path from 'node:path';
-import { logger } from '@rsbuild/core';
 import {
-  isProd,
-  withPublicPath,
-  generateScriptTag,
-  getPublicPathFromCompiler,
   type Rspack,
   type ScriptLoading,
+  ensureAssetPrefix,
+  logger,
+} from '@rsbuild/core';
+import {
+  generateScriptTag,
+  getPublicPathFromCompiler,
+  isProd,
 } from '@rsbuild/shared';
-import WebpackSources from '@rsbuild/shared/webpack-sources';
 import type HtmlWebpackPlugin from 'html-webpack-plugin';
 import type { PluginRemOptions } from './types';
 
@@ -116,11 +117,12 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
               stage:
                 compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_PRE_PROCESS,
             },
-            async (assets) => {
+            async () => {
               const scriptPath = await this.getScriptPath();
-              assets[scriptPath] = new WebpackSources.RawSource(
-                await getRuntimeCode(),
-                false,
+              const code = await getRuntimeCode();
+              compilation.emitAsset(
+                scriptPath,
+                new compiler.webpack.sources.RawSource(code, false),
               );
             },
           );
@@ -158,7 +160,10 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
             });
           } else {
             const publicPath = getPublicPathFromCompiler(compiler);
-            const url = withPublicPath(await this.getScriptPath(), publicPath);
+            const url = ensureAssetPrefix(
+              await this.getScriptPath(),
+              publicPath,
+            );
 
             const attributes: Record<string, string> = {
               ...scriptTag.attributes,

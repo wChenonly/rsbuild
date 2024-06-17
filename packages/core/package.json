@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/core",
-  "version": "0.5.4",
+  "version": "0.7.7",
   "description": "The Rspack-based build tool.",
   "homepage": "https://rsbuild.dev",
   "bugs": {
@@ -12,61 +12,83 @@
     "directory": "packages/core"
   },
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./server": {
-      "types": "./dist/server/index.d.ts",
-      "default": "./dist/server/index.js"
+      "types": "./dist-types/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./client/hmr": {
-      "types": "./dist/client/hmr/index.d.ts",
-      "default": "./dist/client/hmr.mjs"
+      "types": "./dist-types/client/hmr/index.d.ts",
+      "default": "./dist/client/hmr.js"
     },
-    "./plugins/*": {
-      "types": "./dist/plugins/*.d.ts",
-      "default": "./dist/plugins/*.js"
-    },
-    "./provider": {
-      "types": "./dist/provider/index.d.ts",
-      "default": "./dist/provider/index.js"
+    "./client/overlay": {
+      "types": "./dist-types/client/overlay.d.ts",
+      "default": "./dist/client/overlay.js"
     },
     "./types": {
       "types": "./types.d.ts"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "types": "./dist-types/index.d.ts",
   "bin": {
     "rsbuild": "./bin/rsbuild.js"
   },
   "files": [
     "bin",
     "dist",
+    "dist-types",
     "static",
     "compiled",
     "types.d.ts"
   ],
   "scripts": {
-    "build": "modern build",
-    "dev": "modern build --watch"
+    "build": "modern build && tsc-alias -p tsconfig.json",
+    "dev": "modern build --watch",
+    "prebundle": "prebundle"
   },
   "dependencies": {
     "@rsbuild/shared": "workspace:*",
-    "@rspack/core": "0.5.9",
+    "@rspack/core": "0.7.3",
     "@swc/helpers": "0.5.3",
     "core-js": "~3.36.0",
-    "html-webpack-plugin": "npm:html-rspack-plugin@5.6.2",
+    "html-webpack-plugin": "npm:html-rspack-plugin@5.7.2",
     "postcss": "^8.4.38"
   },
   "devDependencies": {
-    "@types/node": "16.x",
+    "@types/connect": "3.4.38",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "18.x",
+    "@types/on-finished": "2.3.4",
+    "@types/ws": "^8.5.10",
+    "commander": "^12.1.0",
+    "connect": "3.7.0",
+    "connect-history-api-fallback": "^2.0.0",
+    "css-loader": "7.1.2",
+    "dotenv": "16.4.5",
+    "dotenv-expand": "11.0.6",
+    "fs-extra": "^11.2.0",
+    "http-compression": "1.0.20",
+    "launch-editor-middleware": "^2.6.1",
+    "on-finished": "2.4.1",
+    "open": "^8.4.0",
+    "postcss-load-config": "6.0.1",
+    "postcss-loader": "8.1.1",
+    "postcss-value-parser": "4.2.0",
+    "prebundle": "1.1.0",
+    "rspack-manifest-plugin": "5.0.0",
+    "sirv": "^2.0.4",
+    "jiti": "^1.21.6",
+    "semver": "^7.6.2",
+    "style-loader": "3.3.4",
+    "tsc-alias": "^1.8.10",
     "typescript": "^5.4.2",
-    "webpack": "^5.91.0"
+    "webpack": "^5.92.0",
+    "webpack-dev-middleware": "7.2.1",
+    "ws": "^8.17.1"
   },
   "engines": {
     "node": ">=16.0.0"

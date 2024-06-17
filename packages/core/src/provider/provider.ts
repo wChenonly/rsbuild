@@ -1,26 +1,12 @@
-import {
-  pickRsbuildConfig,
-  type CreateCompiler,
-  type RsbuildProvider,
-  type PreviewServerOptions,
-} from '@rsbuild/shared';
-import { createContext, createPublicContext } from './createContext';
+import type { CreateCompiler } from '@rsbuild/shared';
+import type { RsbuildProvider } from '../types';
 import { initConfigs, initRsbuildConfig } from './initConfigs';
-import { getPluginAPI } from './initPlugins';
-import { applyDefaultPlugins } from './shared';
 
 export const rspackProvider: RsbuildProvider = async ({
+  context,
   pluginManager,
   rsbuildOptions,
-  plugins,
 }) => {
-  const rsbuildConfig = pickRsbuildConfig(rsbuildOptions.rsbuildConfig);
-
-  const context = await createContext(rsbuildOptions, rsbuildConfig, 'rspack');
-  const pluginAPI = getPluginAPI({ context, pluginManager });
-
-  context.pluginAPI = pluginAPI;
-
   const createCompiler = (async () => {
     const { createCompiler } = await import('./createCompiler');
     const { rspackConfigs } = await initConfigs({
@@ -38,23 +24,16 @@ export const rspackProvider: RsbuildProvider = async ({
   return {
     bundler: 'rspack',
 
-    pluginAPI,
-
     createCompiler,
-
-    publicContext: createPublicContext(context),
-
-    async applyDefaultPlugins() {
-      pluginManager.addPlugins(await applyDefaultPlugins(plugins));
-    },
 
     async createDevServer(options) {
       const { createDevServer } = await import('../server/devServer');
       const { createDevMiddleware } = await import('./createCompiler');
-      await initRsbuildConfig({ context, pluginManager });
+      const config = await initRsbuildConfig({ context, pluginManager });
       return createDevServer(
         { context, pluginManager, rsbuildOptions },
         createDevMiddleware,
+        config,
         options,
       );
     },
@@ -62,21 +41,16 @@ export const rspackProvider: RsbuildProvider = async ({
     async startDevServer(options) {
       const { createDevServer } = await import('../server/devServer');
       const { createDevMiddleware } = await import('./createCompiler');
-      await initRsbuildConfig({ context, pluginManager });
+      const config = await initRsbuildConfig({ context, pluginManager });
 
       const server = await createDevServer(
         { context, pluginManager, rsbuildOptions },
         createDevMiddleware,
+        config,
         options,
       );
 
       return server.listen();
-    },
-
-    async preview(options?: PreviewServerOptions) {
-      const { startProdServer } = await import('../server/prodServer');
-      await initRsbuildConfig({ context, pluginManager });
-      return startProdServer(context, context.config, options);
     },
 
     async build(options) {

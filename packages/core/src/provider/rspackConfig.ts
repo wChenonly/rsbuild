@@ -1,19 +1,19 @@
 import {
-  debug,
   CHAIN_ID,
-  castArray,
-  getNodeEnv,
-  chainToConfig,
-  modifyBundlerChain,
-  mergeChainedOptions,
-  type RspackConfig,
-  type RsbuildTarget,
   type ModifyChainUtils,
   type ModifyRspackConfigUtils,
+  type RsbuildTarget,
+  type RspackConfig,
+  castArray,
+  chainToConfig,
+  debug,
+  getNodeEnv,
+  modifyBundlerChain,
+  reduceConfigsAsyncWithContext,
 } from '@rsbuild/shared';
-import { getCompiledPath } from './shared';
+import { rspack } from '@rspack/core';
+import { getHTMLPlugin } from '../pluginHelper';
 import type { InternalContext } from '../types';
-import { getHTMLPlugin } from './htmlPluginUtil';
 
 async function modifyRspackConfig(
   context: InternalContext,
@@ -27,10 +27,10 @@ async function modifyRspackConfig(
   );
 
   if (context.config.tools?.rspack) {
-    modifiedConfig = mergeChainedOptions({
-      defaults: modifiedConfig,
-      options: context.config.tools.rspack,
-      utils,
+    modifiedConfig = await reduceConfigsAsyncWithContext({
+      initial: modifiedConfig,
+      config: context.config.tools.rspack,
+      ctx: utils,
       mergeFn: utils.mergeConfig,
     });
   }
@@ -44,7 +44,6 @@ async function getConfigUtils(
   chainUtils: ModifyChainUtils,
 ): Promise<ModifyRspackConfigUtils> {
   const { merge } = await import('@rsbuild/shared/webpack-merge');
-  const rspack = await import('@rspack/core');
 
   return {
     ...chainUtils,
@@ -101,7 +100,6 @@ export function getChainUtils(target: RsbuildTarget): ModifyChainUtils {
     isServer: target === 'node',
     isWebWorker: target === 'web-worker',
     isServiceWorker: target === 'service-worker',
-    getCompiledPath,
     CHAIN_ID,
     HtmlPlugin: getHTMLPlugin(),
   };
@@ -118,15 +116,17 @@ export async function generateRspackConfig({
   const {
     BannerPlugin,
     DefinePlugin,
+    IgnorePlugin,
     ProvidePlugin,
     HotModuleReplacementPlugin,
-  } = await import('@rspack/core');
+  } = rspack;
 
   const chain = await modifyBundlerChain(context, {
     ...chainUtils,
     bundler: {
       BannerPlugin,
       DefinePlugin,
+      IgnorePlugin,
       ProvidePlugin,
       HotModuleReplacementPlugin,
     },

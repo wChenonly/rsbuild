@@ -2,15 +2,6 @@
 
 exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
 {
-  "builtins": {
-    "css": {
-      "modules": {
-        "exportsOnly": false,
-        "localIdentName": "[path][name]__[local]-[hash:6]",
-        "localsConvention": "camelCase",
-      },
-    },
-  },
   "context": "<ROOT>/packages/core/tests",
   "devtool": "cheap-module-source-map",
   "entry": {
@@ -20,6 +11,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
   },
   "experiments": {
     "asyncWebAssembly": true,
+    "css": false,
   },
   "infrastructureLogging": {
     "level": "error",
@@ -39,6 +31,63 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "resolve": {
+          "preferRelative": true,
+        },
+        "sideEffects": true,
+        "test": /\\\\\\.css\\$/,
+        "use": [
+          {
+            "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/builtin-plugin/css-extract/loader.js",
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": {
+                "auto": true,
+                "exportGlobals": false,
+                "exportLocalsConvention": "camelCase",
+                "localIdentName": "[path][name]__[local]-[hash:base64:6]",
+                "namedExport": false,
+              },
+              "sourceMap": false,
+            },
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "config": false,
+                "plugins": [
+                  {
+                    "browsers": [
+                      "chrome >= 87",
+                      "edge >= 88",
+                      "firefox >= 78",
+                      "safari >= 14",
+                    ],
+                    "info": [Function],
+                    "options": {
+                      "flexbox": "no-2009",
+                      "overrideBrowserslist": [
+                        "chrome >= 87",
+                        "edge >= 88",
+                        "firefox >= 78",
+                        "safari >= 14",
+                      ],
+                    },
+                    "postcssPlugin": "autoprefixer",
+                    "prepare": [Function],
+                  },
+                ],
+              },
+              "sourceMap": false,
+            },
+          },
+        ],
+      },
+      {
         "include": [
           {
             "and": [
@@ -50,6 +99,11 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
+        "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
+        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -73,7 +127,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -82,7 +136,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -95,6 +148,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           ],
         },
         "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
           "fullySpecified": false,
         },
         "use": [
@@ -118,7 +174,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -127,7 +183,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -151,7 +206,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -178,7 +233,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -205,7 +260,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -232,7 +287,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -247,318 +302,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         },
         "test": /\\\\\\.wasm\\$/,
         "type": "asset/resource",
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.css\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.less\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.s\\(\\?:a\\|c\\)ss\\$/,
       },
     ],
   },
@@ -592,8 +335,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
   },
   "output": {
     "chunkFilename": "static/js/async/[name].js",
-    "cssChunkFilename": "static/css/async/[name].css",
-    "cssFilename": "static/css/[name].css",
     "devtoolModuleFilenameTemplate": [Function],
     "filename": "static/js/[name].js",
     "hashFunction": "xxhash64",
@@ -608,6 +349,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
   "plugins": [
     HotModuleReplacementPlugin {
       "name": "HotModuleReplacementPlugin",
+    },
+    CssExtractRspackPlugin {
+      "options": {
+        "chunkFilename": "static/css/async/[name].css",
+        "filename": "static/css/[name].css",
+        "ignoreOrder": true,
+      },
     },
     HtmlWebpackPlugin {
       "options": {
@@ -662,6 +410,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
       "version": 5,
     },
     HtmlBasicPlugin {
+      "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
         "index": {},
@@ -675,14 +424,10 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
       "affectedHooks": "compilation",
       "name": "DefinePlugin",
     },
-    RemoveCssSourcemapPlugin {
-      "name": "RemoveCssSourcemapPlugin",
-    },
   ],
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
     },
     "extensions": [
       ".ts",
@@ -703,15 +448,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
 
 exports[`applyDefaultPlugins > should apply default plugins correctly when prod 1`] = `
 {
-  "builtins": {
-    "css": {
-      "modules": {
-        "exportsOnly": false,
-        "localIdentName": "[local]-[hash:6]",
-        "localsConvention": "camelCase",
-      },
-    },
-  },
   "context": "<ROOT>/packages/core/tests",
   "devtool": false,
   "entry": {
@@ -721,6 +457,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
   },
   "experiments": {
     "asyncWebAssembly": true,
+    "css": false,
   },
   "infrastructureLogging": {
     "level": "error",
@@ -740,6 +477,63 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "resolve": {
+          "preferRelative": true,
+        },
+        "sideEffects": true,
+        "test": /\\\\\\.css\\$/,
+        "use": [
+          {
+            "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/builtin-plugin/css-extract/loader.js",
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": {
+                "auto": true,
+                "exportGlobals": false,
+                "exportLocalsConvention": "camelCase",
+                "localIdentName": "[local]-[hash:base64:6]",
+                "namedExport": false,
+              },
+              "sourceMap": false,
+            },
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "config": false,
+                "plugins": [
+                  {
+                    "browsers": [
+                      "chrome >= 87",
+                      "edge >= 88",
+                      "firefox >= 78",
+                      "safari >= 14",
+                    ],
+                    "info": [Function],
+                    "options": {
+                      "flexbox": "no-2009",
+                      "overrideBrowserslist": [
+                        "chrome >= 87",
+                        "edge >= 88",
+                        "firefox >= 78",
+                        "safari >= 14",
+                      ],
+                    },
+                    "postcssPlugin": "autoprefixer",
+                    "prepare": [Function],
+                  },
+                ],
+              },
+              "sourceMap": false,
+            },
+          },
+        ],
+      },
+      {
         "include": [
           {
             "and": [
@@ -751,6 +545,11 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
+        "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
+        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -774,7 +573,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -783,7 +582,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": false,
             },
           },
         ],
@@ -796,6 +594,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
           ],
         },
         "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
           "fullySpecified": false,
         },
         "use": [
@@ -819,7 +620,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -828,7 +629,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": false,
             },
           },
         ],
@@ -852,7 +652,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -879,7 +679,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -906,7 +706,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -933,7 +733,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -948,318 +748,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
         },
         "test": /\\\\\\.wasm\\$/,
         "type": "asset/resource",
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.css\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.less\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.s\\(\\?:a\\|c\\)ss\\$/,
       },
     ],
   },
@@ -1316,8 +804,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
   },
   "output": {
     "chunkFilename": "static/js/async/[name].[contenthash:8].js",
-    "cssChunkFilename": "static/css/async/[name].[contenthash:8].css",
-    "cssFilename": "static/css/[name].[contenthash:8].css",
     "filename": "static/js/[name].[contenthash:8].js",
     "hashFunction": "xxhash64",
     "path": "<ROOT>/packages/core/tests/dist",
@@ -1329,6 +815,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
     "hints": false,
   },
   "plugins": [
+    CssExtractRspackPlugin {
+      "options": {
+        "chunkFilename": "static/css/async/[name].[contenthash:8].css",
+        "filename": "static/css/[name].[contenthash:8].css",
+        "ignoreOrder": true,
+      },
+    },
     HtmlWebpackPlugin {
       "options": {
         "base": false,
@@ -1420,6 +913,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
       "version": 5,
     },
     HtmlBasicPlugin {
+      "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
         "index": {},
@@ -1433,13 +927,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
       "affectedHooks": "compilation",
       "name": "DefinePlugin",
     },
-    RemoveCssSourcemapPlugin {
-      "name": "RemoveCssSourcemapPlugin",
-    },
     ProgressPlugin {
       "_options": {
         "prefix": "Client",
         "profile": false,
+        "progressChars": "━━",
+        "template": "● {prefix:.bold} {bar:25.green/white.dim} ({percent}%) {wide_msg:.dim}",
+        "tick": undefined,
       },
       "affectedHooks": undefined,
       "name": "ProgressPlugin",
@@ -1448,7 +942,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
     },
     "extensions": [
       ".ts",
@@ -1469,15 +962,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
 
 exports[`applyDefaultPlugins > should apply default plugins correctly when target = node 1`] = `
 {
-  "builtins": {
-    "css": {
-      "modules": {
-        "exportsOnly": true,
-        "localIdentName": "[path][name]__[local]-[hash:6]",
-        "localsConvention": "camelCase",
-      },
-    },
-  },
   "context": "<ROOT>/packages/core/tests",
   "devtool": "cheap-module-source-map",
   "entry": {
@@ -1487,6 +971,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   },
   "experiments": {
     "asyncWebAssembly": true,
+    "css": false,
   },
   "infrastructureLogging": {
     "level": "error",
@@ -1504,6 +989,33 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
           "fullySpecified": false,
         },
         "test": /\\\\\\.m\\?js/,
+      },
+      {
+        "resolve": {
+          "preferRelative": true,
+        },
+        "sideEffects": true,
+        "test": /\\\\\\.css\\$/,
+        "use": [
+          {
+            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": {
+                "auto": true,
+                "exportGlobals": false,
+                "exportLocalsConvention": "camelCase",
+                "exportOnlyLocals": true,
+                "localIdentName": "[path][name]__[local]-[hash:base64:6]",
+                "namedExport": false,
+              },
+              "sourceMap": false,
+            },
+          },
+        ],
       },
       {
         "include": [
@@ -1534,7 +1046,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -1543,7 +1055,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -1573,7 +1084,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -1582,7 +1093,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -1606,7 +1116,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -1633,7 +1143,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -1660,7 +1170,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -1687,7 +1197,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -1707,131 +1217,12 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.node\\$/,
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/rspack/nodeAddonsLoader",
+            "loader": "<ROOT>/packages/core/dist/transformRawLoader.cjs",
+            "options": {
+              "id": "rsbuild-transform-0",
+            },
           },
         ],
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-          },
-        ],
-        "test": /\\\\\\.css\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.less\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.s\\(\\?:a\\|c\\)ss\\$/,
       },
     ],
   },
@@ -1842,11 +1233,11 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   },
   "output": {
     "chunkFilename": "[name].js",
-    "cssChunkFilename": "static/css/async/[name].css",
-    "cssFilename": "static/css/[name].css",
     "filename": "[name].js",
     "hashFunction": "xxhash64",
-    "libraryTarget": "commonjs2",
+    "library": {
+      "type": "commonjs2",
+    },
     "path": "<ROOT>/packages/core/tests/dist/server",
     "pathinfo": false,
     "publicPath": "/",
@@ -1856,6 +1247,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
+    RsbuildTransformPlugin {},
     DefinePlugin {
       "_options": {
         "process.env.ASSET_PREFIX": """",
@@ -1885,15 +1277,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
 
 exports[`tools.rspack > should match snapshot 1`] = `
 {
-  "builtins": {
-    "css": {
-      "modules": {
-        "exportsOnly": false,
-        "localIdentName": "[path][name]__[local]-[hash:6]",
-        "localsConvention": "camelCase",
-      },
-    },
-  },
   "context": "<ROOT>/packages/core/tests",
   "devtool": "cheap-module-source-map",
   "entry": {
@@ -1903,6 +1286,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
   },
   "experiments": {
     "asyncWebAssembly": true,
+    "css": false,
   },
   "infrastructureLogging": {
     "level": "error",
@@ -1930,6 +1314,63 @@ exports[`tools.rspack > should match snapshot 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "resolve": {
+          "preferRelative": true,
+        },
+        "sideEffects": true,
+        "test": /\\\\\\.css\\$/,
+        "use": [
+          {
+            "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/builtin-plugin/css-extract/loader.js",
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "options": {
+              "importLoaders": 1,
+              "modules": {
+                "auto": true,
+                "exportGlobals": false,
+                "exportLocalsConvention": "camelCase",
+                "localIdentName": "[path][name]__[local]-[hash:base64:6]",
+                "namedExport": false,
+              },
+              "sourceMap": false,
+            },
+          },
+          {
+            "loader": "<ROOT>/packages/core/compiled/postcss-loader",
+            "options": {
+              "postcssOptions": {
+                "config": false,
+                "plugins": [
+                  {
+                    "browsers": [
+                      "chrome >= 87",
+                      "edge >= 88",
+                      "firefox >= 78",
+                      "safari >= 14",
+                    ],
+                    "info": [Function],
+                    "options": {
+                      "flexbox": "no-2009",
+                      "overrideBrowserslist": [
+                        "chrome >= 87",
+                        "edge >= 88",
+                        "firefox >= 78",
+                        "safari >= 14",
+                      ],
+                    },
+                    "postcssPlugin": "autoprefixer",
+                    "prepare": [Function],
+                  },
+                ],
+              },
+              "sourceMap": false,
+            },
+          },
+        ],
+      },
+      {
         "include": [
           {
             "and": [
@@ -1941,6 +1382,11 @@ exports[`tools.rspack > should match snapshot 1`] = `
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
+        "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
+        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -1964,7 +1410,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -1973,7 +1419,6 @@ exports[`tools.rspack > should match snapshot 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -1986,6 +1431,9 @@ exports[`tools.rspack > should match snapshot 1`] = `
           ],
         },
         "resolve": {
+          "alias": {
+            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
+          },
           "fullySpecified": false,
         },
         "use": [
@@ -2009,7 +1457,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
                 "parser": {
                   "decorators": true,
                   "syntax": "typescript",
-                  "tsx": true,
+                  "tsx": false,
                 },
                 "preserveAllComments": true,
                 "transform": {
@@ -2018,7 +1466,6 @@ exports[`tools.rspack > should match snapshot 1`] = `
                   "useDefineForClassFields": false,
                 },
               },
-              "sourceMaps": true,
             },
           },
         ],
@@ -2042,7 +1489,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -2069,7 +1516,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -2096,7 +1543,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -2123,7 +1570,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
             },
             "parser": {
               "dataUrlCondition": {
-                "maxSize": 10000,
+                "maxSize": 4096,
               },
             },
             "type": "asset",
@@ -2138,318 +1585,6 @@ exports[`tools.rspack > should match snapshot 1`] = `
         },
         "test": /\\\\\\.wasm\\$/,
         "type": "asset/resource",
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.css\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/less-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/less",
-                  "lessOptions": {
-                    "javascriptEnabled": true,
-                    "paths": [
-                      "<ROOT>/packages/core/tests/node_modules",
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.less\\$/,
-      },
-      {
-        "oneOf": [
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "test": /\\\\\\.module\\\\\\.\\\\w\\+\\$/i,
-            "type": "css/module",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-          {
-            "resolve": {
-              "preferRelative": true,
-            },
-            "sideEffects": true,
-            "type": "css",
-            "use": [
-              {
-                "loader": "<ROOT>/packages/shared/compiled/postcss-loader",
-                "options": {
-                  "postcssOptions": {
-                    "config": false,
-                    "plugins": [
-                      {
-                        "browsers": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                        "info": [Function],
-                        "options": {
-                          "flexbox": "no-2009",
-                          "overrideBrowserslist": [
-                            "chrome >= 87",
-                            "edge >= 88",
-                            "firefox >= 78",
-                            "safari >= 14",
-                          ],
-                        },
-                        "postcssPlugin": "autoprefixer",
-                        "prepare": [Function],
-                      },
-                    ],
-                  },
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/resolve-url-loader",
-                "options": {
-                  "join": [Function],
-                  "sourceMap": false,
-                },
-              },
-              {
-                "loader": "<ROOT>/packages/shared/compiled/sass-loader",
-                "options": {
-                  "implementation": "<ROOT>/packages/shared/compiled/sass",
-                  "sourceMap": true,
-                },
-              },
-            ],
-          },
-        ],
-        "test": /\\\\\\.s\\(\\?:a\\|c\\)ss\\$/,
       },
     ],
   },
@@ -2483,8 +1618,6 @@ exports[`tools.rspack > should match snapshot 1`] = `
   },
   "output": {
     "chunkFilename": "static/js/async/[name].js",
-    "cssChunkFilename": "static/css/async/[name].css",
-    "cssFilename": "static/css/[name].css",
     "devtoolModuleFilenameTemplate": [Function],
     "filename": "static/js/[name].js",
     "hashFunction": "xxhash64",
@@ -2502,6 +1635,13 @@ exports[`tools.rspack > should match snapshot 1`] = `
     },
     HotModuleReplacementPlugin {
       "name": "HotModuleReplacementPlugin",
+    },
+    CssExtractRspackPlugin {
+      "options": {
+        "chunkFilename": "static/css/async/[name].css",
+        "filename": "static/css/[name].css",
+        "ignoreOrder": true,
+      },
     },
     HtmlWebpackPlugin {
       "options": {
@@ -2556,6 +1696,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
       "version": 5,
     },
     HtmlBasicPlugin {
+      "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
         "index": {},
@@ -2569,14 +1710,10 @@ exports[`tools.rspack > should match snapshot 1`] = `
       "affectedHooks": "compilation",
       "name": "DefinePlugin",
     },
-    RemoveCssSourcemapPlugin {
-      "name": "RemoveCssSourcemapPlugin",
-    },
   ],
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
     },
     "extensions": [
       ".ts",

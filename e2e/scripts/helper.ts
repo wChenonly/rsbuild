@@ -1,7 +1,7 @@
 import { platform } from 'node:os';
 import { join } from 'node:path';
 import { test } from '@playwright/test';
-import { fse, type ConsoleType, castArray } from '@rsbuild/shared';
+import { type ConsoleType, castArray, fse } from '@rsbuild/shared';
 import glob, {
   convertPathToPattern,
   type Options as GlobOptions,
@@ -22,6 +22,9 @@ export const getProviderTest = (
 
   // @ts-expect-error
   testSkip.describe = test.describe.skip;
+
+  // @ts-expect-error
+  testSkip.fail = test.describe.skip;
   // @ts-expect-error
   return testSkip as typeof test.skip & {
     describe: typeof test.describe.skip;
@@ -44,9 +47,13 @@ export const globContentJSON = async (path: string, options?: GlobOptions) => {
   const files = await glob(convertPath(join(path, '**/*')), options);
   const ret: Record<string, string> = {};
 
-  for await (const file of files) {
-    ret[file] = await fse.readFile(file, 'utf-8');
-  }
+  await Promise.all(
+    files.map((file) =>
+      fse.readFile(file, 'utf-8').then((content) => {
+        ret[file] = content;
+      }),
+    ),
+  );
 
   return ret;
 };

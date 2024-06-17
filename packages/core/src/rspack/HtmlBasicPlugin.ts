@@ -1,15 +1,17 @@
+import {
+  type HtmlBasicTag,
+  type HtmlTag,
+  type HtmlTagDescriptor,
+  type HtmlTagUtils,
+  type ModifyHTMLTagsFn,
+  isFunction,
+  partition,
+} from '@rsbuild/shared';
+import type { Compilation, Compiler } from '@rspack/core';
 import type HtmlWebpackPlugin from 'html-webpack-plugin';
 import type { HtmlTagObject } from 'html-webpack-plugin';
-import type { Compiler, Compilation } from '@rspack/core';
-import {
-  partition,
-  isFunction,
-  withPublicPath,
-  type HtmlTag,
-  type HtmlTagUtils,
-  type HtmlTagDescriptor,
-} from '@rsbuild/shared';
-import { getHTMLPlugin } from '../provider/htmlPluginUtil';
+import { ensureAssetPrefix } from '../helpers';
+import { getHTMLPlugin } from '../pluginHelper';
 
 export type TagConfig = {
   tags?: HtmlTagDescriptor[];
@@ -85,20 +87,40 @@ const getTagPriority = (tag: HtmlTag, tagConfig: TagConfig) => {
   return priority;
 };
 
-// convert tags between `HtmlTag` and `HtmlTagObject`.
+/**
+ * `HtmlTagObject` -> `HtmlBasicTag`
+ */
+const formatBasicTag = (tag: HtmlTagObject): HtmlBasicTag => ({
+  tag: tag.tagName,
+  attrs: tag.attributes,
+  children: tag.innerHTML,
+});
+
+/**
+ * `HtmlBasicTag` -> `HtmlTagObject`
+ */
+const fromBasicTag = (tag: HtmlBasicTag): HtmlTagObject => ({
+  meta: {},
+  tagName: tag.tag,
+  attributes: tag.attrs ?? {},
+  voidTag: VOID_TAGS.includes(tag.tag),
+  innerHTML: tag.children,
+});
+
+/**
+ * `HtmlTagObject[]` -> `HtmlTag[]`
+ */
 const formatTags = (
   tags: HtmlTagObject[],
   override?: Partial<HtmlTag>,
 ): HtmlTag[] =>
   tags.map((tag) => ({
-    tag: tag.tagName,
-    attrs: tag.attributes,
-    children: tag.innerHTML,
+    ...formatBasicTag(tag),
     publicPath: false,
     ...override,
   }));
 
-const modifyTags = (
+const applyTagConfig = (
   data: AlterAssetTagGroupsData,
   tagConfig: TagConfig,
   compilationHash: string,
@@ -123,9 +145,9 @@ const modifyTags = (
         if (typeof optPublicPath === 'function') {
           filename = optPublicPath(filename, data.publicPath);
         } else if (typeof optPublicPath === 'string') {
-          filename = withPublicPath(filename, optPublicPath);
+          filename = ensureAssetPrefix(filename, optPublicPath);
         } else if (optPublicPath !== false) {
-          filename = withPublicPath(filename, data.publicPath);
+          filename = ensureAssetPrefix(filename, data.publicPath);
         }
 
         const optHash = tag.hash ?? tagConfig.hash;
@@ -145,15 +167,10 @@ const modifyTags = (
         }
 
         attrs[filenameTag] = filename;
+        tag.attrs = attrs;
       }
 
-      ret.push({
-        meta: {},
-        tagName: tag.tag,
-        attributes: attrs,
-        voidTag: VOID_TAGS.includes(tag.tag),
-        innerHTML: tag.children,
-      });
+      ret.push(fromBasicTag(tag));
     }
     return ret;
   };
@@ -222,23 +239,29 @@ export class HtmlBasicPlugin {
 
   readonly options: HtmlBasicPluginOptions;
 
-  constructor(options: HtmlBasicPluginOptions) {
+  readonly modifyTagsFn?: ModifyHTMLTagsFn;
+
+  constructor(
+    options: HtmlBasicPluginOptions,
+    modifyTagsFn?: ModifyHTMLTagsFn,
+  ) {
     this.name = 'HtmlBasicPlugin';
     this.options = options;
+    this.modifyTagsFn = modifyTagsFn;
   }
 
   apply(compiler: Compiler) {
     compiler.hooks.compilation.tap(this.name, (compilation: Compilation) => {
       getHTMLPlugin()
         .getHooks(compilation)
-        .alterAssetTagGroups.tap(this.name, (data) => {
+        .alterAssetTagGroups.tapPromise(this.name, async (data) => {
           const entryName = data.plugin.options?.entryName;
 
           if (!entryName) {
             return data;
           }
 
-          const { headTags } = data;
+          const { headTags, bodyTags } = data;
           const { favicon, tagConfig, templateContent } =
             this.options[entryName];
 
@@ -248,9 +271,27 @@ export class HtmlBasicPlugin {
 
           addFavicon(headTags, favicon);
 
+          const tags = {
+            headTags: headTags.map(formatBasicTag),
+            bodyTags: bodyTags.map(formatBasicTag),
+          };
+
+          const modified = this.modifyTagsFn
+            ? await this.modifyTagsFn(tags, {
+                compilation,
+                assetPrefix: data.publicPath,
+                filename: data.outputName,
+              })
+            : tags;
+
+          Object.assign(data, {
+            headTags: modified.headTags.map(fromBasicTag),
+            bodyTags: modified.bodyTags.map(fromBasicTag),
+          });
+
           if (tagConfig) {
             const hash = compilation.hash ?? '';
-            modifyTags(data, tagConfig, hash, entryName);
+            applyTagConfig(data, tagConfig, hash, entryName);
           }
 
           return data;

@@ -1,53 +1,24 @@
 import type {
-  Options as SassOptions,
-  LegacyOptions as LegacySassOptions,
-} from '../../compiled/sass';
-import type * as SassLoader from '../../compiled/sass-loader';
-import type Less from '../../compiled/less';
-import type { LoaderContext } from '@rspack/core';
+  CssExtractRspackLoaderOptions,
+  CssExtractRspackPluginOptions,
+} from '@rspack/core';
 import type { AcceptedPlugin, ProcessOptions } from 'postcss';
-import type { Configuration as WebpackConfig } from 'webpack';
-import type {
-  PluginOptions as MiniCSSExtractPluginOptions,
-  LoaderOptions as MiniCSSExtractLoaderOptions,
-} from 'mini-css-extract-plugin';
-import type { Options as AutoprefixerOptions } from '../../compiled/autoprefixer';
 import type { MinifyOptions } from 'terser';
+import type { Configuration as WebpackConfig } from 'webpack';
+import type Autoprefixer from '../../compiled/autoprefixer/index.js';
+import type { Rspack } from './rspack';
+
+type AutoprefixerOptions = Autoprefixer.Options;
 
 export interface CSSExtractOptions {
-  pluginOptions?: MiniCSSExtractPluginOptions;
-  loaderOptions?: MiniCSSExtractLoaderOptions;
+  pluginOptions?: CssExtractRspackPluginOptions;
+  loaderOptions?: CssExtractRspackLoaderOptions;
 }
 
 export type { WebpackConfig, AutoprefixerOptions };
 
 /** Currently using terser for html js minify and will be replaced by swc later */
 export type MinifyJSOptions = MinifyOptions;
-
-export type SassLoaderOptions = Omit<SassLoader.Options, 'sassOptions'> &
-  (
-    | {
-        api?: 'legacy';
-        sassOptions?: Partial<LegacySassOptions<'async'>>;
-      }
-    | {
-        api: 'modern';
-        sassOptions?: SassOptions<'async'>;
-      }
-  );
-
-export type LessLoaderOptions = {
-  lessOptions?: Less.Options;
-  additionalData?:
-    | string
-    | ((
-        content: string,
-        loaderContext: LoaderContext<LessLoaderOptions>,
-      ) => string | Promise<string>);
-  sourceMap?: boolean;
-  webpackImporter?: boolean;
-  implementation?: unknown;
-};
 
 export type PostCSSOptions = ProcessOptions & {
   config?: boolean;
@@ -75,17 +46,89 @@ export type PostCSSLoaderOptions = {
 
 export type { AcceptedPlugin as PostCSSPlugin } from 'postcss';
 
-export interface CSSModulesOptions {
-  compileType?: string;
-  mode?: string;
-  auto?: boolean | RegExp | ((resourcePath: string) => boolean);
+export type CSSLoaderModulesMode =
+  | 'local'
+  | 'global'
+  | 'pure'
+  | 'icss'
+  | ((resourcePath: string) => 'local' | 'global' | 'pure' | 'icss');
+
+export type CSSLoaderExportLocalsConvention =
+  | 'asIs'
+  | 'as-is'
+  | 'camelCase'
+  | 'camel-case'
+  | 'camelCaseOnly'
+  | 'camel-case-only'
+  | 'dashes'
+  | 'dashesOnly'
+  | 'dashes-only'
+  | ((name: string) => string);
+
+export interface CSSLoaderModulesOptions {
+  /**
+   * Allows auto enable CSS modules/ICSS based on the filename, query or fragment.
+   */
+  auto?:
+    | boolean
+    | RegExp
+    | ((
+        resourcePath: string,
+        resourceQuery: string,
+        resourceFragment: string,
+      ) => boolean);
+  /**
+   * Allow `css-loader` to export names from global class or id, so you can use that as local name.
+   */
   exportGlobals?: boolean;
-  localIdentName?: string;
-  localIdentContext?: string;
-  localIdentHashPrefix?: string;
-  namedExport?: boolean;
-  exportLocalsConvention?: string;
+  /**
+   * Style of exported class names.
+   */
+  exportLocalsConvention?: CSSLoaderExportLocalsConvention;
+  /**
+   * Export only locals.
+   */
   exportOnlyLocals?: boolean;
+  /**
+   * Allows to specify a function to generate the classname.
+   */
+  getLocalIdent?: (
+    context: Rspack.LoaderContext,
+    localIdentName: string,
+    localName: string,
+  ) => string;
+  /**
+   * Allows to configure the generated local ident name.
+   */
+  localIdentName?: string;
+  /**
+   * Allows to redefine basic loader context for local ident name.
+   */
+  localIdentContext?: string;
+  /**
+   * Allows to add custom hash to generate more unique classes.
+   */
+  localIdentHashSalt?: string;
+  /**
+   * Allows to specify hash function to generate classes.
+   */
+  localIdentHashFunction?: string;
+  /**
+   * Allows to specify hash digest to generate classes.
+   */
+  localIdentHashDigest?: string;
+  /**
+   * Allows to specify custom RegExp for local ident name.
+   */
+  localIdentRegExp?: string | RegExp;
+  /**
+   * Controls the level of compilation applied to the input styles.
+   */
+  mode?: CSSLoaderModulesMode;
+  /**
+   * Enables/disables ES modules named export for locals.
+   */
+  namedExport?: boolean;
 }
 
 export interface CSSLoaderOptions {
@@ -107,14 +150,14 @@ export interface CSSLoaderOptions {
   /**
    * Allows to enable/disable CSS Modules or ICSS and setup configuration:
    */
-  modules?: boolean | string | CSSModulesOptions;
+  modules?: boolean | string | CSSLoaderModulesOptions;
   /**
    * By default generation of source maps depends on the devtool option.
    */
   sourceMap?: boolean;
   /**
    * Allows to enables/disables or setups number of loaders applied before CSS loader for @import at-rules,
-   * CSS modules and ICSS imports, i.e. @import/composes/@value value from './values.css'/etc.
+   * CSS Modules and ICSS imports, i.e. @import/composes/@value value from './values.css'/etc.
    *
    * @default 0
    */

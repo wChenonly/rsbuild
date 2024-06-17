@@ -1,6 +1,7 @@
 import type { RsbuildPlugin } from '@rsbuild/core';
-import type { VueJSXPluginOptions } from '@vue/babel-plugin-jsx';
 import { modifyBabelLoaderOptions } from '@rsbuild/plugin-babel';
+import { isUsingHMR } from '@rsbuild/shared';
+import type { VueJSXPluginOptions } from '@vue/babel-plugin-jsx';
 
 export type PluginVueJsxOptions = {
   /**
@@ -10,12 +11,16 @@ export type PluginVueJsxOptions = {
   vueJsxOptions?: VueJSXPluginOptions;
 };
 
+export const PLUGIN_VUE_JSX_NAME = 'rsbuild:vue-jsx';
+
 export function pluginVueJsx(options: PluginVueJsxOptions = {}): RsbuildPlugin {
   return {
-    name: 'rsbuild:vue-jsx',
+    name: PLUGIN_VUE_JSX_NAME,
 
     setup(api) {
-      api.modifyBundlerChain(async (chain, { CHAIN_ID }) => {
+      api.modifyBundlerChain(async (chain, { CHAIN_ID, isProd, target }) => {
+        const config = api.getNormalizedConfig();
+
         modifyBabelLoaderOptions({
           chain,
           CHAIN_ID,
@@ -25,6 +30,16 @@ export function pluginVueJsx(options: PluginVueJsxOptions = {}): RsbuildPlugin {
               require.resolve('@vue/babel-plugin-jsx'),
               options.vueJsxOptions || {},
             ]);
+
+            const usingHMR = isUsingHMR(config, { target, isProd });
+
+            if (usingHMR) {
+              babelOptions.plugins ??= [];
+              babelOptions.plugins.push([
+                require.resolve('babel-plugin-vue-jsx-hmr'),
+              ]);
+            }
+
             return babelOptions;
           },
         });

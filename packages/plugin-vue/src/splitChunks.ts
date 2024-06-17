@@ -1,9 +1,5 @@
-import type { RsbuildPluginAPI } from '@rsbuild/core';
-import {
-  isPlainObject,
-  createCacheGroups,
-  type SplitChunks,
-} from '@rsbuild/shared';
+import type { RsbuildPluginAPI, SplitChunks } from '@rsbuild/core';
+import { createCacheGroups, isPlainObject } from '@rsbuild/shared';
 import type { SplitVueChunkOptions } from '.';
 
 export const applySplitChunksRule = (
@@ -44,7 +40,6 @@ export const applySplitChunksRule = (
 
     chain.optimization.splitChunks({
       ...currentConfig,
-      // @ts-expect-error Rspack and Webpack uses different cacheGroups type
       cacheGroups: {
         ...(currentConfig as Exclude<SplitChunks, false>).cacheGroups,
         ...createCacheGroups(extraGroups),

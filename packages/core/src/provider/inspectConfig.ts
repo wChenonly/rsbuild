@@ -1,15 +1,14 @@
-import { join, isAbsolute } from 'node:path';
-import { initConfigs, type InitConfigsOptions } from './initConfigs';
+import { isAbsolute, join } from 'node:path';
 import {
-  setNodeEnv,
-  getNodeEnv,
-  stringifyConfig,
-  outputInspectConfigFiles,
-  type RspackConfig,
-  type NormalizedConfig,
-  type InspectConfigResult,
   type InspectConfigOptions,
+  type InspectConfigResult,
+  type NormalizedConfig,
+  type RspackConfig,
+  getNodeEnv,
+  setNodeEnv,
 } from '@rsbuild/shared';
+import { outputInspectConfigFiles, stringifyConfig } from '../config';
+import { type InitConfigsOptions, initConfigs } from './initConfigs';
 
 export async function inspectConfig({
   context,
@@ -41,7 +40,7 @@ export async function inspectConfig({
     pluginNames: string[];
   } = {
     ...context.normalizedConfig!,
-    pluginNames: pluginManager.plugins.map((p) => p.name),
+    pluginNames: pluginManager.getPlugins().map((p) => p.name),
   };
 
   const rawRsbuildConfig = await stringifyConfig(

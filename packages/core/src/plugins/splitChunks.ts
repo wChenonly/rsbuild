@@ -1,12 +1,12 @@
 import assert from 'node:assert';
 import {
-  NODE_MODULES_REGEX,
-  createDependenciesRegExp,
-  type Polyfill,
   type CacheGroups,
-  type SplitChunks,
   type ForceSplitting,
+  NODE_MODULES_REGEX,
+  type Polyfill,
   type RsbuildChunkSplit,
+  type SplitChunks,
+  createDependenciesRegExp,
 } from '@rsbuild/shared';
 import type { RsbuildPlugin } from '../types';
 
@@ -137,7 +137,7 @@ function splitByModule(ctx: SplitChunksContext): SplitChunks {
       ...userDefinedCacheGroups,
       // Core group
       vendors: {
-        priority: -10,
+        priority: -9,
         test: NODE_MODULES_REGEX,
         name(module) {
           return module
@@ -281,10 +281,7 @@ export const pluginSplitChunks = (): RsbuildPlugin => ({
           polyfill: config.output.polyfill,
         });
 
-        chain.optimization.splitChunks(
-          // @ts-expect-error splitChunks type mismatch
-          splitChunksOptions,
-        );
+        chain.optimization.splitChunks(splitChunksOptions);
       },
     );
   },

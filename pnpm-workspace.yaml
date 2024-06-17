@@ -1,7 +1,9 @@
 packages:
+  - 'website'
   - 'e2e/**'
   - 'scripts/**'
   - 'packages/**'
   - 'examples/**'
   - '!**/compiled/**'
-  - '!**/create-rsbuild/template-*'
+  - '!**/dist-types/**'
+  - '!**/create-rsbuild/template-*/**'

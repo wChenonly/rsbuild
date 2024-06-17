@@ -1,19 +1,14 @@
-import { createCompiler } from './createCompiler';
-import { initConfigs, type InitConfigsOptions } from './initConfigs';
-import {
-  logger,
-  getNodeEnv,
-  setNodeEnv,
-  isMultiCompiler,
-} from '@rsbuild/shared';
+import { getNodeEnv, logger, onCompileDone, setNodeEnv } from '@rsbuild/shared';
 import type {
-  Stats,
-  MultiStats,
   BuildOptions,
+  MultiStats,
+  Rspack,
   RspackConfig,
-  RspackCompiler,
-  RspackMultiCompiler,
+  Stats,
 } from '@rsbuild/shared';
+import { rspack } from '@rspack/core';
+import { createCompiler } from './createCompiler';
+import { type InitConfigsOptions, initConfigs } from './initConfigs';
 
 export const build = async (
   initOptions: InitConfigsOptions,
@@ -25,7 +20,7 @@ export const build = async (
 
   const { context } = initOptions;
 
-  let compiler: RspackCompiler | RspackMultiCompiler;
+  let compiler: Rspack.Compiler | Rspack.MultiCompiler;
   let bundlerConfigs: RspackConfig[] | undefined;
 
   if (customCompiler) {
@@ -50,12 +45,12 @@ export const build = async (
     await p;
   };
 
-  // MultiCompiler does not supports `done.tapPromise`
-  if (isMultiCompiler(compiler)) {
-    compiler.hooks.done.tap('rsbuild:done', onDone);
-  } else {
-    compiler.hooks.done.tapPromise('rsbuild:done', onDone);
-  }
+  onCompileDone(
+    compiler,
+    onDone,
+    // @ts-expect-error type mismatch
+    rspack.MultiStats,
+  );
 
   if (watch) {
     compiler.watch({}, (err) => {
@@ -67,7 +62,7 @@ export const build = async (
   }
 
   await new Promise<{ stats?: Stats | MultiStats }>((resolve, reject) => {
-    compiler.run((err: any, stats?: Stats | MultiStats) => {
+    compiler.run((err, stats?: Stats | MultiStats) => {
       if (err || stats?.hasErrors()) {
         const buildError = err || new Error('Rspack build failed!');
         reject(buildError);
@@ -77,7 +72,11 @@ export const build = async (
       else {
         // When using run or watch, call close and wait for it to finish before calling run or watch again.
         // Concurrent compilations will corrupt the output files.
-        compiler.close(() => {
+        compiler.close((closeErr) => {
+          if (closeErr) {
+            logger.error(closeErr);
+          }
+
           // Assert type of stats must align to compiler.
           resolve({ stats });
         });
