@@ -1,4 +1,4 @@
-import { getBundlerChain } from '@rsbuild/shared';
+import { getBundlerChain } from '../src/configChain';
 import { pluginExternals } from '../src/plugins/externals';
 
 describe('plugin-external', () => {
@@ -10,11 +10,6 @@ describe('plugin-external', () => {
       modifyBundlerChain: (fn: any) => {
         modifyBundlerChainCb = fn;
       },
-      getNormalizedConfig: () => ({
-        output: {
-          externals: ['react', /@swc\/.*/],
-        },
-      }),
       onBeforeCreateCompiler: (fn: any) => {
         onBeforeCreateCompilerCb = fn;
       },
@@ -22,9 +17,17 @@ describe('plugin-external', () => {
 
     pluginExternals().setup(api);
 
-    const chain = await getBundlerChain();
+    const chain = getBundlerChain();
 
-    await modifyBundlerChainCb(chain);
+    await modifyBundlerChainCb(chain, {
+      environment: {
+        config: {
+          output: {
+            externals: ['react', /@swc\/.*/],
+          },
+        },
+      },
+    });
 
     const bundlerConfigs = [
       {

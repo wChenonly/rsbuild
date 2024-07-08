@@ -1,7 +1,8 @@
+import fs from 'node:fs';
 import { platform } from 'node:os';
 import { join } from 'node:path';
 import { test } from '@playwright/test';
-import { type ConsoleType, castArray, fse } from '@rsbuild/shared';
+import type { ConsoleType } from '@rsbuild/core';
 import glob, {
   convertPathToPattern,
   type Options as GlobOptions,
@@ -49,7 +50,7 @@ export const globContentJSON = async (path: string, options?: GlobOptions) => {
 
   await Promise.all(
     files.map((file) =>
-      fse.readFile(file, 'utf-8').then((content) => {
+      fs.promises.readFile(file, 'utf-8').then((content) => {
         ret[file] = content;
       }),
     ),
@@ -64,7 +65,7 @@ export const awaitFileExists = async (dir: string) => {
   let checks = 0;
 
   while (checks < maxChecks) {
-    if (fse.existsSync(dir)) {
+    if (fs.existsSync(dir)) {
       return;
     }
     checks++;
@@ -80,7 +81,7 @@ export const proxyConsole = (
   const logs: string[] = [];
   const restores: Array<() => void> = [];
 
-  for (const type of castArray(types)) {
+  for (const type of Array.isArray(types) ? types : [types]) {
     const method = console[type];
 
     restores.push(() => {
@@ -101,3 +102,6 @@ export const proxyConsole = (
     },
   };
 };
+
+// Windows and macOS use different new lines
+export const normalizeNewlines = (str: string) => str.replace(/\r\n/g, '\n');

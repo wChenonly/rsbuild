@@ -1,7 +1,8 @@
+import fs from 'node:fs';
 import { join } from 'node:path';
 import { build } from '@e2e/helper';
 import { expect, test } from '@playwright/test';
-import { fse } from '@rsbuild/shared';
+import fse from 'fs-extra';
 
 test('should compile Node addons correctly', async () => {
   const rsbuild = await build({
@@ -12,23 +13,24 @@ test('should compile Node addons correctly', async () => {
     file.endsWith('test.darwin.node'),
   );
 
-  expect(addonFile?.includes('server/test.darwin.node')).toBeTruthy();
+  expect(addonFile?.includes('/test.darwin.node')).toBeTruthy();
 
   expect(
-    fse.existsSync(join(__dirname, 'dist', 'server', 'test.darwin.node')),
+    fs.existsSync(join(__dirname, 'dist', 'test.darwin.node')),
   ).toBeTruthy();
 
   // the `test.darwin.node` is only compatible with darwin
   if (process.platform === 'darwin') {
-    const content = await import('./dist/server/index.js');
-    expect(typeof content.default.readLength).toEqual('function');
+    const content = await import('./dist/index.js');
+    expect(typeof (content.default as any).readLength).toEqual('function');
   }
 });
 
 test('should compile Node addons in the node_modules correctly', async () => {
   const pkgDir = join(__dirname, 'node_modules', 'node-addon-pkg');
 
-  fse.removeSync(pkgDir);
+  fs.rmSync(pkgDir, { recursive: true, force: true });
+
   fse.outputJSONSync(join(pkgDir, 'package.json'), {
     name: 'node-addon-pkg',
     main: 'src/index.js',
@@ -38,7 +40,7 @@ test('should compile Node addons in the node_modules correctly', async () => {
     `import addon from './other.node'; export default addon;`,
   );
   fse.ensureDirSync(join(pkgDir, 'src'));
-  fse.copyFileSync(
+  fs.copyFileSync(
     join(__dirname, 'src', 'test.darwin.node'),
     join(pkgDir, 'src', 'other.node'),
   );
@@ -59,14 +61,12 @@ test('should compile Node addons in the node_modules correctly', async () => {
     file.endsWith('other.node'),
   );
 
-  expect(addonFile?.includes('server/other.node')).toBeTruthy();
+  expect(addonFile?.includes('/other.node')).toBeTruthy();
 
-  expect(
-    fse.existsSync(join(__dirname, 'dist', 'server', 'other.node')),
-  ).toBeTruthy();
+  expect(fs.existsSync(join(__dirname, 'dist', 'other.node'))).toBeTruthy();
 
   if (process.platform === 'darwin') {
-    const content = await import('./dist/server/index.js');
-    expect(typeof content.default.readLength).toEqual('function');
+    const content = await import('./dist/index.js');
+    expect(typeof (content.default as any).readLength).toEqual('function');
   }
 });

@@ -1,49 +1,48 @@
-import {
-  CHAIN_ID,
-  type ModifyChainUtils,
-  type ModifyRspackConfigUtils,
-  type RsbuildTarget,
-  type RspackConfig,
-  castArray,
-  chainToConfig,
-  debug,
-  getNodeEnv,
-  modifyBundlerChain,
-  reduceConfigsAsyncWithContext,
-} from '@rsbuild/shared';
 import { rspack } from '@rspack/core';
+import { reduceConfigsAsyncWithContext } from 'reduce-configs';
+import { CHAIN_ID, chainToConfig, modifyBundlerChain } from '../configChain';
+import { castArray, getNodeEnv } from '../helpers';
+import { logger } from '../logger';
 import { getHTMLPlugin } from '../pluginHelper';
-import type { InternalContext } from '../types';
+import type {
+  EnvironmentContext,
+  InternalContext,
+  ModifyChainUtils,
+  ModifyRspackConfigUtils,
+  RsbuildTarget,
+  Rspack,
+  RspackConfig,
+} from '../types';
 
 async function modifyRspackConfig(
   context: InternalContext,
   rspackConfig: RspackConfig,
   utils: ModifyRspackConfigUtils,
 ) {
-  debug('modify Rspack config');
+  logger.debug('modify Rspack config');
   let [modifiedConfig] = await context.hooks.modifyRspackConfig.call(
     rspackConfig,
     utils,
   );
 
-  if (context.config.tools?.rspack) {
+  if (utils.environment.config.tools?.rspack) {
     modifiedConfig = await reduceConfigsAsyncWithContext({
       initial: modifiedConfig,
-      config: context.config.tools.rspack,
+      config: utils.environment.config.tools.rspack,
       ctx: utils,
       mergeFn: utils.mergeConfig,
     });
   }
 
-  debug('modify Rspack config done');
+  logger.debug('modify Rspack config done');
   return modifiedConfig;
 }
 
-async function getConfigUtils(
-  config: RspackConfig,
+export async function getConfigUtils(
+  config: Rspack.Configuration,
   chainUtils: ModifyChainUtils,
 ): Promise<ModifyRspackConfigUtils> {
-  const { merge } = await import('@rsbuild/shared/webpack-merge');
+  const { merge } = await import('webpack-merge');
 
   return {
     ...chainUtils,
@@ -80,26 +79,34 @@ async function getConfigUtils(
     },
 
     removePlugin(pluginName) {
-      if (config.plugins) {
-        config.plugins = config.plugins.filter(
-          (p) => p && p.name !== pluginName,
-        );
+      if (!config.plugins) {
+        return;
       }
+      config.plugins = config.plugins.filter((plugin) => {
+        if (!plugin) {
+          return true;
+        }
+        const name = plugin.name || plugin.constructor.name;
+        return name !== pluginName;
+      });
     },
   };
 }
 
-export function getChainUtils(target: RsbuildTarget): ModifyChainUtils {
+export function getChainUtils(
+  target: RsbuildTarget,
+  environment: EnvironmentContext,
+): ModifyChainUtils {
   const nodeEnv = getNodeEnv();
 
   return {
+    environment,
     env: nodeEnv,
     target,
     isDev: nodeEnv === 'development',
     isProd: nodeEnv === 'production',
     isServer: target === 'node',
     isWebWorker: target === 'web-worker',
-    isServiceWorker: target === 'service-worker',
     CHAIN_ID,
     HtmlPlugin: getHTMLPlugin(),
   };
@@ -108,11 +115,13 @@ export function getChainUtils(target: RsbuildTarget): ModifyChainUtils {
 export async function generateRspackConfig({
   target,
   context,
+  environment,
 }: {
+  environment: string;
   target: RsbuildTarget;
   context: InternalContext;
 }): Promise<RspackConfig> {
-  const chainUtils = getChainUtils(target);
+  const chainUtils = getChainUtils(target, context.environments[environment]);
   const {
     BannerPlugin,
     DefinePlugin,

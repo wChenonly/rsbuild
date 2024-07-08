@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-styled-components",
-  "version": "0.7.7",
+  "version": "1.0.0-alpha.6",
   "description": "styled-components plugin for Rsbuild",
   "repository": {
     "type": "git",
@@ -26,15 +26,16 @@
     "dev": "modern build --watch"
   },
   "dependencies": {
-    "@rsbuild/shared": "workspace:*"
+    "@swc/plugin-styled-components": "2.0.9",
+    "reduce-configs": "^1.0.0"
   },
   "devDependencies": {
     "@rsbuild/core": "workspace:*",
     "@types/node": "18.x",
-    "typescript": "^5.4.2"
+    "typescript": "^5.5.2"
   },
   "peerDependencies": {
-    "@rsbuild/core": "workspace:^0.7.7"
+    "@rsbuild/core": "workspace:^1.0.0-alpha.6"
   },
   "publishConfig": {
     "access": "public",

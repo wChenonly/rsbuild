@@ -77,7 +77,7 @@ export const bar = 'bar';
 import { foo } from './utils';
 ```
 
-- re-export 了一个类型，但是没有添加 `type` 修饰符，导致 babel 等编译工具无法识别到类型导出，导致编译异常。
+- re-export 了一个类型，但是没有添加 `type` 修饰符，导致 SWC、Babel 等转译工具无法识别到类型导出，导致编译异常。
 
 ```ts
 // utils.ts
@@ -97,7 +97,7 @@ export default {
       module: {
         parser: {
           javascript: {
-            exportsPresence: 'error',
+            exportsPresence: 'warn',
           },
         },
       },
@@ -108,7 +108,7 @@ export default {
 
 同时，你需要尽快联系第三方依赖的开发者来修复相应的问题。
 
-> 你可以查看 webpack 的文档来了解 [module.parser.javascript.exportsPresence](https://www.rspack.dev/config/module#moduleparserjavascriptexportspresence) 的更多细节。
+> 你可以查看 Rspack 的文档来了解 [module.parser.javascript.exportsPresence](https://rspack.dev/config/module#moduleparserjavascriptexportspresence) 的更多细节。
 
 ---
 

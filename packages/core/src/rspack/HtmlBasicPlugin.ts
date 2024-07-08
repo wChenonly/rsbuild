@@ -1,17 +1,16 @@
-import {
-  type HtmlBasicTag,
-  type HtmlTag,
-  type HtmlTagDescriptor,
-  type HtmlTagUtils,
-  type ModifyHTMLTagsFn,
-  isFunction,
-  partition,
-} from '@rsbuild/shared';
 import type { Compilation, Compiler } from '@rspack/core';
-import type HtmlWebpackPlugin from 'html-webpack-plugin';
-import type { HtmlTagObject } from 'html-webpack-plugin';
-import { ensureAssetPrefix } from '../helpers';
+import type HtmlWebpackPlugin from 'html-rspack-plugin';
+import type { HtmlTagObject } from 'html-rspack-plugin';
+import { ensureAssetPrefix, isFunction, partition } from '../helpers';
 import { getHTMLPlugin } from '../pluginHelper';
+import type {
+  EnvironmentContext,
+  HtmlBasicTag,
+  HtmlTag,
+  HtmlTagDescriptor,
+  HtmlTagUtils,
+  ModifyHTMLTagsFn,
+} from '../types';
 
 export type TagConfig = {
   tags?: HtmlTagDescriptor[];
@@ -21,7 +20,7 @@ export type TagConfig = {
 };
 
 /** @see {@link https://developer.mozilla.org/en-US/docs/Glossary/Void_element} */
-export const VOID_TAGS = [
+const VOID_TAGS = [
   'area',
   'base',
   'br',
@@ -40,7 +39,7 @@ export const VOID_TAGS = [
 ];
 
 /** @see {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head#see_also} */
-export const HEAD_TAGS = [
+const HEAD_TAGS = [
   'title',
   'base',
   'link',
@@ -237,20 +236,24 @@ const addFavicon = (headTags: HtmlTagObject[], favicon?: string) => {
 export class HtmlBasicPlugin {
   readonly name: string;
 
+  readonly getEnvironment: () => EnvironmentContext;
+
   readonly options: HtmlBasicPluginOptions;
 
   readonly modifyTagsFn?: ModifyHTMLTagsFn;
 
   constructor(
     options: HtmlBasicPluginOptions,
+    environment: EnvironmentContext,
     modifyTagsFn?: ModifyHTMLTagsFn,
   ) {
     this.name = 'HtmlBasicPlugin';
+    this.getEnvironment = () => environment;
     this.options = options;
     this.modifyTagsFn = modifyTagsFn;
   }
 
-  apply(compiler: Compiler) {
+  apply(compiler: Compiler): void {
     compiler.hooks.compilation.tap(this.name, (compilation: Compilation) => {
       getHTMLPlugin()
         .getHooks(compilation)
@@ -281,6 +284,7 @@ export class HtmlBasicPlugin {
                 compilation,
                 assetPrefix: data.publicPath,
                 filename: data.outputName,
+                environment: this.getEnvironment(),
               })
             : tags;
 

@@ -1,17 +1,19 @@
 import { isAbsolute, join } from 'node:path';
 import url from 'node:url';
+import { normalizePublicDirs } from '../config';
+import { logger } from '../logger';
 import type {
   DevConfig,
+  EnvironmentAPI,
   RequestHandler,
   Rspack,
   ServerAPIs,
   ServerConfig,
-} from '@rsbuild/shared';
-import { isDebug } from '@rsbuild/shared';
-import { normalizePublicDirs } from '../config';
+} from '../types';
 import type { UpgradeEvent } from './helper';
 import {
   faviconFallbackMiddleware,
+  getHtmlCompletionMiddleware,
   getHtmlFallbackMiddleware,
   getRequestLoggerMiddleware,
 } from './middlewares';
@@ -27,6 +29,7 @@ export type RsbuildDevMiddlewareOptions = {
   pwd: string;
   dev: DevConfig;
   server: ServerConfig;
+  environments: EnvironmentAPI;
   compileMiddlewareAPI?: CompileMiddlewareAPI;
   outputFileSystem: Rspack.OutputFileSystem;
   output: {
@@ -36,12 +39,14 @@ export type RsbuildDevMiddlewareOptions = {
 
 const applySetupMiddlewares = (
   dev: RsbuildDevMiddlewareOptions['dev'],
+  environments: EnvironmentAPI,
   compileMiddlewareAPI?: CompileMiddlewareAPI,
 ) => {
   const setupMiddlewares = dev.setupMiddlewares || [];
 
   const serverOptions: ServerAPIs = {
     sockWrite: (type, data) => compileMiddlewareAPI?.sockWrite(type, data),
+    environments,
   };
 
   const before: RequestHandler[] = [];
@@ -107,9 +112,8 @@ const applyDefaultMiddlewares = async ({
   // dev proxy handler, each proxy has own handler
   if (server.proxy) {
     const { createProxyMiddleware } = await import('./proxy');
-    const { middlewares: proxyMiddlewares, upgrade } = createProxyMiddleware(
-      server.proxy,
-    );
+    const { middlewares: proxyMiddlewares, upgrade } =
+      await createProxyMiddleware(server.proxy);
     upgradeEvents.push(upgrade);
 
     for (const middleware of proxyMiddlewares) {
@@ -141,6 +145,20 @@ const applyDefaultMiddlewares = async ({
     });
   }
 
+  const distPath = isAbsolute(output.distPath)
+    ? output.distPath
+    : join(pwd, output.distPath);
+
+  if (compileMiddlewareAPI) {
+    middlewares.push(
+      getHtmlCompletionMiddleware({
+        distPath,
+        callback: compileMiddlewareAPI.middleware,
+        outputFileSystem,
+      }),
+    );
+  }
+
   const publicDirs = normalizePublicDirs(server?.publicDir);
   for (const publicDir of publicDirs) {
     const { default: sirv } = await import('sirv');
@@ -155,17 +173,16 @@ const applyDefaultMiddlewares = async ({
     middlewares.push(assetMiddleware);
   }
 
-  const { distPath } = output;
-
-  compileMiddlewareAPI &&
+  if (compileMiddlewareAPI) {
     middlewares.push(
       getHtmlFallbackMiddleware({
-        distPath: isAbsolute(distPath) ? distPath : join(pwd, distPath),
+        distPath,
         callback: compileMiddlewareAPI.middleware,
         htmlFallback: server.htmlFallback,
         outputFileSystem,
       }),
     );
+  }
 
   if (server.historyApiFallback) {
     const { default: connectHistoryApiFallback } = await import(
@@ -193,17 +210,24 @@ const applyDefaultMiddlewares = async ({
   };
 };
 
-export const getMiddlewares = async (options: RsbuildDevMiddlewareOptions) => {
+export const getMiddlewares = async (
+  options: RsbuildDevMiddlewareOptions,
+): Promise<{
+  close: () => Promise<void>;
+  onUpgrade: UpgradeEvent;
+  middlewares: Middlewares;
+}> => {
   const middlewares: Middlewares = [];
-  const { compileMiddlewareAPI } = options;
+  const { environments, compileMiddlewareAPI } = options;
 
-  if (isDebug()) {
+  if (logger.level === 'verbose') {
     middlewares.push(await getRequestLoggerMiddleware());
   }
 
   // Order: setupMiddlewares.unshift => internal middlewares => setupMiddlewares.push
   const { before, after } = applySetupMiddlewares(
     options.dev,
+    environments,
     compileMiddlewareAPI,
   );
 

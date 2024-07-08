@@ -8,7 +8,6 @@ exports[`plugins/react > should not apply splitChunks rule when strategy is not 
       "enforce": true,
       "name": "vendor",
       "priority": 0,
-      "reuseExistingChunk": true,
       "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]/,
     },
   },
@@ -28,7 +27,6 @@ exports[`plugins/react > should work with swc-loader 1`] = `
   },
   "experiments": {
     "asyncWebAssembly": true,
-    "css": false,
   },
   "infrastructureLogging": {
     "level": "error",
@@ -116,11 +114,6 @@ exports[`plugins/react > should work with swc-loader 1`] = `
           },
           /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
         ],
-        "resolve": {
-          "alias": {
-            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
-          },
-        },
         "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         "type": "javascript/auto",
         "use": [
@@ -128,9 +121,7 @@ exports[`plugins/react > should work with swc-loader 1`] = `
             "loader": "builtin:swc-loader",
             "options": {
               "env": {
-                "coreJs": "3.36",
-                "mode": "usage",
-                "shippedProposals": true,
+                "mode": undefined,
                 "targets": [
                   "chrome >= 87",
                   "edge >= 88",
@@ -148,14 +139,13 @@ exports[`plugins/react > should work with swc-loader 1`] = `
                 },
                 "preserveAllComments": true,
                 "transform": {
-                  "decoratorMetadata": true,
-                  "legacyDecorator": true,
+                  "decoratorVersion": "2022-03",
+                  "legacyDecorator": false,
                   "react": {
                     "development": false,
                     "refresh": true,
                     "runtime": "automatic",
                   },
-                  "useDefineForClassFields": false,
                 },
               },
             },
@@ -170,9 +160,6 @@ exports[`plugins/react > should work with swc-loader 1`] = `
           ],
         },
         "resolve": {
-          "alias": {
-            "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
-          },
           "fullySpecified": false,
         },
         "use": [
@@ -180,9 +167,7 @@ exports[`plugins/react > should work with swc-loader 1`] = `
             "loader": "builtin:swc-loader",
             "options": {
               "env": {
-                "coreJs": "3.36",
-                "mode": "usage",
-                "shippedProposals": true,
+                "mode": undefined,
                 "targets": [
                   "chrome >= 87",
                   "edge >= 88",
@@ -200,14 +185,13 @@ exports[`plugins/react > should work with swc-loader 1`] = `
                 },
                 "preserveAllComments": true,
                 "transform": {
-                  "decoratorMetadata": true,
-                  "legacyDecorator": true,
+                  "decoratorVersion": "2022-03",
+                  "legacyDecorator": false,
                   "react": {
                     "development": false,
                     "refresh": true,
                     "runtime": "automatic",
                   },
-                  "useDefineForClassFields": false,
                 },
               },
             },
@@ -332,7 +316,7 @@ exports[`plugins/react > should work with swc-loader 1`] = `
       },
     ],
   },
-  "name": "Client",
+  "name": "web",
   "optimization": {
     "minimize": false,
     "splitChunks": {
@@ -340,32 +324,22 @@ exports[`plugins/react > should work with swc-loader 1`] = `
         "lib-axios": {
           "name": "lib-axios",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(axios\\|axios-\\.\\+\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
         "lib-lodash": {
           "name": "lib-lodash",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(lodash\\|lodash-es\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
         },
-        "lib-polyfill": {
-          "name": "lib-polyfill",
-          "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(tslib\\|core-js\\|@babel\\\\/runtime\\|@swc\\\\/helpers\\)\\[\\\\\\\\/\\]/,
-        },
-        "lib-react": {
+        "react": {
           "name": "lib-react",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(react\\|react-dom\\|scheduler\\|react-refresh\\|@rspack\\[\\\\\\\\/\\]plugin-react-refresh\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]\\(\\?:react\\|react-dom\\|scheduler\\|react-refresh\\|@rspack\\[\\\\\\\\/\\]plugin-react-refresh\\)\\[\\\\\\\\/\\]/,
         },
-        "lib-router": {
+        "router": {
           "name": "lib-router",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(react-router\\|react-router-dom\\|history\\|@remix-run\\[\\\\\\\\/\\]router\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]\\(\\?:react-router\\|react-router-dom\\|history\\|@remix-run\\[\\\\\\\\/\\]router\\)\\[\\\\\\\\/\\]/,
         },
       },
       "chunks": "all",
@@ -395,7 +369,7 @@ exports[`plugins/react > should work with swc-loader 1`] = `
         "ignoreOrder": true,
       },
     },
-    HtmlWebpackPlugin {
+    HtmlRspackPlugin {
       "options": {
         "base": false,
         "cache": true,
@@ -416,7 +390,6 @@ exports[`plugins/react > should work with swc-loader 1`] = `
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
-        "minify": false,
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
@@ -439,15 +412,15 @@ exports[`plugins/react > should work with swc-loader 1`] = `
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
-        "minify": false,
         "scriptLoading": "defer",
         "template": "<ROOT>/packages/core/static/template.html",
         "templateParameters": [Function],
         "title": "Rsbuild App",
       },
-      "version": 5,
+      "version": 6,
     },
     HtmlBasicPlugin {
+      "getEnvironment": [Function],
       "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
@@ -469,6 +442,7 @@ exports[`plugins/react > should work with swc-loader 1`] = `
         "include": [
           /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
         ],
+        "overlay": false,
       },
     },
   ],

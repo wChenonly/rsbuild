@@ -1,6 +1,10 @@
-import type { RsbuildPluginAPI, SplitChunks } from '@rsbuild/core';
-import { createCacheGroups, isPlainObject } from '@rsbuild/shared';
+import type { CacheGroups, RsbuildPluginAPI, SplitChunks } from '@rsbuild/core';
 import type { SplitVueChunkOptions } from '.';
+
+const isPlainObject = (obj: unknown): obj is Record<string, any> =>
+  obj !== null &&
+  typeof obj === 'object' &&
+  Object.prototype.toString.call(obj) === '[object Object]';
 
 export const applySplitChunksRule = (
   api: RsbuildPluginAPI,
@@ -8,9 +12,9 @@ export const applySplitChunksRule = (
     vue: true,
     router: true,
   },
-) => {
-  api.modifyBundlerChain((chain) => {
-    const config = api.getNormalizedConfig();
+): void => {
+  api.modifyBundlerChain((chain, { environment }) => {
+    const { config } = environment;
     if (config.performance.chunkSplit.strategy !== 'split-by-experience') {
       return;
     }
@@ -20,14 +24,22 @@ export const applySplitChunksRule = (
       return;
     }
 
-    const extraGroups: Record<string, (string | RegExp)[]> = {};
+    const extraGroups: CacheGroups = {};
 
-    if (options.vue) {
-      extraGroups.vue = ['vue', 'vue-loader'];
+    if (options.router) {
+      extraGroups.vue = {
+        name: 'lib-vue',
+        test: /node_modules[\\/](?:vue|vue-loader)[\\/]/,
+        priority: 0,
+      };
     }
 
     if (options.router) {
-      extraGroups.router = ['vue-router'];
+      extraGroups.router = {
+        name: 'lib-router',
+        test: /node_modules[\\/]vue-router[\\/]/,
+        priority: 0,
+      };
     }
 
     if (!Object.keys(extraGroups).length) {
@@ -38,7 +50,7 @@ export const applySplitChunksRule = (
       ...currentConfig,
       cacheGroups: {
         ...(currentConfig as Exclude<SplitChunks, false>).cacheGroups,
-        ...createCacheGroups(extraGroups),
+        ...extraGroups,
       },
     });
   });

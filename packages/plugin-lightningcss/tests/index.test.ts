@@ -1,5 +1,4 @@
 import { type Rspack, createRsbuild } from '@rsbuild/core';
-import { isPlainObject } from '@rsbuild/shared';
 import { createStubRsbuild } from '@scripts/test-helper';
 import { describe, expect, it } from 'vitest';
 import { lightningcss, pluginLightningcss } from '../src';
@@ -10,9 +9,9 @@ const getCSSRules = (rspackConfig: Rspack.Configuration) => {
   return (
     (rspackConfig.module?.rules?.filter((item) => {
       const isRule =
-        isPlainObject(item) &&
+        typeof item === 'object' &&
         CSS_RULES.some((txt) =>
-          item.test?.toString().replace(/[\W]/g, '').includes(txt),
+          item?.test?.toString().replace(/[\W]/g, '').includes(txt),
         );
       return isRule;
     }) as Rspack.RuleSetRule[]) ?? []
@@ -38,56 +37,6 @@ describe('plugins/lightningcss', () => {
     const rsbuild = await createStubRsbuild({
       plugins: [pluginLightningcss()],
     });
-    const config = await rsbuild.unwrapConfig();
-    expect(config.optimization).toMatchSnapshot();
-
-    process.env.NODE_ENV = 'test';
-  });
-
-  it('plugin-lightningcss should not set lightningCssMinifyPlugin with minify: false', async () => {
-    process.env.NODE_ENV = 'production';
-    const rsbuild = await createStubRsbuild({
-      rsbuildConfig: {
-        output: {
-          minify: false,
-        },
-      },
-      plugins: [
-        pluginLightningcss({
-          minify: {
-            errorRecovery: true,
-            exclude: lightningcss.Features.Colors,
-          },
-        }),
-      ],
-    });
-
-    const config = await rsbuild.unwrapConfig();
-    expect(config.optimization).toMatchSnapshot();
-
-    process.env.NODE_ENV = 'test';
-  });
-
-  it('plugin-lightningcss should not set lightningCssMinifyPlugin with minify.css: false', async () => {
-    process.env.NODE_ENV = 'production';
-    const rsbuild = await createStubRsbuild({
-      rsbuildConfig: {
-        output: {
-          minify: {
-            css: false,
-          },
-        },
-      },
-      plugins: [
-        pluginLightningcss({
-          minify: {
-            errorRecovery: true,
-            exclude: lightningcss.Features.Colors,
-          },
-        }),
-      ],
-    });
-
     const config = await rsbuild.unwrapConfig();
     expect(config.optimization).toMatchSnapshot();
 
@@ -120,14 +69,6 @@ describe('plugins/lightningcss', () => {
                 },
               },
             },
-            minify: {
-              errorRecovery: true,
-              exclude: lightningcss.Features.Colors,
-              cssModules: {
-                dashedIdents: true,
-                pattern: '[hash]-[local]',
-              },
-            },
           }),
         ],
       },
@@ -150,7 +91,6 @@ describe('plugins/lightningcss', () => {
         plugins: [
           pluginLightningcss({
             transform: true,
-            minify: true,
           }),
         ],
       },
@@ -172,7 +112,6 @@ describe('plugins/lightningcss', () => {
       plugins: [
         pluginLightningcss({
           transform: false,
-          minify: false,
         }),
       ],
     });

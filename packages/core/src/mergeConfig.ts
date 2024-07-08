@@ -1,27 +1,28 @@
-import {
-  type RsbuildConfig,
-  castArray,
-  isFunction,
-  isPlainObject,
-} from '@rsbuild/shared';
+import { castArray, cloneDeep, isFunction, isPlainObject } from './helpers';
+import type { RsbuildConfig } from './types';
 
-const OVERRIDE_PATH = [
+const OVERRIDE_PATHS = [
   'performance.removeConsole',
   'output.inlineScripts',
   'output.inlineStyles',
   'output.cssModules.auto',
-  'output.targets',
-  'output.emitAssets',
+  'output.overrideBrowserslist',
   'server.open',
   'server.printUrls',
-  'dev.startUrl',
   'provider',
 ];
 
 /**
  * When merging configs, some properties prefer `override` over `merge to array`
  */
-const isOverridePath = (key: string) => OVERRIDE_PATH.includes(key);
+const isOverridePath = (key: string) => {
+  // ignore environments name prefix, such as `environments.web`
+  if (key.startsWith('environments.')) {
+    const realKey = key.split('.').slice(2).join('.');
+    return OVERRIDE_PATHS.includes(realKey);
+  }
+  return OVERRIDE_PATHS.includes(key);
+};
 
 const merge = (x: unknown, y: unknown, path = '') => {
   // force some keys to override
@@ -31,10 +32,10 @@ const merge = (x: unknown, y: unknown, path = '') => {
 
   // ignore undefined property
   if (x === undefined) {
-    return y;
+    return isPlainObject(y) ? cloneDeep(y) : y;
   }
   if (y === undefined) {
-    return x;
+    return isPlainObject(x) ? cloneDeep(x) : x;
   }
 
   const pair = [x, y];
@@ -64,11 +65,9 @@ const merge = (x: unknown, y: unknown, path = '') => {
   return merged;
 };
 
-export const mergeRsbuildConfig = (
-  ...configs: RsbuildConfig[]
-): RsbuildConfig => {
+export const mergeRsbuildConfig = <T = RsbuildConfig>(...configs: T[]): T => {
   if (configs.length === 2) {
-    return merge(configs[0], configs[1]) as RsbuildConfig;
+    return merge(configs[0], configs[1]) as T;
   }
 
   if (configs.length < 2) {
@@ -76,7 +75,7 @@ export const mergeRsbuildConfig = (
   }
 
   return configs.reduce(
-    (result, config) => merge(result, config) as RsbuildConfig,
-    {},
+    (result, config) => merge(result, config) as T,
+    {} as T,
   );
 };

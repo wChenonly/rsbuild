@@ -100,6 +100,29 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         ],
       },
       {
+        "include": [
+          {
+            "and": [
+              "<ROOT>/packages/compat/webpack/tests",
+              {
+                "not": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]/,
+              },
+            ],
+          },
+          /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
+        ],
+        "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
+        "type": "javascript/auto",
+      },
+      {
+        "mimetype": {
+          "or": [
+            "text/javascript",
+            "application/javascript",
+          ],
+        },
+      },
+      {
         "oneOf": [
           {
             "generator": {
@@ -217,7 +240,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
       },
     ],
   },
-  "name": "Client",
+  "name": "web",
   "optimization": {
     "minimize": false,
     "splitChunks": {
@@ -225,20 +248,12 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "lib-axios": {
           "name": "lib-axios",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(axios\\|axios-\\.\\+\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
         "lib-lodash": {
           "name": "lib-lodash",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(lodash\\|lodash-es\\)\\[\\\\\\\\/\\]/,
-        },
-        "lib-polyfill": {
-          "name": "lib-polyfill",
-          "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(tslib\\|core-js\\|@babel\\\\/runtime\\|@swc\\\\/helpers\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
         },
       },
       "chunks": "all",
@@ -277,7 +292,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "linkType": "text/css",
       },
     },
-    HtmlWebpackPlugin {
+    HtmlRspackPlugin {
       "options": {
         "base": false,
         "cache": true,
@@ -298,7 +313,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
-        "minify": false,
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
@@ -321,15 +335,15 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
-        "minify": false,
         "scriptLoading": "defer",
         "template": "<ROOT>/packages/core/static/template.html",
         "templateParameters": [Function],
         "title": "Rsbuild App",
       },
-      "version": 5,
+      "version": 6,
     },
     HtmlBasicPlugin {
+      "getEnvironment": [Function],
       "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
@@ -347,7 +361,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
       "dependenciesCount": 10000,
       "handler": [Function],
       "hasCompileErrors": false,
-      "id": "Client",
+      "id": "web",
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
@@ -496,6 +510,29 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         ],
       },
       {
+        "include": [
+          {
+            "and": [
+              "<ROOT>/packages/compat/webpack/tests",
+              {
+                "not": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]/,
+              },
+            ],
+          },
+          /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
+        ],
+        "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
+        "type": "javascript/auto",
+      },
+      {
+        "mimetype": {
+          "or": [
+            "text/javascript",
+            "application/javascript",
+          ],
+        },
+      },
+      {
         "oneOf": [
           {
             "generator": {
@@ -613,7 +650,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
       },
     ],
   },
-  "name": "Client",
+  "name": "web",
   "optimization": {
     "minimize": true,
     "splitChunks": {
@@ -621,20 +658,12 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "lib-axios": {
           "name": "lib-axios",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(axios\\|axios-\\.\\+\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
         "lib-lodash": {
           "name": "lib-lodash",
           "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(lodash\\|lodash-es\\)\\[\\\\\\\\/\\]/,
-        },
-        "lib-polyfill": {
-          "name": "lib-polyfill",
-          "priority": 0,
-          "reuseExistingChunk": true,
-          "test": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]\\(tslib\\|core-js\\|@babel\\\\/runtime\\|@swc\\\\/helpers\\)\\[\\\\\\\\/\\]/,
+          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
         },
       },
       "chunks": "all",
@@ -669,7 +698,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "linkType": "text/css",
       },
     },
-    HtmlWebpackPlugin {
+    HtmlRspackPlugin {
       "options": {
         "base": false,
         "cache": true,
@@ -689,26 +718,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
             "charset": "UTF-8",
           },
           "viewport": "width=device-width, initial-scale=1.0",
-        },
-        "minify": {
-          "collapseWhitespace": true,
-          "keepClosingSlash": true,
-          "minifyCSS": true,
-          "minifyJS": {
-            "format": {
-              "ascii_only": true,
-            },
-            "mangle": {
-              "safari10": true,
-            },
-          },
-          "minifyURLs": true,
-          "removeComments": false,
-          "removeEmptyAttributes": true,
-          "removeRedundantAttributes": true,
-          "removeScriptTypeAttributes": true,
-          "removeStyleLinkTypeAttributes": true,
-          "useShortDoctype": true,
         },
         "publicPath": "auto",
         "scriptLoading": "defer",
@@ -732,34 +741,15 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
-        "minify": {
-          "collapseWhitespace": true,
-          "keepClosingSlash": true,
-          "minifyCSS": true,
-          "minifyJS": {
-            "format": {
-              "ascii_only": true,
-            },
-            "mangle": {
-              "safari10": true,
-            },
-          },
-          "minifyURLs": true,
-          "removeComments": false,
-          "removeEmptyAttributes": true,
-          "removeRedundantAttributes": true,
-          "removeScriptTypeAttributes": true,
-          "removeStyleLinkTypeAttributes": true,
-          "useShortDoctype": true,
-        },
         "scriptLoading": "defer",
         "template": "<ROOT>/packages/core/static/template.html",
         "templateParameters": [Function],
         "title": "Rsbuild App",
       },
-      "version": 5,
+      "version": 6,
     },
     HtmlBasicPlugin {
+      "getEnvironment": [Function],
       "modifyTagsFn": [Function],
       "name": "HtmlBasicPlugin",
       "options": {
@@ -777,7 +767,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
       "dependenciesCount": 10000,
       "handler": [Function],
       "hasCompileErrors": false,
-      "id": "Client",
+      "id": "web",
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
@@ -894,6 +884,29 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
           },
         ],
+      },
+      {
+        "include": [
+          {
+            "and": [
+              "<ROOT>/packages/compat/webpack/tests",
+              {
+                "not": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]/,
+              },
+            ],
+          },
+          /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
+        ],
+        "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
+        "type": "javascript/auto",
+      },
+      {
+        "mimetype": {
+          "or": [
+            "text/javascript",
+            "application/javascript",
+          ],
+        },
       },
       {
         "oneOf": [
@@ -1024,7 +1037,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       },
     ],
   },
-  "name": "Server",
+  "name": "node",
   "optimization": {
     "minimize": true,
     "splitChunks": false,
@@ -1036,7 +1049,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "library": {
       "type": "commonjs2",
     },
-    "path": "<ROOT>/packages/compat/webpack/tests/dist/server",
+    "path": "<ROOT>/packages/compat/webpack/tests/dist",
     "pathinfo": false,
     "publicPath": "/",
     "webassemblyModuleFilename": "static/wasm/[hash].module.wasm",
@@ -1057,7 +1070,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       "dependenciesCount": 10000,
       "handler": [Function],
       "hasCompileErrors": false,
-      "id": "Server",
+      "id": "node",
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
@@ -1115,7 +1128,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       ],
     },
     "cacheDirectory": "<ROOT>/packages/compat/webpack/tests/node_modules/.cache/webpack",
-    "name": "web-worker-production",
+    "name": "webWorker-production",
     "type": "filesystem",
   },
   "context": "<ROOT>/packages/compat/webpack/tests",
@@ -1172,6 +1185,29 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             },
           },
         ],
+      },
+      {
+        "include": [
+          {
+            "and": [
+              "<ROOT>/packages/compat/webpack/tests",
+              {
+                "not": /\\[\\\\\\\\/\\]node_modules\\[\\\\\\\\/\\]/,
+              },
+            ],
+          },
+          /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
+        ],
+        "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
+        "type": "javascript/auto",
+      },
+      {
+        "mimetype": {
+          "or": [
+            "text/javascript",
+            "application/javascript",
+          ],
+        },
       },
       {
         "oneOf": [
@@ -1291,7 +1327,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       },
     ],
   },
-  "name": "Web Worker",
+  "name": "webWorker",
   "optimization": {
     "minimize": true,
     "splitChunks": false,
@@ -1320,7 +1356,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       "dependenciesCount": 10000,
       "handler": [Function],
       "hasCompileErrors": false,
-      "id": "Web Worker",
+      "id": "webWorker",
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,

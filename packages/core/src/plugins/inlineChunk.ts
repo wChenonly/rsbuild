@@ -1,20 +1,14 @@
-import {
-  type InlineChunkTest,
-  JS_REGEX,
-  isHtmlDisabled,
-  pick,
-} from '@rsbuild/shared';
-import { CSS_REGEX } from '../constants';
-import type { RsbuildPlugin } from '../types';
+import { CSS_REGEX, JS_REGEX } from '../constants';
+import { pick } from '../helpers';
+import type { InlineChunkTest, RsbuildPlugin } from '../types';
 
 export const pluginInlineChunk = (): RsbuildPlugin => ({
   name: 'rsbuild:inline-chunk',
 
   setup(api) {
-    api.modifyBundlerChain(async (chain, { target, CHAIN_ID, isDev }) => {
-      const config = api.getNormalizedConfig();
-
-      if (isHtmlDisabled(config, target) || isDev) {
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, isDev, environment }) => {
+      const { htmlPaths, config } = environment;
+      if (Object.keys(htmlPaths).length === 0 || isDev) {
         return;
       }
 

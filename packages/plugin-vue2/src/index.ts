@@ -1,4 +1,4 @@
-import type { RsbuildPlugin } from '@rsbuild/core';
+import type { RsbuildPlugin, RspackChain } from '@rsbuild/core';
 import { type VueLoaderOptions, VueLoaderPlugin } from 'vue-loader';
 import { VueLoader15PitchFixPlugin } from './VueLoader15PitchFixPlugin';
 import { applySplitChunksRule } from './splitChunks';
@@ -67,7 +67,8 @@ export function pluginVue2(options: PluginVueOptions = {}): RsbuildPlugin {
 
         const userLoaderOptions = options.vueLoaderOptions ?? {};
         const compilerOptions = {
-          preserveWhitespace: false,
+          // https://github.com/vuejs/vue-cli/pull/3853
+          whitespace: 'condense',
           ...userLoaderOptions.compilerOptions,
         };
         const vueLoaderOptions = {
@@ -76,24 +77,43 @@ export function pluginVue2(options: PluginVueOptions = {}): RsbuildPlugin {
           compilerOptions,
         };
 
-        chain.module
-          .rule(CHAIN_ID.RULE.VUE)
+        const rule = chain.module.rule(CHAIN_ID.RULE.VUE);
+
+        rule
           .test(VUE_REGEXP)
           .use(CHAIN_ID.USE.VUE)
           .loader(require.resolve('vue-loader'))
           .options(vueLoaderOptions);
+
+        if (chain.module.rules.has(CHAIN_ID.RULE.JS)) {
+          applyResolveConfig(rule, chain.module.rule(CHAIN_ID.RULE.JS));
+        }
 
         // Support for lang="postcss" and lang="pcss" in SFC
         chain.module.rule(CHAIN_ID.RULE.CSS).test(/\.(?:css|postcss|pcss)$/);
 
         chain.plugin(CHAIN_ID.PLUGIN.VUE_LOADER_PLUGIN).use(VueLoaderPlugin);
         // we could remove this once a new vue-loader@15 is released with https://github.com/vuejs/vue-loader/pull/2071 shipped
-        chain
-          .plugin(CHAIN_ID.PLUGIN.VUE_LOADER_15_PITCH_FIX_PLUGIN)
-          .use(VueLoader15PitchFixPlugin);
+        chain.plugin('vue-loader-15-pitch-fix').use(VueLoader15PitchFixPlugin);
       });
 
       applySplitChunksRule(api, options.splitChunks);
     },
   };
+}
+
+function applyResolveConfig(
+  vueRule: RspackChain.Rule,
+  jsRule: RspackChain.Rule,
+) {
+  const fullySpecified = jsRule.resolve.get('fullySpecified');
+  const aliases = jsRule.resolve.alias.entries();
+
+  if (aliases) {
+    vueRule.resolve.alias.merge(aliases);
+  }
+
+  if (fullySpecified !== undefined) {
+    vueRule.resolve.fullySpecified(fullySpecified);
+  }
 }

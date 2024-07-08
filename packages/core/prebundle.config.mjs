@@ -1,22 +1,29 @@
+import fs from 'node:fs';
 // @ts-check
 /**
  * Tip: please add the prebundled packages to `tsconfig.json#paths`.
  */
 import { join } from 'node:path';
-import fse from 'fs-extra';
 
 // The package size of `schema-utils` is large, and validate has a performance overhead of tens of ms.
 // So we skip the validation and let TypeScript to ensure type safety.
 const writeEmptySchemaUtils = (task) => {
   const schemaUtilsPath = join(task.distPath, 'schema-utils.js');
-  fse.writeFileSync(schemaUtilsPath, 'module.exports.validate = () => {};');
+  fs.writeFileSync(schemaUtilsPath, 'module.exports.validate = () => {};');
+};
+
+// postcss-loader and css-loader use `semver` to compare PostCSS ast version,
+// Rsbuild uses the same PostCSS version and do not need the comparison.
+const writeEmptySemver = (task) => {
+  const schemaUtilsPath = join(task.distPath, 'semver.js');
+  fs.writeFileSync(schemaUtilsPath, 'module.exports.satisfies = () => true;');
 };
 
 function replaceFileContent(filePath, replaceFn) {
-  const content = fse.readFileSync(filePath, 'utf-8');
+  const content = fs.readFileSync(filePath, 'utf-8');
   const newContent = replaceFn(content);
   if (newContent !== content) {
-    fse.writeFileSync(filePath, newContent);
+    fs.writeFileSync(filePath, newContent);
   }
 }
 
@@ -39,9 +46,32 @@ export default {
     'on-finished',
     'connect',
     'rspack-manifest-plugin',
+    'webpack-merge',
     {
-      name: 'semver',
-      ignoreDts: true,
+      name: 'chokidar',
+      externals: {
+        fsevents: 'fsevents',
+      },
+    },
+    {
+      name: 'picocolors',
+      beforeBundle({ depPath }) {
+        const typesFile = join(depPath, 'types.ts');
+        // Fix type bundle
+        if (fs.existsSync(typesFile)) {
+          fs.renameSync(typesFile, join(depPath, 'types.d.ts'));
+        }
+      },
+    },
+    {
+      name: 'rslog',
+      afterBundle(task) {
+        // use the cjs bundle of rslog
+        fs.copyFileSync(
+          join(task.depPath, 'dist/index.cjs'),
+          join(task.distPath, 'index.js'),
+        );
+      },
     },
     {
       name: 'jiti',
@@ -51,7 +81,7 @@ export default {
       name: 'launch-editor-middleware',
       ignoreDts: true,
       externals: {
-        picocolors: '@rsbuild/shared/picocolors',
+        picocolors: '../picocolors',
       },
     },
     {
@@ -71,6 +101,54 @@ export default {
       ignoreDts: true,
     },
     {
+      name: 'browserslist',
+      // preserve the `require(require.resolve())`
+      beforeBundle(task) {
+        replaceFileContent(join(task.depPath, 'node.js'), (content) =>
+          content.replaceAll(
+            'require(require.resolve',
+            'eval("require")(require.resolve',
+          ),
+        );
+      },
+    },
+    {
+      name: 'rspack-chain',
+      externals: {
+        '@rspack/core': '@rspack/core',
+      },
+    },
+    {
+      name: 'http-proxy-middleware',
+      externals: {
+        // express is a peer dependency, no need to provide express type
+        express: 'express',
+      },
+      beforeBundle(task) {
+        replaceFileContent(
+          join(task.depPath, 'dist/types.d.ts'),
+          (content) =>
+            `${content.replace(
+              "import type * as httpProxy from 'http-proxy'",
+              "import type httpProxy from 'http-proxy'",
+            )}`,
+        );
+      },
+    },
+    {
+      // The webpack-bundle-analyzer version was locked to v4.9.0 to be compatible with Rspack
+      // If we need to upgrade the version, please check if the chunk detail can be displayed correctly
+      name: 'webpack-bundle-analyzer',
+    },
+    {
+      name: 'autoprefixer',
+      externals: {
+        browserslist: '../browserslist',
+        'postcss-value-parser': '../postcss-value-parser',
+        picocolors: '../picocolors',
+      },
+    },
+    {
       name: 'webpack-dev-middleware',
       externals: {
         'schema-utils': './schema-utils',
@@ -84,9 +162,10 @@ export default {
       name: 'style-loader',
       ignoreDts: true,
       afterBundle: (task) => {
-        fse.copySync(
+        fs.cpSync(
           join(task.depPath, 'dist/runtime'),
           join(task.distPath, 'runtime'),
+          { recursive: true },
         );
       },
     },
@@ -95,16 +174,18 @@ export default {
       ignoreDts: true,
       externals: {
         'postcss-value-parser': '../postcss-value-parser',
-        semver: '../semver',
+        semver: './semver',
       },
+      afterBundle: writeEmptySemver,
     },
     {
       name: 'postcss-loader',
       externals: {
         jiti: '../jiti',
-        semver: '../semver',
+        semver: './semver',
       },
       ignoreDts: true,
+      afterBundle: writeEmptySemver,
     },
     {
       name: 'postcss-load-config',

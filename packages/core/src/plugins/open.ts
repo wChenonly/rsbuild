@@ -1,9 +1,9 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { type Routes, castArray, debug, logger } from '@rsbuild/shared';
 import { STATIC_PATH } from '../constants';
-import { canParse } from '../helpers';
-import type { NormalizedConfig, RsbuildPlugin } from '../types';
+import { canParse, castArray } from '../helpers';
+import { logger } from '../logger';
+import type { NormalizedConfig, Routes, RsbuildPlugin } from '../types';
 
 const execAsync = promisify(exec);
 
@@ -60,9 +60,9 @@ export async function openBrowser(url: string): Promise<boolean> {
 
         return true;
       }
-      debug('Failed to find the target browser.');
+      logger.debug('Failed to find the target browser.');
     } catch (err) {
-      debug('Failed to open start URL with apple script.');
+      logger.debug('Failed to open start URL with apple script.');
       logger.debug(err);
     }
   }
@@ -80,10 +80,10 @@ export async function openBrowser(url: string): Promise<boolean> {
   }
 }
 
-export const replacePlaceholder = (url: string, port: number) =>
+export const replacePlaceholder = (url: string, port: number): string =>
   url.replace(/<port>/g, String(port));
 
-export function resolveUrl(str: string, base: string) {
+export function resolveUrl(str: string, base: string): string {
   if (canParse(str)) {
     return str;
   }
@@ -103,20 +103,19 @@ const openedURLs: string[] = [];
 const normalizeOpenConfig = (
   config: NormalizedConfig,
 ): { targets?: string[]; before?: () => Promise<void> | void } => {
-  const open = config.server.open || config.dev.startUrl;
-  const { beforeStartUrl } = config.dev;
+  const { open } = config.server;
 
   if (open === false) {
     return {};
   }
   if (open === true) {
-    return { targets: [], before: beforeStartUrl };
+    return { targets: [] };
   }
   if (typeof open === 'string') {
-    return { targets: [open], before: beforeStartUrl };
+    return { targets: [open] };
   }
   if (Array.isArray(open)) {
-    return { targets: open, before: beforeStartUrl };
+    return { targets: open };
   }
 
   return {

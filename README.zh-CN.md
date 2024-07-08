@@ -5,21 +5,11 @@
 # Rsbuild
 
 <p>
-  <a href="https://discord.gg/XsaKEEk4mW">
-    <img src="https://img.shields.io/badge/chat-discord-blue?style=flat-square&logo=discord&colorA=564341&colorB=EDED91" alt="discord channel" />
-  </a>
-  <a href="https://npmjs.com/package/@rsbuild/shared?activeTab=readme">
-   <img src="https://img.shields.io/npm/v/@rsbuild/shared?style=flat-square&colorA=564341&colorB=EDED91" alt="npm version" />
-  </a>
-  <a href="https://npmcharts.com/compare/@rsbuild/core?minimal=true">
-    <img src="https://img.shields.io/npm/dm/@rsbuild/core.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="downloads" />
-  </a>
-  <a href="https://nodejs.org/en/about/previous-releases">
-    <img src="https://img.shields.io/node/v/@rsbuild/core.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="node version">
-  </a>
-  <a href="https://github.com/web-infra-dev/rsbuild/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/@rsbuild/shared?style=flat-square&colorA=564341&colorB=EDED91" alt="license" />
-  </a>
+  <a href="https://discord.gg/XsaKEEk4mW"><img src="https://img.shields.io/badge/chat-discord-blue?style=flat-square&logo=discord&colorA=564341&colorB=EDED91" alt="discord channel" /></a>
+  <a href="https://npmjs.com/package/@rsbuild/core?activeTab=readme"><img src="https://img.shields.io/npm/v/@rsbuild/core?style=flat-square&colorA=564341&colorB=EDED91" alt="npm version" /></a>
+  <a href="https://npmcharts.com/compare/@rsbuild/core?minimal=true"><img src="https://img.shields.io/npm/dm/@rsbuild/core.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="downloads" /></a>
+  <a href="https://nodejs.org/en/about/previous-releases"><img src="https://img.shields.io/node/v/@rsbuild/core.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="node version"></a>
+  <a href="https://github.com/web-infra-dev/rsbuild/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="license" /></a>
 </p>
 
 [English](./README.md) | 简体中文
@@ -52,7 +42,7 @@ Rsbuild 与 Vite 有许多相似之处，它们皆致力于提升前端的开发
 
 Rsbuild 的构建性能与原生 Rspack 处于同一水平，以下是构建 1000 个 React 组件的时间：
 
-![benchmark](https://github.com/web-infra-dev/rsbuild/assets/7237365/2909b68f-8928-49c6-8eb3-cd1486dbf876)
+![benchmark](https://assets.rspack.dev/rsbuild/assets/benchmark-v049.png)
 
 > 以上数据来自 [performance-compare](https://github.com/rspack-contrib/performance-compare) benchmark。
 
@@ -77,10 +67,6 @@ Rsbuild 具备以下特性：
 下图说明了 Rsbuild 与生态中其他工具之间的关系：
 
 ![Rspack Ecosystem](https://github.com/web-infra-dev/rsbuild/assets/7237365/1ec93ad6-b8b1-475b-963f-cba1e7d79dec)
-
-## 📍 路线图
-
-我们计划在 2024 年 7 月之前发布 Rsbuild v1.0（基于 Rspack v1.0），参见 [Rsbuild v1.0 Release Plan](https://github.com/web-infra-dev/rsbuild/discussions/1678)。
 
 ## 📚 快速上手
 

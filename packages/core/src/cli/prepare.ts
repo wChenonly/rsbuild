@@ -1,4 +1,4 @@
-import { logger } from '@rsbuild/shared';
+import { logger } from '../logger';
 
 function initNodeEnv() {
   if (!process.env.NODE_ENV) {
@@ -9,7 +9,7 @@ function initNodeEnv() {
   }
 }
 
-export function prepareCli() {
+export function prepareCli(): void {
   initNodeEnv();
 
   // Print a blank line to keep the greet log nice.

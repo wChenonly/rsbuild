@@ -1,16 +1,13 @@
-import {
-  type RequestHandler as Middleware,
-  type ProxyDetail,
-  type ProxyOptions,
-  logger,
-} from '@rsbuild/shared';
-import {
-  type RequestHandler,
-  createProxyMiddleware as baseCreateProxyMiddleware,
-} from '@rsbuild/shared/http-proxy-middleware';
+import type { RequestHandler } from 'http-proxy-middleware';
+import { logger } from '../logger';
+import type {
+  RequestHandler as Middleware,
+  ProxyDetail,
+  ProxyOptions,
+} from '../types';
 import type { UpgradeEvent } from './helper';
 
-export function formatProxyOptions(proxyOptions: ProxyOptions) {
+function formatProxyOptions(proxyOptions: ProxyOptions) {
   const ret: ProxyDetail[] = [];
 
   if (Array.isArray(proxyOptions)) {
@@ -42,12 +39,21 @@ export function formatProxyOptions(proxyOptions: ProxyOptions) {
   return ret;
 }
 
-export const createProxyMiddleware = (proxyOptions: ProxyOptions) => {
+export const createProxyMiddleware = async (
+  proxyOptions: ProxyOptions,
+): Promise<{
+  middlewares: Middleware[];
+  upgrade: UpgradeEvent;
+}> => {
   // If it is not an array, it may be an object that uses the context attribute
   // or an object in the form of { source: ProxyDetail }
   const formattedOptionsList = formatProxyOptions(proxyOptions);
   const proxyMiddlewares: RequestHandler[] = [];
   const middlewares: Middleware[] = [];
+
+  const { createProxyMiddleware: baseCreateProxyMiddleware } = await import(
+    'http-proxy-middleware'
+  );
 
   for (const opts of formattedOptionsList) {
     const proxyMiddleware = baseCreateProxyMiddleware(opts.context!, opts);

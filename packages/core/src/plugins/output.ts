@@ -1,16 +1,17 @@
 import { posix } from 'node:path';
+import { rspack } from '@rspack/core';
 import {
   DEFAULT_ASSET_PREFIX,
-  type NormalizedConfig,
-  type RsbuildContext,
-  getDistPath,
-  getFilename,
-} from '@rsbuild/shared';
-import { rspack } from '@rspack/core';
-import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
-import { formatPublicPath } from '../helpers';
+  DEFAULT_DEV_HOST,
+  DEFAULT_PORT,
+} from '../constants';
+import { formatPublicPath, getFilename } from '../helpers';
 import { getCssExtractPlugin } from '../pluginHelper';
-import type { RsbuildPlugin } from '../types';
+import type {
+  NormalizedEnvironmentConfig,
+  RsbuildContext,
+  RsbuildPlugin,
+} from '../types';
 import { isUseCssExtract } from './css';
 
 function getPublicPath({
@@ -19,7 +20,7 @@ function getPublicPath({
   context,
 }: {
   isProd: boolean;
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   context: RsbuildContext;
 }) {
   const { dev, output } = config;
@@ -51,16 +52,28 @@ function getPublicPath({
   return formatPublicPath(publicPath);
 }
 
+const getJsAsyncPath = (
+  jsPath: string,
+  isServer: boolean,
+  jsAsync?: string,
+) => {
+  if (jsAsync !== undefined) {
+    return jsAsync;
+  }
+  if (isServer) {
+    return jsPath;
+  }
+
+  return jsPath ? `${jsPath}/async` : 'async';
+};
+
 export const pluginOutput = (): RsbuildPlugin => ({
   name: 'rsbuild:output',
 
   setup(api) {
     api.modifyBundlerChain(
-      async (
-        chain,
-        { CHAIN_ID, target, isProd, isServer, isServiceWorker },
-      ) => {
-        const config = api.getNormalizedConfig();
+      async (chain, { CHAIN_ID, target, isProd, isServer, environment }) => {
+        const { distPath, config } = environment;
 
         const publicPath = getPublicPath({
           config,
@@ -69,13 +82,17 @@ export const pluginOutput = (): RsbuildPlugin => ({
         });
 
         // js output
-        const jsPath = getDistPath(config, 'js');
-        const jsAsyncPath = getDistPath(config, 'jsAsync');
-        const jsFilename = getFilename(config, 'js', isProd);
+        const jsPath = config.output.distPath.js;
+        const jsAsyncPath = getJsAsyncPath(
+          jsPath,
+          isServer,
+          config.output.distPath.jsAsync,
+        );
+        const jsFilename = getFilename(config, 'js', isProd, isServer);
         const isJsFilenameFn = typeof jsFilename === 'function';
 
         chain.output
-          .path(api.context.distPath)
+          .path(distPath)
           .filename(
             isJsFilenameFn
               ? (...args) => {
@@ -102,23 +119,10 @@ export const pluginOutput = (): RsbuildPlugin => ({
           .hashFunction('xxhash64');
 
         if (isServer) {
-          const serverPath = getDistPath(config, 'server');
-
-          chain.output
-            .path(posix.join(api.context.distPath, serverPath))
-            .filename('[name].js')
-            .chunkFilename('[name].js')
-            .library({
-              ...(chain.output.get('library') || {}),
-              type: 'commonjs2',
-            });
-        }
-
-        if (isServiceWorker) {
-          const workerPath = getDistPath(config, 'worker');
-          const filename = posix.join(workerPath, '[name].js');
-
-          chain.output.filename(filename).chunkFilename(filename);
+          chain.output.library({
+            type: 'commonjs2',
+            ...(chain.output.get('library') || {}),
+          });
         }
 
         if (config.output.copy && api.context.bundlerType === 'rspack') {
@@ -134,9 +138,11 @@ export const pluginOutput = (): RsbuildPlugin => ({
         if (isUseCssExtract(config, target)) {
           const extractPluginOptions = config.tools.cssExtract.pluginOptions;
 
-          const cssPath = getDistPath(config, 'css');
+          const cssPath = config.output.distPath.css;
           const cssFilename = getFilename(config, 'css', isProd);
-          const cssAsyncPath = getDistPath(config, 'cssAsync');
+          const cssAsyncPath =
+            config.output.distPath.cssAsync ??
+            (cssPath ? `${cssPath}/async` : 'async');
 
           chain
             .plugin(CHAIN_ID.PLUGIN.MINI_CSS_EXTRACT)

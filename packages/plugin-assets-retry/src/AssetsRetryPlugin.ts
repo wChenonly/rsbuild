@@ -1,11 +1,7 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { type Rspack, ensureAssetPrefix } from '@rsbuild/core';
-import {
-  fse,
-  generateScriptTag,
-  getPublicPathFromCompiler,
-} from '@rsbuild/shared';
-import type HtmlWebpackPlugin from 'html-webpack-plugin';
+import type HtmlWebpackPlugin from 'html-rspack-plugin';
 import type { PluginAssetsRetryOptions } from './types';
 
 export class AssetsRetryPlugin implements Rspack.RspackPluginInstance {
@@ -45,7 +41,7 @@ export class AssetsRetryPlugin implements Rspack.RspackPluginInstance {
     this.minify = minify;
   }
 
-  async getRetryCode() {
+  async getRetryCode(): Promise<string> {
     const { default: serialize } = await import('serialize-javascript');
     const filename = 'initialChunkRetry';
     const runtimeFilePath = path.join(
@@ -53,13 +49,13 @@ export class AssetsRetryPlugin implements Rspack.RspackPluginInstance {
       'runtime',
       this.minify ? `${filename}.min.js` : `${filename}.js`,
     );
-    const runtimeCode = await fse.readFile(runtimeFilePath, 'utf-8');
+    const runtimeCode = await fs.promises.readFile(runtimeFilePath, 'utf-8');
     return `(function(){${runtimeCode};init(${serialize(
       this.#retryOptions,
     )});})()`;
   }
 
-  async getScriptPath() {
+  async getScriptPath(): Promise<string> {
     if (!this.scriptPath) {
       this.scriptPath = path.posix.join(
         this.distDir,
@@ -98,7 +94,12 @@ export class AssetsRetryPlugin implements Rspack.RspackPluginInstance {
       this.HtmlPlugin.getHooks(compilation).alterAssetTagGroups.tapPromise(
         this.name,
         async (data) => {
-          const scriptTag = generateScriptTag();
+          const scriptTag = {
+            tagName: 'script',
+            attributes: {},
+            voidTag: false,
+            meta: {},
+          };
 
           if (this.inlineScript) {
             data.headTags.unshift({
@@ -106,7 +107,7 @@ export class AssetsRetryPlugin implements Rspack.RspackPluginInstance {
               innerHTML: await this.getRetryCode(),
             });
           } else {
-            const publicPath = getPublicPathFromCompiler(compiler);
+            const { publicPath } = compilation.outputOptions;
             const url = ensureAssetPrefix(
               await this.getScriptPath(),
               publicPath,

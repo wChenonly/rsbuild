@@ -1,5 +1,5 @@
-import type { HtmlConfig } from '@rsbuild/shared';
 import { createStubRsbuild } from '@scripts/test-helper';
+import type { HtmlConfig } from '../src';
 import { pluginEntry } from '../src/plugins/entry';
 import { pluginHtml } from '../src/plugins/html';
 
@@ -18,7 +18,7 @@ describe('plugin-html', () => {
     });
     const config = await rsbuild.unwrapConfig();
 
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeTruthy();
+    expect(await rsbuild.matchBundlerPlugin('HtmlRspackPlugin')).toBeTruthy();
     expect(config).toMatchSnapshot();
   });
 
@@ -27,11 +27,11 @@ describe('plugin-html', () => {
       plugins: [pluginEntry(), pluginHtml()],
       rsbuildConfig: {
         output: {
-          targets: ['node'],
+          target: 'node',
         },
       },
     });
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeFalsy();
+    expect(await rsbuild.matchBundlerPlugin('HtmlRspackPlugin')).toBeFalsy();
   });
 
   it('should not register html plugin when target is web-worker', async () => {
@@ -39,23 +39,11 @@ describe('plugin-html', () => {
       plugins: [pluginEntry(), pluginHtml()],
       rsbuildConfig: {
         output: {
-          targets: ['web-worker'],
+          target: 'web-worker',
         },
       },
     });
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeFalsy();
-  });
-
-  it('should not register html plugin when target is service-worker', async () => {
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginEntry(), pluginHtml()],
-      rsbuildConfig: {
-        output: {
-          targets: ['service-worker'],
-        },
-      },
-    });
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeFalsy();
+    expect(await rsbuild.matchBundlerPlugin('HtmlRspackPlugin')).toBeFalsy();
   });
 
   it('should register appIcon plugin when using html.appIcon', async () => {
@@ -142,7 +130,7 @@ describe('plugin-html', () => {
       },
     });
 
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeFalsy();
+    expect(await rsbuild.matchBundlerPlugin('HtmlRspackPlugin')).toBeFalsy();
   });
 
   it('should disable html plugin when htmlPlugin is an array and contains false', async () => {
@@ -155,7 +143,7 @@ describe('plugin-html', () => {
       },
     });
 
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toBeFalsy();
+    expect(await rsbuild.matchBundlerPlugin('HtmlRspackPlugin')).toBeFalsy();
   });
 
   it('should support multi entry', async () => {
@@ -197,6 +185,46 @@ describe('plugin-html', () => {
     });
     const config = await rsbuild.unwrapConfig();
     expect(config).toMatchSnapshot();
+  });
+
+  it('should support environment html config', async () => {
+    const rsbuild = await createStubRsbuild({
+      plugins: [pluginEntry(), pluginHtml()],
+      rsbuildConfig: {
+        environments: {
+          web: {
+            source: {
+              entry: {
+                main: './src/main.ts',
+              },
+            },
+            html: {
+              mountId: 'app',
+              title: 'web',
+            },
+            output: {
+              distPath: {
+                html: 'web',
+              },
+            },
+          },
+          web1: {
+            source: {
+              entry: {
+                index: './src/main1.ts',
+              },
+            },
+            html: {
+              mountId: 'app1',
+              title: 'web1',
+            },
+          },
+        },
+      },
+    });
+    const configs = await rsbuild.initConfigs();
+
+    expect(configs).toMatchSnapshot();
   });
 
   it.each<{ value: HtmlConfig['inject']; message: string }>([

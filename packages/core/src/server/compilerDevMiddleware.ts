@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Socket } from 'node:net';
-import type { DevConfig, NextFunction, ServerConfig } from '@rsbuild/shared';
+import { pathnameParse } from '../helpers/path';
+import type { DevConfig, NextFunction, ServerConfig } from '../types';
 import type {
   DevMiddleware as CustomDevMiddleware,
   DevMiddlewareAPI,
@@ -63,7 +64,7 @@ export class CompilerDevMiddleware {
     this.devMiddleware = devMiddleware;
   }
 
-  public async init() {
+  public async init(): Promise<void> {
     // start compiling
     this.middleware = this.setupDevMiddleware(
       this.devMiddleware,
@@ -73,11 +74,11 @@ export class CompilerDevMiddleware {
     await this.socketServer.prepare();
   }
 
-  public upgrade(req: IncomingMessage, sock: Socket, head: any) {
+  public upgrade(req: IncomingMessage, sock: Socket, head: any): void {
     this.socketServer.upgrade(req, sock, head);
   }
 
-  public close() {
+  public close(): void {
     // socketServer close should before app close
     this.socketServer.close();
     this.middleware?.close(noop);
@@ -86,7 +87,7 @@ export class CompilerDevMiddleware {
   public sockWrite(
     type: string,
     data?: Record<string, any> | string | boolean,
-  ) {
+  ): void {
     this.socketServer.sockWrite(type, data);
   }
 
@@ -122,6 +123,8 @@ export class CompilerDevMiddleware {
       etag: 'weak',
     });
 
+    const assetPrefixes = publicPaths.map(pathnameParse);
+
     const warp = async (
       req: IncomingMessage,
       res: ServerResponse,
@@ -129,7 +132,7 @@ export class CompilerDevMiddleware {
     ) => {
       const { url } = req;
       const assetPrefix =
-        url && publicPaths.find((prefix) => url.startsWith(prefix));
+        url && assetPrefixes.find((prefix) => url.startsWith(prefix));
 
       // slice publicPath, static asset have publicPath but html does not.
       if (assetPrefix && assetPrefix !== '/') {

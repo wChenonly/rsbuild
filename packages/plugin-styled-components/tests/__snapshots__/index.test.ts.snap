@@ -13,11 +13,6 @@ exports[`plugins/styled-components > should apply styledComponents option to swc
     },
     /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
   ],
-  "resolve": {
-    "alias": {
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
-    },
-  },
   "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
   "type": "javascript/auto",
   "use": [
@@ -25,9 +20,7 @@ exports[`plugins/styled-components > should apply styledComponents option to swc
       "loader": "builtin:swc-loader",
       "options": {
         "env": {
-          "coreJs": "3.36",
-          "mode": "usage",
-          "shippedProposals": true,
+          "mode": undefined,
           "targets": [
             "chrome >= 87",
             "edge >= 88",
@@ -37,6 +30,19 @@ exports[`plugins/styled-components > should apply styledComponents option to swc
         },
         "isModule": "unknown",
         "jsc": {
+          "experimental": {
+            "plugins": [
+              [
+                "<ROOT>/node_modules/<PNPM_INNER>/@swc/plugin-styled-components/swc_plugin_styled_components.wasm",
+                {
+                  "displayName": true,
+                  "pure": false,
+                  "ssr": false,
+                  "transpileTemplateLiterals": true,
+                },
+              ],
+            ],
+          },
           "externalHelpers": true,
           "parser": {
             "decorators": true,
@@ -45,17 +51,8 @@ exports[`plugins/styled-components > should apply styledComponents option to swc
           },
           "preserveAllComments": true,
           "transform": {
-            "decoratorMetadata": true,
-            "legacyDecorator": true,
-            "useDefineForClassFields": false,
-          },
-        },
-        "rspackExperiments": {
-          "styledComponents": {
-            "displayName": true,
-            "pure": false,
-            "ssr": false,
-            "transpileTemplateLiterals": true,
+            "decoratorVersion": "2022-03",
+            "legacyDecorator": false,
           },
         },
       },
@@ -90,6 +87,19 @@ exports[`plugins/styled-components > should enable ssr option when target contai
         },
         "isModule": "unknown",
         "jsc": {
+          "experimental": {
+            "plugins": [
+              [
+                "<ROOT>/node_modules/<PNPM_INNER>/@swc/plugin-styled-components/swc_plugin_styled_components.wasm",
+                {
+                  "displayName": true,
+                  "pure": false,
+                  "ssr": true,
+                  "transpileTemplateLiterals": true,
+                },
+              ],
+            ],
+          },
           "externalHelpers": true,
           "parser": {
             "decorators": true,
@@ -98,17 +108,8 @@ exports[`plugins/styled-components > should enable ssr option when target contai
           },
           "preserveAllComments": true,
           "transform": {
-            "decoratorMetadata": true,
-            "legacyDecorator": true,
-            "useDefineForClassFields": false,
-          },
-        },
-        "rspackExperiments": {
-          "styledComponents": {
-            "displayName": true,
-            "pure": false,
-            "ssr": true,
-            "transpileTemplateLiterals": true,
+            "decoratorVersion": "2022-03",
+            "legacyDecorator": false,
           },
         },
       },
@@ -130,11 +131,6 @@ exports[`plugins/styled-components > should enable ssr option when target contai
     },
     /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
   ],
-  "resolve": {
-    "alias": {
-      "core-js": "<ROOT>/node_modules/<PNPM_INNER>/core-js",
-    },
-  },
   "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
   "type": "javascript/auto",
   "use": [
@@ -142,9 +138,7 @@ exports[`plugins/styled-components > should enable ssr option when target contai
       "loader": "builtin:swc-loader",
       "options": {
         "env": {
-          "coreJs": "3.36",
-          "mode": "usage",
-          "shippedProposals": true,
+          "mode": undefined,
           "targets": [
             "chrome >= 87",
             "edge >= 88",
@@ -154,6 +148,19 @@ exports[`plugins/styled-components > should enable ssr option when target contai
         },
         "isModule": "unknown",
         "jsc": {
+          "experimental": {
+            "plugins": [
+              [
+                "<ROOT>/node_modules/<PNPM_INNER>/@swc/plugin-styled-components/swc_plugin_styled_components.wasm",
+                {
+                  "displayName": true,
+                  "pure": false,
+                  "ssr": true,
+                  "transpileTemplateLiterals": true,
+                },
+              ],
+            ],
+          },
           "externalHelpers": true,
           "parser": {
             "decorators": true,
@@ -162,17 +169,8 @@ exports[`plugins/styled-components > should enable ssr option when target contai
           },
           "preserveAllComments": true,
           "transform": {
-            "decoratorMetadata": true,
-            "legacyDecorator": true,
-            "useDefineForClassFields": false,
-          },
-        },
-        "rspackExperiments": {
-          "styledComponents": {
-            "displayName": true,
-            "pure": false,
-            "ssr": true,
-            "transpileTemplateLiterals": true,
+            "decoratorVersion": "2022-03",
+            "legacyDecorator": false,
           },
         },
       },

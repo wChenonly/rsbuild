@@ -1,17 +1,12 @@
 import path from 'node:path';
 import type { RsbuildPlugin, Rspack } from '@rsbuild/core';
 import { PLUGIN_REACT_NAME } from '@rsbuild/plugin-react';
-import {
-  SCRIPT_REGEX,
-  deepmerge,
-  getDistPath,
-  getFilename,
-} from '@rsbuild/shared';
 import type { Config } from '@svgr/core';
+import deepmerge from 'deepmerge';
 
 export type SvgDefaultExport = 'component' | 'url';
 
-export const SVG_REGEX = /\.svg$/;
+const SVG_REGEX = /\.svg$/;
 
 export type PluginSvgrOptions = {
   /**
@@ -69,11 +64,8 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
   pre: [PLUGIN_REACT_NAME],
 
   setup(api) {
-    api.modifyBundlerChain(async (chain, { isProd, CHAIN_ID }) => {
-      const config = api.getNormalizedConfig();
-      const distDir = getDistPath(config, 'svg');
-      const filename = getFilename(config, 'svg', isProd);
-      const outputName = path.posix.join(distDir, filename);
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, environment }) => {
+      const { config } = environment;
       const { dataUriLimit } = config.output;
       const maxSize =
         typeof dataUriLimit === 'number' ? dataUriLimit : dataUriLimit.svg;
@@ -132,7 +124,10 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
       if (mixedImport || svgrOptions.exportType) {
         const { exportType = mixedImport ? 'named' : undefined } = svgrOptions;
 
-        const issuerInclude = [SCRIPT_REGEX, /\.mdx$/];
+        const issuerInclude = [
+          /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/,
+          /\.mdx$/,
+        ];
         const issuer = options.excludeImporter
           ? { and: [issuerInclude, { not: options.excludeImporter }] }
           : issuerInclude;
@@ -165,7 +160,7 @@ export const pluginSvgr = (options: PluginSvgrOptions = {}): RsbuildPlugin => ({
             .loader(path.join(__dirname, '../compiled', 'url-loader/index.js'))
             .options({
               limit: maxSize,
-              name: outputName,
+              name: generatorOptions?.filename,
             });
         }
       }

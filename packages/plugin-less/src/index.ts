@@ -1,13 +1,11 @@
 import path from 'node:path';
-import type { RsbuildPlugin, Rspack } from '@rsbuild/core';
-import {
-  type ConfigChainWithContext,
-  type FileFilterUtil,
-  castArray,
-  cloneDeep,
-  deepmerge,
-  reduceConfigsWithContext,
-} from '@rsbuild/shared';
+import type {
+  ConfigChainWithContext,
+  RsbuildPlugin,
+  Rspack,
+} from '@rsbuild/core';
+import deepmerge from 'deepmerge';
+import { reduceConfigsWithContext } from 'reduce-configs';
 import type Less from '../compiled/less';
 
 export const PLUGIN_LESS_NAME = 'rsbuild:less';
@@ -37,7 +35,7 @@ export type PluginLessOptions = {
        * @deprecated
        * use `exclude` option instead.
        */
-      addExcludes: FileFilterUtil;
+      addExcludes: (items: string | RegExp | Array<string | RegExp>) => void;
     }
   >;
 
@@ -54,8 +52,8 @@ const getLessLoaderOptions = (
 ) => {
   const excludes: (RegExp | string)[] = [];
 
-  const addExcludes: FileFilterUtil = (items) => {
-    excludes.push(...castArray(items));
+  const addExcludes = (items: string | RegExp | Array<string | RegExp>) => {
+    excludes.push(...(Array.isArray(items) ? items : [items]));
   };
 
   const defaultLessLoaderOptions: LessLoaderOptions = {
@@ -106,8 +104,8 @@ export const pluginLess = (
   name: PLUGIN_LESS_NAME,
 
   setup(api) {
-    api.modifyBundlerChain(async (chain, { CHAIN_ID }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, environment }) => {
+      const { config } = environment;
       const rule = chain.module
         .rule(CHAIN_ID.RULE.LESS)
         .test(/\.less$/)
@@ -134,11 +132,14 @@ export const pluginLess = (
       // Copy the builtin CSS rules
       for (const id of Object.keys(cssRule.uses.entries())) {
         const loader = cssRule.uses.get(id);
-        const options = cloneDeep(loader.get('options'));
+        const options = loader.get('options') ?? {};
+        const clonedOptions = deepmerge<Record<string, any>>({}, options);
+
         if (id === CHAIN_ID.USE.CSS) {
-          options.importLoaders = 2;
+          clonedOptions.importLoaders = 2;
         }
-        rule.use(id).loader(loader.get('loader')).options(options);
+
+        rule.use(id).loader(loader.get('loader')).options(clonedOptions);
       }
 
       rule

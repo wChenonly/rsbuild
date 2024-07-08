@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-rem",
-  "version": "0.7.7",
+  "version": "1.0.0-alpha.6",
   "description": "Rem plugin for Rsbuild",
   "homepage": "https://rsbuild.dev",
   "repository": {
@@ -29,7 +29,7 @@
     "prebundle": "prebundle"
   },
   "dependencies": {
-    "@rsbuild/shared": "workspace:*",
+    "deepmerge": "^4.3.1",
     "terser": "5.31.1"
   },
   "devDependencies": {
@@ -37,13 +37,13 @@
     "@rsbuild/plugin-less": "workspace:*",
     "@rsbuild/plugin-sass": "workspace:*",
     "@scripts/test-helper": "workspace:*",
-    "html-webpack-plugin": "npm:html-rspack-plugin@5.7.2",
+    "html-rspack-plugin": "6.0.0-beta.3",
     "postcss-pxtorem": "6.1.0",
     "prebundle": "1.1.0",
-    "typescript": "^5.4.2"
+    "typescript": "^5.5.2"
   },
   "peerDependencies": {
-    "@rsbuild/core": "workspace:^0.7.7"
+    "@rsbuild/core": "workspace:^1.0.0-alpha.6"
   },
   "publishConfig": {
     "access": "public",

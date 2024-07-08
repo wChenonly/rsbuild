@@ -1,59 +1,33 @@
-import {
-  type RsbuildEntry,
-  type RsbuildTarget,
-  castArray,
-  color,
-  createVirtualModule,
-  reduceConfigsMergeContext,
-} from '@rsbuild/shared';
 import type { EntryDescription } from '@rspack/core';
-import type { NormalizedConfig, RsbuildConfig, RsbuildPlugin } from '../types';
-
-export function getEntryObject(
-  config: RsbuildConfig | NormalizedConfig,
-  target: RsbuildTarget,
-): RsbuildEntry {
-  if (!config.source?.entry) {
-    return {};
-  }
-
-  return reduceConfigsMergeContext({
-    initial: {},
-    config: config.source?.entry,
-    ctx: { target },
-  });
-}
+import color from 'picocolors';
+import { castArray, createVirtualModule } from '../helpers';
+import type { RsbuildPlugin } from '../types';
 
 export const pluginEntry = (): RsbuildPlugin => ({
   name: 'rsbuild:entry',
 
   setup(api) {
-    api.modifyBundlerChain(
-      async (chain, { target, isServer, isServiceWorker }) => {
-        const config = api.getNormalizedConfig();
-        const { preEntry } = config.source;
-        const entry =
-          target === 'web' ? api.context.entry : getEntryObject(config, target);
+    api.modifyBundlerChain(async (chain, { environment, isServer }) => {
+      const { config, entry } = environment;
+      const { preEntry } = config.source;
 
-        const injectCoreJsEntry =
-          config.output.polyfill === 'entry' && !isServer && !isServiceWorker;
+      const injectCoreJsEntry = config.output.polyfill === 'entry' && !isServer;
 
-        for (const entryName of Object.keys(entry)) {
-          const entryPoint = chain.entry(entryName);
-          const addEntry = (item: string | EntryDescription) => {
-            entryPoint.add(item);
-          };
+      for (const entryName of Object.keys(entry)) {
+        const entryPoint = chain.entry(entryName);
+        const addEntry = (item: string | EntryDescription) => {
+          entryPoint.add(item);
+        };
 
-          preEntry.forEach(addEntry);
+        preEntry.forEach(addEntry);
 
-          if (injectCoreJsEntry) {
-            addEntry(createVirtualModule('import "core-js";'));
-          }
-
-          castArray(entry[entryName]).forEach(addEntry);
+        if (injectCoreJsEntry) {
+          addEntry(createVirtualModule('import "core-js";'));
         }
-      },
-    );
+
+        castArray(entry[entryName]).forEach(addEntry);
+      }
+    });
 
     api.onBeforeCreateCompiler(({ bundlerConfigs }) => {
       if (bundlerConfigs.every((config) => !config.entry)) {

@@ -1,8 +1,9 @@
-import { isFunction } from '@rsbuild/shared';
+import { isFunction } from './helpers';
 import type {
   AsyncHook,
   HookDescriptor,
   ModifyBundlerChainFn,
+  ModifyEnvironmentConfigFn,
   ModifyHTMLTagsFn,
   ModifyRsbuildConfigFn,
   ModifyRspackConfigFn,
@@ -19,7 +20,7 @@ import type {
   OnCloseDevServerFn,
   OnDevCompileDoneFn,
   OnExitFn,
-} from '@rsbuild/shared';
+} from './types';
 
 export function createAsyncHook<
   Callback extends (...args: any[]) => any,
@@ -61,7 +62,26 @@ export function createAsyncHook<
   };
 }
 
-export function initHooks() {
+export function initHooks(): {
+  onExit: AsyncHook<OnExitFn>;
+  onAfterBuild: AsyncHook<OnAfterBuildFn>;
+  onBeforeBuild: AsyncHook<OnBeforeBuildFn>;
+  onDevCompileDone: AsyncHook<OnDevCompileDoneFn>;
+  onCloseDevServer: AsyncHook<OnCloseDevServerFn>;
+  onAfterStartDevServer: AsyncHook<OnAfterStartDevServerFn>;
+  onBeforeStartDevServer: AsyncHook<OnBeforeStartDevServerFn>;
+  onAfterStartProdServer: AsyncHook<OnAfterStartProdServerFn>;
+  onBeforeStartProdServer: AsyncHook<OnBeforeStartProdServerFn>;
+  onAfterCreateCompiler: AsyncHook<OnAfterCreateCompilerFn>;
+  onBeforeCreateCompiler: AsyncHook<OnBeforeCreateCompilerFn>;
+  modifyHTMLTags: AsyncHook<ModifyHTMLTagsFn>;
+  modifyRspackConfig: AsyncHook<ModifyRspackConfigFn>;
+  modifyBundlerChain: AsyncHook<ModifyBundlerChainFn>;
+  modifyWebpackChain: AsyncHook<ModifyWebpackChainFn>;
+  modifyWebpackConfig: AsyncHook<ModifyWebpackConfigFn>;
+  modifyRsbuildConfig: AsyncHook<ModifyRsbuildConfigFn>;
+  modifyEnvironmentConfig: AsyncHook<ModifyEnvironmentConfigFn>;
+} {
   return {
     onExit: createAsyncHook<OnExitFn>(),
     onAfterBuild: createAsyncHook<OnAfterBuildFn>(),
@@ -80,6 +100,7 @@ export function initHooks() {
     modifyWebpackChain: createAsyncHook<ModifyWebpackChainFn>(),
     modifyWebpackConfig: createAsyncHook<ModifyWebpackConfigFn>(),
     modifyRsbuildConfig: createAsyncHook<ModifyRsbuildConfigFn>(),
+    modifyEnvironmentConfig: createAsyncHook<ModifyEnvironmentConfigFn>(),
   };
 }
 

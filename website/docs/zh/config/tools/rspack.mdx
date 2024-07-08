@@ -126,7 +126,7 @@ export default {
 
 ### target
 
-- **类型：** `'web' | 'node' | 'web-worker' | 'service-worker'`
+- **类型：** `'web' | 'node' | 'web-worker'`
 
 通过 target 参数可以判断构建的目标运行时环境。比如：
 
@@ -193,6 +193,22 @@ export default {
     rspack: (config, { rspack }) => {
       config.plugins?.push(new rspack.BannerPlugin());
       return config;
+    },
+  },
+};
+```
+
+### HtmlPlugin
+
+- **类型：** `typeof import('html-rspack-plugin')`
+
+通过这个参数你可以拿到 `html-rspack-plugin` 插件的实例。
+
+```js
+export default {
+  tools: {
+    rspack: (config, { HtmlPlugin }) => {
+      console.log(HtmlPlugin);
     },
   },
 };

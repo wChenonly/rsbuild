@@ -6,7 +6,6 @@ import type {
   Rspack,
   RspackChain,
 } from '@rsbuild/core';
-import { SCRIPT_REGEX, deepmerge, isUsingHMR } from '@rsbuild/shared';
 import type { PluginReactOptions } from '.';
 
 const modifySwcLoaderOptions = ({
@@ -33,62 +32,65 @@ const modifySwcLoaderOptions = ({
 export const applyBasicReactSupport = (
   api: RsbuildPluginAPI,
   options: PluginReactOptions,
-) => {
+): void => {
   const REACT_REFRESH_PATH = require.resolve('react-refresh');
 
-  api.modifyBundlerChain(async (chain, { CHAIN_ID, isDev, isProd, target }) => {
-    const config = api.getNormalizedConfig();
-    const usingHMR = isUsingHMR(config, { isProd, target });
-    const reactOptions: Rspack.SwcLoaderTransformConfig['react'] = {
-      development: isDev,
-      refresh: usingHMR,
-      runtime: 'automatic',
-      ...options.swcReactOptions,
-    };
+  api.modifyBundlerChain(
+    async (chain, { CHAIN_ID, environment, isDev, isProd, target }) => {
+      const { config } = environment;
+      const usingHMR = !isProd && config.dev.hmr && target === 'web';
+      const reactOptions: Rspack.SwcLoaderTransformConfig['react'] = {
+        development: isDev,
+        refresh: usingHMR,
+        runtime: 'automatic',
+        ...options.swcReactOptions,
+      };
 
-    modifySwcLoaderOptions({
-      chain,
-      CHAIN_ID,
-      modifier: (opts) => {
-        const extraOptions: Rspack.SwcLoaderOptions = {
-          jsc: {
-            parser: {
-              syntax: 'typescript',
-              // enable supports for React JSX/TSX compilation
-              tsx: true,
-            },
-            transform: {
-              react: reactOptions,
-            },
-          },
-        };
+      modifySwcLoaderOptions({
+        chain,
+        CHAIN_ID,
+        modifier: (opts) => {
+          opts.jsc ||= {};
+          opts.jsc.transform ||= {};
+          opts.jsc.transform.react = reactOptions;
+          opts.jsc.parser = {
+            ...opts.jsc.parser,
+            syntax: 'typescript',
+            // enable supports for React JSX/TSX compilation
+            tsx: true,
+          };
 
-        return deepmerge(opts, extraOptions);
-      },
-    });
-
-    if (!usingHMR) {
-      return;
-    }
-
-    chain.resolve.alias.set('react-refresh', path.dirname(REACT_REFRESH_PATH));
-
-    const { default: ReactRefreshRspackPlugin } = await import(
-      '@rspack/plugin-react-refresh'
-    );
-
-    chain
-      .plugin(CHAIN_ID.PLUGIN.REACT_FAST_REFRESH)
-      .use(ReactRefreshRspackPlugin, [
-        {
-          include: [SCRIPT_REGEX],
-          ...options.reactRefreshOptions,
+          return opts;
         },
-      ]);
-  });
+      });
+
+      if (!usingHMR) {
+        return;
+      }
+
+      chain.resolve.alias.set(
+        'react-refresh',
+        path.dirname(REACT_REFRESH_PATH),
+      );
+
+      const { default: ReactRefreshRspackPlugin } = await import(
+        '@rspack/plugin-react-refresh'
+      );
+      const SCRIPT_REGEX = /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/;
+
+      chain
+        .plugin(CHAIN_ID.PLUGIN.REACT_FAST_REFRESH)
+        .use(ReactRefreshRspackPlugin, [
+          {
+            include: [SCRIPT_REGEX],
+            ...options.reactRefreshOptions,
+          },
+        ]);
+    },
+  );
 };
 
-export const applyReactProfiler = (api: RsbuildPluginAPI) => {
+export const applyReactProfiler = (api: RsbuildPluginAPI): void => {
   api.modifyRsbuildConfig((config, { mergeRsbuildConfig }) => {
     const enableProfilerConfig: RsbuildConfig = {
       output: {

@@ -1,10 +1,9 @@
-import {
-  type DnsPrefetchOption,
-  type HtmlBasicTag,
-  type PreconnectOption,
-  isHtmlDisabled,
-} from '@rsbuild/shared';
-import type { RsbuildPlugin } from '../types';
+import type {
+  DnsPrefetchOption,
+  HtmlBasicTag,
+  PreconnectOption,
+  RsbuildPlugin,
+} from '../types';
 
 const generateLinks = (
   options: PreconnectOption[] | DnsPrefetchOption[],
@@ -22,8 +21,8 @@ export const pluginResourceHints = (): RsbuildPlugin => ({
   name: 'rsbuild:resource-hints',
 
   setup(api) {
-    api.modifyHTMLTags(({ headTags, bodyTags }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyHTMLTags(({ headTags, bodyTags }, { environment }) => {
+      const { config } = environment;
       const { dnsPrefetch, preconnect } = config.performance;
 
       if (dnsPrefetch) {
@@ -45,16 +44,16 @@ export const pluginResourceHints = (): RsbuildPlugin => ({
       return { headTags, bodyTags };
     });
 
-    api.modifyBundlerChain(async (chain, { CHAIN_ID, target }) => {
-      const config = api.getNormalizedConfig();
-      const {
-        performance: { preload, prefetch },
-      } = config;
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, environment }) => {
+      const { config, htmlPaths } = environment;
 
-      if (isHtmlDisabled(config, target)) {
+      if (Object.keys(htmlPaths).length === 0) {
         return;
       }
 
+      const {
+        performance: { preload, prefetch },
+      } = config;
       const HTMLCount = chain.entryPoints.values().length;
 
       const { HtmlPreloadOrPrefetchPlugin } = await import(

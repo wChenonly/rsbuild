@@ -99,7 +99,7 @@ For example, if you register both the Foo and Bar plugins mentioned above, the F
 
 `api.context` is a read-only object that provides some context information.
 
-The content of `api.context` is exactly the same as `rsbuild.context`, please refer to [rsbuild.context](/api/javascript-api/instance#rsbuild-context).
+The content of `api.context` is exactly the same as `rsbuild.context`, please refer to [rsbuild.context](/api/javascript-api/instance#rsbuildcontext).
 
 - **Example:**
 
@@ -157,25 +157,6 @@ import IsPluginExists from '@en/shared/isPluginExists.mdx';
 export default () => ({
   setup: (api) => {
     console.log(api.isPluginExists('plugin-foo'));
-  },
-});
-```
-
-## api.getHTMLPaths
-
-import GetHTMLPaths from '@en/shared/getHtmlPaths.mdx';
-
-<GetHTMLPaths />
-
-- **Example:**
-
-```ts
-const pluginFoo = () => ({
-  setup(api) {
-    api.modifyRspackConfig(() => {
-      const htmlPaths = api.getHTMLPaths();
-      console.log(htmlPaths); // { index: 'index.html' };
-    });
   },
 });
 ```
@@ -242,7 +223,7 @@ api.transform({ test: /\.pug$/ }, ({ code }) => {
 });
 ```
 
-- `targets`: matches the Rsbuild [output.targets](/config/output/targets), and applies the current transform function only to the matched targets.
+- `targets`: matches the Rsbuild [output.target](/config/output/target), and applies the current transform function only to the matched targets.
 
 ```js
 api.transform({ test: /\.pug$/, targets: ['web'] }, ({ code }) => {

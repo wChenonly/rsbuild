@@ -1,8 +1,12 @@
-import type { ConfigChain, RsbuildConfig, RsbuildPlugin } from '@rsbuild/core';
-import { getNodeEnv, isServerTarget, reduceConfigs } from '@rsbuild/shared';
+import type {
+  RsbuildConfig,
+  RsbuildPlugin,
+  RsbuildTarget,
+} from '@rsbuild/core';
+import { type ConfigChain, reduceConfigs } from 'reduce-configs';
 
 /**
- * the options of [rspackExperiments.styledComponents](https://rspack.dev/guide/features/builtin-swc-loader#rspackexperimentsstyledcomponents).
+ * The options of [@swc/plugin-styled-components](https://www.npmjs.com/package/@swc/plugin-styled-components).
  */
 export type PluginStyledComponentsOptions = {
   displayName?: boolean;
@@ -16,6 +20,10 @@ export type PluginStyledComponentsOptions = {
   pure?: boolean;
   cssProps?: boolean;
 };
+
+function isServerTarget(target: RsbuildTarget[]) {
+  return Array.isArray(target) ? target.includes('node') : target === 'node';
+}
 
 const getDefaultStyledComponentsConfig = (isProd: boolean, ssr: boolean) => {
   return {
@@ -40,9 +48,8 @@ export const pluginStyledComponents = (
       return;
     }
 
-    const getMergedOptions = () => {
-      const useSSR = isServerTarget(api.context.targets);
-      const isProd = getNodeEnv() === 'production';
+    const getMergedOptions = (useSSR: boolean) => {
+      const isProd = process.env.NODE_ENV === 'production';
 
       return reduceConfigs({
         initial: getDefaultStyledComponentsConfig(isProd, useSSR),
@@ -50,23 +57,39 @@ export const pluginStyledComponents = (
       });
     };
 
-    api.modifyRsbuildConfig((userConfig, { mergeRsbuildConfig }) => {
-      const extraConfig: RsbuildConfig = {
-        tools: {
-          swc(opts) {
-            const mergedOptions = getMergedOptions();
-            if (!mergedOptions) {
-              return opts;
-            }
+    api.modifyRsbuildConfig({
+      order: 'post',
+      handler: (userConfig, { mergeRsbuildConfig }) => {
+        const targets = userConfig.environments
+          ? Object.values(userConfig.environments).map(
+              (e) => e.output?.target || userConfig.output?.target || 'web',
+            )
+          : [userConfig.output?.target || 'web'];
+        const useSSR = isServerTarget(targets);
+        const mergedOptions = getMergedOptions(useSSR);
+        if (!mergedOptions) {
+          return userConfig;
+        }
 
-            opts.rspackExperiments ??= {};
-            opts.rspackExperiments.styledComponents = mergedOptions;
-            return opts;
+        const extraConfig: RsbuildConfig = {
+          tools: {
+            swc: {
+              jsc: {
+                experimental: {
+                  plugins: [
+                    [
+                      require.resolve('@swc/plugin-styled-components'),
+                      mergedOptions,
+                    ],
+                  ],
+                },
+              },
+            },
           },
-        },
-      };
+        };
 
-      return mergeRsbuildConfig(extraConfig, userConfig);
+        return mergeRsbuildConfig(extraConfig, userConfig);
+      },
     });
   },
 });

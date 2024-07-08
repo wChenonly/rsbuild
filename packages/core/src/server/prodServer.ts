@@ -1,21 +1,20 @@
 import type { Server } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
-import { join } from 'node:path';
-import {
-  type PreviewServerOptions,
-  type RequestHandler,
-  type ServerConfig,
-  getNodeEnv,
-  isDebug,
-  setNodeEnv,
-} from '@rsbuild/shared';
 import type Connect from 'connect';
-import { ROOT_DIST_DIR } from '../constants';
-import type { InternalContext, NormalizedConfig } from '../types';
+import { getNodeEnv, setNodeEnv } from '../helpers';
+import { pathnameParse } from '../helpers/path';
+import { logger } from '../logger';
+import type {
+  InternalContext,
+  NormalizedConfig,
+  PreviewServerOptions,
+  RequestHandler,
+  ServerConfig,
+} from '../types';
 import {
   type StartServerResult,
-  formatRoutes,
   getAddressUrls,
+  getRoutes,
   getServerConfig,
   printServerURLs,
 } from './helper';
@@ -29,7 +28,7 @@ type RsbuildProdServerOptions = {
   pwd: string;
   output: {
     path: string;
-    assetPrefix?: string;
+    assetPrefixes: string[];
   };
   serverConfig: ServerConfig;
 };
@@ -45,7 +44,7 @@ export class RsbuildProdServer {
   }
 
   // Complete the preparation of services
-  public async onInit(app: Server | Http2SecureServer) {
+  public async onInit(app: Server | Http2SecureServer): Promise<void> {
     this.app = app;
 
     await this.applyDefaultMiddlewares();
@@ -55,7 +54,7 @@ export class RsbuildProdServer {
     const { headers, proxy, historyApiFallback, compress } =
       this.options.serverConfig;
 
-    if (isDebug()) {
+    if (logger.level === 'verbose') {
       this.middlewares.use(await getRequestLoggerMiddleware());
     }
 
@@ -81,7 +80,7 @@ export class RsbuildProdServer {
 
     if (proxy) {
       const { createProxyMiddleware } = await import('./proxy');
-      const { middlewares, upgrade } = createProxyMiddleware(proxy);
+      const { middlewares, upgrade } = await createProxyMiddleware(proxy);
 
       for (const middleware of middlewares) {
         this.middlewares.use(middleware);
@@ -111,14 +110,13 @@ export class RsbuildProdServer {
 
   private async applyStaticAssetMiddleware() {
     const {
-      output: { path, assetPrefix },
+      output: { path, assetPrefixes },
       serverConfig: { htmlFallback },
-      pwd,
     } = this.options;
 
     const { default: sirv } = await import('sirv');
 
-    const assetMiddleware = sirv(join(pwd, path), {
+    const assetMiddleware = sirv(path, {
       etag: true,
       dev: true,
       ignores: ['favicon.ico'],
@@ -127,6 +125,8 @@ export class RsbuildProdServer {
 
     this.middlewares.use((req, res, next) => {
       const url = req.url;
+      const assetPrefix =
+        url && assetPrefixes.find((prefix) => url.startsWith(prefix));
 
       // handler assetPrefix
       if (assetPrefix && url?.startsWith(assetPrefix)) {
@@ -141,14 +141,14 @@ export class RsbuildProdServer {
     });
   }
 
-  public close() {}
+  public close(): void {}
 }
 
 export async function startProdServer(
   context: InternalContext,
   config: NormalizedConfig,
   { getPortSilently }: PreviewServerOptions = {},
-) {
+): Promise<StartServerResult> {
   if (!getNodeEnv()) {
     setNodeEnv('production');
   }
@@ -166,8 +166,10 @@ export async function startProdServer(
     {
       pwd: context.rootPath,
       output: {
-        path: config.output.distPath.root || ROOT_DIST_DIR,
-        assetPrefix: config.output.assetPrefix,
+        path: context.distPath,
+        assetPrefixes: Object.values(context.environments).map((e) =>
+          pathnameParse(e.config.output.assetPrefix),
+        ),
       },
       serverConfig,
     },
@@ -190,11 +192,7 @@ export async function startProdServer(
         port,
       },
       async () => {
-        const routes = formatRoutes(
-          context.entry,
-          config.output.distPath.html,
-          config.html.outputStructure,
-        );
+        const routes = getRoutes(context);
         await context.hooks.onAfterStartProdServer.call({
           port,
           routes,

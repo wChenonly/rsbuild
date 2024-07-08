@@ -1,7 +1,8 @@
 /**
- * @license
- * Copyright 2018 Google Inc.
+ * This method is modified based on source found in
  * https://github.com/vuejs/preload-webpack-plugin/blob/master/src/lib/extract-chunks.js
+ *
+ * Copyright 2018 Google Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +16,8 @@
  * limitations under the License.
  */
 
-import type { PreloadIncludeType } from '@rsbuild/shared';
 import type { Chunk, ChunkGroup, Compilation } from '@rspack/core';
+import type { PreloadIncludeType } from '../../../types';
 
 interface ExtractChunks {
   compilation: Compilation;
@@ -37,10 +38,12 @@ function isAsync(chunk: Chunk | ChunkGroup): boolean {
   return !chunk.initial;
 }
 
-export function extractChunks({
-  compilation,
-  includeType,
-}: ExtractChunks): Chunk[] {
+export function extractChunks({ compilation, includeType }: ExtractChunks):
+  | Chunk[]
+  | Array<{
+      files: string[];
+      auxiliaryFiles?: string[];
+    }> {
   const chunks = [...compilation.chunks];
 
   // 'asyncChunks' are chunks intended for lazy/async loading usually generated as
@@ -79,7 +82,7 @@ export function extractChunks({
         files: Object.keys(compilation.assets).filter(
           (t) => !licenseAssets.includes(t),
         ),
-      } as Chunk,
+      },
     ];
   }
 

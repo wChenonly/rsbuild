@@ -16,32 +16,6 @@
 type Version = string;
 ```
 
-### context.entry
-
-构建入口对象，对应 [source.entry](/config/source/entry) 选项。
-
-- **类型：**
-
-```ts
-type RsbuildEntry = Record<string, string | string[] | EntryDescription>;
-```
-
-> 如果 `source.entry` 被设置为函数，并针对不同的 target 返回了不同的 entry 对象，那么 context.entry 仅会包含 web target 对应的入口对象。
-
-### context.targets
-
-构建产物类型，对应调用 Rsbuild 配置里的 `output.targets` 选项。
-
-- **类型：**
-
-```ts
-type RsbuildTarget = 'web' | 'node' | 'web-worker' | 'service-worker';
-
-type Context = {
-  targets: RsbuildTarget[];
-};
-```
-
 ### context.rootPath
 
 当前执行构建的根路径，对应调用 `createRsbuild` 时传入的 `cwd` 选项。
@@ -55,6 +29,10 @@ type RootPath = string;
 ### context.distPath
 
 构建产物输出目录的绝对路径，对应 `RsbuildConfig` 中的 `output.distPath.root` 配置项。
+
+当有多个环境时，Rsbuild 会尝试获取所有环境的父 distPath 作为 `context.distPath`。
+
+如果要获取指定环境的输出目录的绝对路径，建议使用 [environment.distPath](/api/javascript-api/types#environmentdistpath)。
 
 - **类型：**
 
@@ -70,16 +48,6 @@ type DistPath = string;
 
 ```ts
 type CachePath = string;
-```
-
-### context.tsconfigPath
-
-tsconfig.json 文件的绝对路径，若项目中不存在 tsconfig.json 文件，则为 `undefined`。
-
-- **类型：**
-
-```ts
-type TsconfigPath = string | undefined;
 ```
 
 ### context.devServer
@@ -106,6 +74,28 @@ type bundlerType = 'rspack' | 'webpack';
 ```
 
 > Rsbuild 内部支持切换到 webpack 进行对照测试，因此提供了该字段进行区分，通常你不需要使用此字段。
+
+## rsbuild.environments
+
+### target
+
+构建产物类型，对应 Rsbuild 的 [output.target](/config/output/target) 配置。
+
+- **类型：**
+
+```ts
+type RsbuildTarget = 'web' | 'node' | 'web-worker';
+```
+
+### tsconfigPath
+
+tsconfig.json 文件的绝对路径，若项目中不存在 tsconfig.json 文件，则为 `undefined`。
+
+- **类型：**
+
+```ts
+type TsconfigPath = string | undefined;
+```
 
 ## rsbuild.build
 
@@ -278,6 +268,28 @@ Rsbuild 配备了一个内置的开发服务器，当你执行 `rsbuild dev` 时
 - **类型：**
 
 ```ts
+type EnvironmentAPI = {
+  [name: string]: {
+    /**
+     * 获取当前环境的构建信息
+     */
+    getStats: () => Promise<Stats>;
+
+    /**
+     * 在服务端加载并执行构建产物
+     *
+     * @param entryName - 入口名称，和 Rsbuild source.entry 的某一个 key 值对应
+     * @returns 入口模块的返回值
+     */
+    loadBundle: <T = unknown>(entryName: string) => Promise<T>;
+
+    /**
+     * 获取编译后的 HTML 模版内容
+     */
+    getTransformedHtml: (entryName: string) => Promise<string>;
+  };
+};
+
 type RsbuildDevServer = {
   /** 启动 Rsbuild DevServer */
   listen: () => Promise<{
@@ -287,6 +299,9 @@ type RsbuildDevServer = {
   }>;
 
   /** 以下 API 在使用自定义 Server 时会用到 */
+
+  /** Rsbuild server environment API */
+  environments: EnvironmentAPI;
 
   /** 解析后的端口号 (默认情况下，Rsbuild Server 会监听 `3000` 端口，并在端口被占用时自动递增端口号。) */
   port: number;
@@ -350,7 +365,7 @@ export async function startDevServer() {
 }
 ```
 
-详细使用情况可参考：[示例](https://github.com/web-infra-dev/rsbuild/blob/main/e2e/cases/server/custom-server/scripts/server.mjs)。
+详细使用情况可参考：[示例](https://github.com/rspack-contrib/rspack-examples/blob/main/rsbuild/express/server.mjs)。
 
 如果你希望直接使用 Rsbuild DevServer 启动项目，可以直接使用 [Rsbuild - startDevServer](#rsbuildstartdevserver) 方法。 `startDevServer` 实际上是以下代码的语法糖：
 
@@ -562,8 +577,10 @@ type InspectConfigOptions = {
 async function InspectConfig(options?: InspectConfigOptions): Promise<{
   rsbuildConfig: string;
   bundlerConfigs: string[];
+  environmentConfigs: string[];
   origin: {
     rsbuildConfig: RsbuildConfig;
+    environmentConfigs: Record<string, EnvironmentConfig>;
     bundlerConfigs: BundlerConfigs[];
   };
 }>;
@@ -774,20 +791,5 @@ import GetNormalizedConfig from '@zh/shared/getNormalizedConfig.mdx';
 rsbuild.onBeforeBuild(() => {
   const config = api.getNormalizedConfig();
   console.log(config.html.title);
-});
-```
-
-## rsbuild.getHTMLPaths
-
-import GetHTMLPaths from '@zh/shared/getHtmlPaths.mdx';
-
-<GetHTMLPaths />
-
-- **示例：**
-
-```ts
-rsbuild.onBeforeBuild(() => {
-  const htmlPaths = api.getHTMLPaths();
-  console.log(htmlPaths); // { main: 'html/main/index.html' };
 });
 ```

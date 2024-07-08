@@ -3,13 +3,10 @@ import type {
   ChainIdentifier,
   RsbuildPlugin,
   RsbuildTarget,
+  Rspack,
   RspackChain,
 } from '@rsbuild/core';
-import {
-  type CopyPluginOptions,
-  TARGET_ID_MAP,
-  isWebTarget,
-} from '@rsbuild/shared';
+import { castArray } from './shared';
 
 async function applyTsConfigPathsPlugin({
   chain,
@@ -38,6 +35,11 @@ async function applyTsConfigPathsPlugin({
     ]);
 }
 
+function isWebTarget(target: RsbuildTarget | RsbuildTarget[]) {
+  const targets = castArray(target);
+  return targets.includes('web') || target.includes('web-worker');
+}
+
 const getMainFields = (chain: RspackChain, target: RsbuildTarget) => {
   const mainFields = chain.resolve.mainFields.values();
 
@@ -59,17 +61,14 @@ export const pluginAdaptor = (): RsbuildPlugin => ({
   name: 'rsbuild-webpack:adaptor',
 
   setup(api) {
-    api.modifyBundlerChain(async (chain, { CHAIN_ID, target }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyBundlerChain(async (chain, { CHAIN_ID, environment, target }) => {
+      const { config, tsconfigPath } = environment;
 
-      if (
-        api.context.tsconfigPath &&
-        config.source.aliasStrategy === 'prefer-tsconfig'
-      ) {
+      if (tsconfigPath && config.source.aliasStrategy === 'prefer-tsconfig') {
         await applyTsConfigPathsPlugin({
           chain,
           CHAIN_ID,
-          configFile: api.context.tsconfigPath,
+          configFile: tsconfigPath,
           mainFields: getMainFields(chain, target),
           extensions: chain.resolve.extensions.values(),
         });
@@ -81,7 +80,7 @@ export const pluginAdaptor = (): RsbuildPlugin => ({
         const { ProgressPlugin } = await import('./progress/ProgressPlugin');
         chain.plugin(CHAIN_ID.PLUGIN.PROGRESS).use(ProgressPlugin, [
           {
-            id: TARGET_ID_MAP[target],
+            id: environment.name,
             ...(progress === true ? {} : progress),
           },
         ]);
@@ -89,23 +88,23 @@ export const pluginAdaptor = (): RsbuildPlugin => ({
 
       const { copy } = config.output;
       if (copy) {
-        const { default: CopyPlugin } = await import(
-          // @ts-expect-error copy-webpack-plugin does not provide types
-          'copy-webpack-plugin'
-        );
+        const { default: CopyPlugin } = await import('copy-webpack-plugin');
 
-        const options: CopyPluginOptions = Array.isArray(copy)
+        const options: Rspack.CopyRspackPluginOptions = Array.isArray(copy)
           ? { patterns: copy }
           : copy;
 
-        chain.plugin(CHAIN_ID.PLUGIN.COPY).use(CopyPlugin, [options]);
+        chain.plugin(CHAIN_ID.PLUGIN.COPY).use(CopyPlugin, [
+          // @ts-expect-error to type mismatch
+          options,
+        ]);
       }
     });
 
     api.modifyWebpackConfig(async (config) => {
       const copyPlugin = config.plugins?.find(
         (item) => item?.constructor.name === 'CopyPlugin',
-      ) as unknown as CopyPluginOptions;
+      ) as unknown as Rspack.CopyRspackPluginOptions;
 
       if (copyPlugin) {
         // If the pattern.context directory not exists, we should remove CopyPlugin.

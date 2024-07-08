@@ -1,19 +1,20 @@
-import { getNodeEnv, logger, onCompileDone, setNodeEnv } from '@rsbuild/shared';
+import { rspack } from '@rspack/core';
+import { getNodeEnv, onCompileDone, setNodeEnv } from '../helpers';
+import { logger } from '../logger';
 import type {
   BuildOptions,
   MultiStats,
   Rspack,
   RspackConfig,
   Stats,
-} from '@rsbuild/shared';
-import { rspack } from '@rspack/core';
+} from '../types';
 import { createCompiler } from './createCompiler';
 import { type InitConfigsOptions, initConfigs } from './initConfigs';
 
 export const build = async (
   initOptions: InitConfigsOptions,
   { mode = 'production', watch, compiler: customCompiler }: BuildOptions = {},
-) => {
+): Promise<void> => {
   if (!getNodeEnv()) {
     setNodeEnv(mode);
   }
@@ -37,20 +38,20 @@ export const build = async (
   let isFirstCompile = true;
   await context.hooks.onBeforeBuild.call({
     bundlerConfigs,
+    environments: context.environments,
   });
 
   const onDone = async (stats: Stats | MultiStats) => {
-    const p = context.hooks.onAfterBuild.call({ isFirstCompile, stats });
+    const p = context.hooks.onAfterBuild.call({
+      isFirstCompile,
+      stats,
+      environments: context.environments,
+    });
     isFirstCompile = false;
     await p;
   };
 
-  onCompileDone(
-    compiler,
-    onDone,
-    // @ts-expect-error type mismatch
-    rspack.MultiStats,
-  );
+  onCompileDone(compiler, onDone, rspack.MultiStats);
 
   if (watch) {
     compiler.watch({}, (err) => {

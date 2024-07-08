@@ -1,10 +1,10 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { fse } from '@rsbuild/shared';
 import { getMonorepoBaseData, getMonorepoSubProjects } from '../common';
-import type { Project } from '../project/project';
+import type { Project } from '../project';
 import type { MonorepoAnalyzer } from '../types';
 import { readPackageJson } from '../utils';
-import { type Filter, defaultFilter } from './filter';
+import type { Filter } from './filter';
 
 export type ExtraMonorepoStrategies = Record<string, MonorepoAnalyzer>;
 
@@ -16,18 +16,17 @@ export interface GetDependentProjectsOptions {
   extraMonorepoStrategies?: ExtraMonorepoStrategies;
 }
 
-const filterProjects = async (projects: Project[], filter?: Filter) => {
-  if (!filter) {
-    return defaultFilter(projects);
-  }
-
-  return filter(projects);
-};
+async function pathExists(path: string) {
+  return fs.promises
+    .access(path)
+    .then(() => true)
+    .catch(() => false);
+}
 
 const getDependentProjects = async (
   projectNameOrRootPath: string,
   options: GetDependentProjectsOptions,
-) => {
+): Promise<Project[]> => {
   const {
     cwd = process.cwd(),
     recursive,
@@ -42,7 +41,7 @@ const getDependentProjects = async (
   );
 
   let projectName: string;
-  if (await fse.pathExists(currentProjectPkgJsonPath)) {
+  if (await pathExists(currentProjectPkgJsonPath)) {
     ({ name: projectName } = await readPackageJson(currentProjectPkgJsonPath));
   } else {
     projectName = projectNameOrRootPath;
@@ -65,7 +64,9 @@ const getDependentProjects = async (
   let dependentProjects = currentProject.getDependentProjects(projects, {
     recursive,
   });
-  dependentProjects = await filterProjects(dependentProjects, filter);
+  if (filter) {
+    dependentProjects = await filter(dependentProjects);
+  }
 
   return dependentProjects;
 };

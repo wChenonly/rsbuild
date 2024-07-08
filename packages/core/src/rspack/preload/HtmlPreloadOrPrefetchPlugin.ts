@@ -1,7 +1,8 @@
 /**
- * @license
- * Copyright 2018 Google Inc.
+ * This method is modified based on source found in
  * https://github.com/vuejs/preload-webpack-plugin/blob/master/src/index.js
+ *
+ * Copyright 2018 Google Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,15 +16,16 @@
  * limitations under the License.
  */
 
-import {
-  type PreloadOrPreFetchOption,
-  getPublicPathFromCompiler,
-  upperFirst,
-} from '@rsbuild/shared';
-import type { Compilation, Compiler, RspackPluginInstance } from '@rspack/core';
-import type HtmlWebpackPlugin from 'html-webpack-plugin';
-import { ensureAssetPrefix } from '../../helpers';
+import type {
+  Chunk,
+  Compilation,
+  Compiler,
+  RspackPluginInstance,
+} from '@rspack/core';
+import type HtmlWebpackPlugin from 'html-rspack-plugin';
+import { ensureAssetPrefix, upperFirst } from '../../helpers';
 import { getHTMLPlugin } from '../../pluginHelper';
+import type { PreloadOrPreFetchOption } from '../../types';
 import {
   type As,
   type BeforeAssetTagGenerationHtmlPluginData,
@@ -78,7 +80,7 @@ function generateLinks(
       : // Only handle chunks imported by this HtmlWebpackPlugin.
         extractedChunks.filter((chunk) =>
           doesChunkBelongToHtml({
-            chunk,
+            chunk: chunk as Chunk,
             compilation,
             htmlPluginData,
             pluginOptions: options,
@@ -117,8 +119,7 @@ function generateLinks(
   // Sort to ensure the output is predictable.
   const sortedFilteredFiles = filteredFiles.sort();
   const links: HtmlWebpackPlugin.HtmlTagObject[] = [];
-  const publicPath = getPublicPathFromCompiler(compilation.compiler);
-  const { crossOriginLoading } = compilation.compiler.options.output;
+  const { publicPath, crossOriginLoading } = compilation.outputOptions;
 
   for (const file of sortedFilteredFiles) {
     const href = ensureAssetPrefix(file, publicPath);

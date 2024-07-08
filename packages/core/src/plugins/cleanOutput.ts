@@ -1,12 +1,8 @@
 import { sep } from 'node:path';
-import { color, fse, logger } from '@rsbuild/shared';
-import type { RsbuildPlugin } from '../types';
-
-const emptyDir = async (dir: string) => {
-  if (await fse.pathExists(dir)) {
-    await fse.emptyDir(dir);
-  }
-};
+import color from 'picocolors';
+import { emptyDir } from '../helpers';
+import { logger } from '../logger';
+import type { EnvironmentContext, RsbuildPlugin } from '../types';
 
 const addTrailingSep = (dir: string) => (dir.endsWith(sep) ? dir : dir + sep);
 
@@ -20,9 +16,9 @@ export const pluginCleanOutput = (): RsbuildPlugin => ({
   name: 'rsbuild:clean-output',
 
   setup(api) {
-    const clean = async () => {
-      const { distPath, rootPath } = api.context;
-      const config = api.getNormalizedConfig();
+    const clean = async (environment: EnvironmentContext) => {
+      const { rootPath } = api.context;
+      const { config, distPath } = environment;
 
       let { cleanDistPath } = config.output;
 
@@ -47,7 +43,22 @@ export const pluginCleanOutput = (): RsbuildPlugin => ({
       }
     };
 
-    api.onBeforeBuild(clean);
-    api.onBeforeStartDevServer(clean);
+    const cleanAll = async (params: {
+      environments: Record<string, EnvironmentContext>;
+    }) => {
+      const environments = Object.values(params.environments).reduce<
+        Array<EnvironmentContext>
+      >((total, curr) => {
+        if (!total.find((t) => t.distPath === curr.distPath)) {
+          total.push(curr);
+        }
+        return total;
+      }, []);
+
+      await Promise.all(environments.map((e) => clean(e)));
+    };
+
+    api.onBeforeBuild(cleanAll);
+    api.onBeforeStartDevServer(cleanAll);
   },
 });

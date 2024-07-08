@@ -1,20 +1,41 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
+import color from 'picocolors';
+import RspackChain from 'rspack-chain';
 import {
+  CSS_DIST_DIR,
   DEFAULT_ASSET_PREFIX,
-  RspackChain,
-  color,
+  DEFAULT_DATA_URL_SIZE,
+  DEFAULT_DEV_HOST,
+  DEFAULT_MOUNT_ID,
+  DEFAULT_PORT,
+  FONT_DIST_DIR,
+  HMR_SOCKET_PATH,
+  HTML_DIST_DIR,
+  IMAGE_DIST_DIR,
+  MEDIA_DIST_DIR,
+  ROOT_DIST_DIR,
+  SVG_DIST_DIR,
+  TS_CONFIG_FILE,
+  WASM_DIST_DIR,
+} from './constants';
+import {
   debounce,
-  fse,
+  findExists,
   getNodeEnv,
+  isFileExists,
   isObject,
-  logger,
   upperFirst,
-} from '@rsbuild/shared';
+} from './helpers';
+import { logger } from './logger';
+import { mergeRsbuildConfig } from './mergeConfig';
+import { restartDevServer } from './server/restart';
 import type {
   InspectConfigOptions,
+  InspectConfigResult,
   NormalizedConfig,
   NormalizedDevConfig,
+  NormalizedEnvironmentConfig,
   NormalizedHtmlConfig,
   NormalizedOutputConfig,
   NormalizedPerformanceConfig,
@@ -22,39 +43,24 @@ import type {
   NormalizedServerConfig,
   NormalizedSourceConfig,
   NormalizedToolsConfig,
+  PluginManager,
   PublicDir,
   PublicDirOptions,
   RsbuildConfig,
   RsbuildEntry,
-} from '@rsbuild/shared';
-import {
-  CSS_DIST_DIR,
-  DEFAULT_DATA_URL_SIZE,
-  DEFAULT_DEV_HOST,
-  DEFAULT_MOUNT_ID,
-  DEFAULT_PORT,
-  FONT_DIST_DIR,
-  HTML_DIST_DIR,
-  IMAGE_DIST_DIR,
-  JS_DIST_DIR,
-  MEDIA_DIST_DIR,
-  ROOT_DIST_DIR,
-  SERVER_DIST_DIR,
-  SERVICE_WORKER_DIST_DIR,
-  SVG_DIST_DIR,
-  TS_CONFIG_FILE,
-  WASM_DIST_DIR,
-} from './constants';
-import { findExists, isFileExists } from './helpers';
-import { mergeRsbuildConfig } from './mergeConfig';
-import { restartDevServer } from './server/restart';
+} from './types';
 
 const getDefaultDevConfig = (): NormalizedDevConfig => ({
   hmr: true,
   liveReload: true,
   assetPrefix: DEFAULT_ASSET_PREFIX,
-  startUrl: false,
+  writeToDisk: false,
   client: {
+    path: HMR_SOCKET_PATH,
+    // By default it is set to "location.port"
+    port: '',
+    // By default it is set to "location.hostname"
+    host: '',
     overlay: true,
   },
 });
@@ -75,7 +81,7 @@ const getDefaultSourceConfig = (): NormalizedSourceConfig => ({
   aliasStrategy: 'prefer-tsconfig',
   preEntry: [],
   decorators: {
-    version: 'legacy',
+    version: '2022-03',
   },
 });
 
@@ -120,10 +126,9 @@ const getDefaultPerformanceConfig = (): NormalizedPerformanceConfig => ({
 });
 
 const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
-  targets: ['web'],
+  target: 'web',
   distPath: {
     root: ROOT_DIST_DIR,
-    js: JS_DIST_DIR,
     css: CSS_DIST_DIR,
     svg: SVG_DIST_DIR,
     font: FONT_DIST_DIR,
@@ -131,13 +136,11 @@ const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
     wasm: WASM_DIST_DIR,
     image: IMAGE_DIST_DIR,
     media: MEDIA_DIST_DIR,
-    server: SERVER_DIST_DIR,
-    worker: SERVICE_WORKER_DIST_DIR,
   },
   assetPrefix: DEFAULT_ASSET_PREFIX,
   filename: {},
   charset: 'ascii',
-  polyfill: 'usage',
+  polyfill: 'off',
   dataUriLimit: {
     svg: DEFAULT_DATA_URL_SIZE,
     font: DEFAULT_DATA_URL_SIZE,
@@ -161,7 +164,7 @@ const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
     exportGlobals: false,
     exportLocalsConvention: 'camelCase',
   },
-  emitAssets: () => true,
+  emitAssets: true,
 });
 
 const createDefaultConfig = (): RsbuildConfig => ({
@@ -173,9 +176,10 @@ const createDefaultConfig = (): RsbuildConfig => ({
   tools: getDefaultToolsConfig(),
   security: getDefaultSecurityConfig(),
   performance: getDefaultPerformanceConfig(),
+  environments: {},
 });
 
-function getDefaultEntry(root: string): RsbuildEntry {
+export function getDefaultEntry(root: string): RsbuildEntry {
   const files = [
     // Most projects are using typescript now.
     // So we put `.ts` as the first one to improve performance.
@@ -201,14 +205,10 @@ function getDefaultEntry(root: string): RsbuildEntry {
 export const withDefaultConfig = async (
   rootPath: string,
   config: RsbuildConfig,
-) => {
+): Promise<RsbuildConfig> => {
   const merged = mergeRsbuildConfig(createDefaultConfig(), config);
 
   merged.source ||= {};
-
-  if (!merged.source.entry) {
-    merged.source.entry = getDefaultEntry(rootPath);
-  }
 
   if (!merged.source.tsconfigPath) {
     const tsconfigPath = join(rootPath, TS_CONFIG_FILE);
@@ -227,7 +227,10 @@ export const withDefaultConfig = async (
  * 3. Meaningful and can be filled by constant value.
  */
 export const normalizeConfig = (config: RsbuildConfig): NormalizedConfig =>
-  mergeRsbuildConfig(createDefaultConfig(), config) as NormalizedConfig;
+  mergeRsbuildConfig(
+    createDefaultConfig(),
+    config,
+  ) as unknown as NormalizedConfig;
 
 export type ConfigParams = {
   env: string;
@@ -272,9 +275,11 @@ const resolveConfigPath = (root: string, customConfig?: string) => {
   }
 
   const CONFIG_FILES = [
+    // `.mjs` and `.ts` are the most used configuration types,
+    // so we resolve them first for performance
+    'rsbuild.config.mjs',
     'rsbuild.config.ts',
     'rsbuild.config.js',
-    'rsbuild.config.mjs',
     'rsbuild.config.cjs',
     'rsbuild.config.mts',
     'rsbuild.config.cts',
@@ -291,12 +296,12 @@ const resolveConfigPath = (root: string, customConfig?: string) => {
   return null;
 };
 
-export async function watchFiles(files: string[]) {
+export async function watchFiles(files: string[]): Promise<void> {
   if (!files.length) {
     return;
   }
 
-  const chokidar = await import('@rsbuild/shared/chokidar');
+  const chokidar = await import('chokidar');
   const watcher = chokidar.watch(files, {
     // do not trigger add for initial files
     ignoreInitial: true,
@@ -341,100 +346,200 @@ export async function loadConfig({
     return config;
   };
 
-  try {
-    const { default: jiti } = await import('jiti');
-    const loadConfig = jiti(__filename, {
-      esmResolve: true,
-      // disable require cache to support restart CLI and read the new config
-      requireCache: false,
-      interopDefault: true,
-    });
+  let configExport: RsbuildConfigExport;
 
-    const configExport = loadConfig(configFilePath) as RsbuildConfigExport;
-
-    if (typeof configExport === 'function') {
-      const command = process.argv[2];
-      const params: ConfigParams = {
-        env: getNodeEnv(),
-        command,
-        envMode: envMode || getNodeEnv(),
-      };
-
-      const result = await configExport(params);
-
-      if (result === undefined) {
-        throw new Error('Rsbuild config function must return a config object.');
-      }
-
-      return {
-        content: applyMetaInfo(result),
-        filePath: configFilePath,
-      };
-    }
-
-    if (!isObject(configExport)) {
-      throw new Error(
-        `Rsbuild config must be an object or a function that returns an object, get ${color.yellow(
-          configExport,
-        )}`,
+  if (/\.(?:js|mjs|cjs)$/.test(configFilePath)) {
+    try {
+      const exportModule = await import(`${configFilePath}?t=${Date.now()}`);
+      configExport = exportModule.default ? exportModule.default : exportModule;
+    } catch (err) {
+      logger.debug(
+        `Failed to load file with dynamic import: ${color.dim(configFilePath)}`,
       );
+    }
+  }
+
+  try {
+    if (configExport! === undefined) {
+      const { default: jiti } = await import('jiti');
+      const loadConfig = jiti(__filename, {
+        esmResolve: true,
+        // disable require cache to support restart CLI and read the new config
+        requireCache: false,
+        interopDefault: true,
+      });
+
+      configExport = loadConfig(configFilePath) as RsbuildConfigExport;
+    }
+  } catch (err) {
+    logger.error(`Failed to load file with jiti: ${color.dim(configFilePath)}`);
+    throw err;
+  }
+
+  if (typeof configExport === 'function') {
+    const command = process.argv[2];
+    const params: ConfigParams = {
+      env: getNodeEnv(),
+      command,
+      envMode: envMode || getNodeEnv(),
+    };
+
+    const result = await configExport(params);
+
+    if (result === undefined) {
+      throw new Error('The config function must return a config object.');
     }
 
     return {
-      content: applyMetaInfo(configExport),
+      content: applyMetaInfo(result),
       filePath: configFilePath,
     };
-  } catch (err) {
-    logger.error(`Failed to load file: ${color.dim(configFilePath)}`);
-    throw err;
   }
+
+  if (!isObject(configExport)) {
+    throw new Error(
+      `The config must be an object or a function that returns an object, get ${color.yellow(
+        configExport,
+      )}`,
+    );
+  }
+
+  return {
+    content: applyMetaInfo(configExport),
+    filePath: configFilePath,
+  };
 }
 
+export const getRsbuildInspectConfig = ({
+  normalizedConfig,
+  inspectOptions,
+  pluginManager,
+}: {
+  normalizedConfig: NormalizedConfig;
+  inspectOptions: InspectConfigOptions;
+  pluginManager: PluginManager;
+}): {
+  rawRsbuildConfig: string;
+  rsbuildConfig: InspectConfigResult['origin']['rsbuildConfig'];
+  rawEnvironmentConfigs: Array<{
+    name: string;
+    content: string;
+  }>;
+  environmentConfigs: InspectConfigResult['origin']['environmentConfigs'];
+} => {
+  const { environments, ...rsbuildConfig } = normalizedConfig;
+
+  const pluginNames = pluginManager.getPlugins().map((p) => p.name);
+
+  const rsbuildDebugConfig: Omit<NormalizedConfig, 'environments'> & {
+    pluginNames: string[];
+  } = {
+    ...rsbuildConfig,
+    pluginNames,
+  };
+
+  const rawRsbuildConfig = stringifyConfig(
+    rsbuildDebugConfig,
+    inspectOptions.verbose,
+  );
+
+  const environmentConfigs: Record<
+    string,
+    NormalizedEnvironmentConfig & {
+      pluginNames: string[];
+    }
+  > = {};
+
+  const rawEnvironmentConfigs: Array<{
+    name: string;
+    content: string;
+  }> = [];
+
+  for (const [name, config] of Object.entries(environments)) {
+    const debugConfig = {
+      ...config,
+      pluginNames,
+    };
+    rawEnvironmentConfigs.push({
+      name,
+      content: stringifyConfig(debugConfig, inspectOptions.verbose),
+    });
+    environmentConfigs[name] = debugConfig;
+  }
+
+  return {
+    rsbuildConfig: rsbuildDebugConfig,
+    rawRsbuildConfig,
+    environmentConfigs,
+    rawEnvironmentConfigs,
+  };
+};
+
 export async function outputInspectConfigFiles({
-  rsbuildConfig,
-  rawRsbuildConfig,
-  bundlerConfigs,
+  rawBundlerConfigs,
+  rawEnvironmentConfigs,
   inspectOptions,
   configType,
 }: {
   configType: string;
-  rsbuildConfig: NormalizedConfig;
-  rawRsbuildConfig: string;
-  bundlerConfigs: string[];
+  rawEnvironmentConfigs: Array<{
+    name: string;
+    content: string;
+  }>;
+  rawBundlerConfigs: Array<{
+    name: string;
+    content: string;
+  }>;
   inspectOptions: InspectConfigOptions & {
     outputPath: string;
   };
-}) {
+}): Promise<void> {
   const { outputPath } = inspectOptions;
 
   const files = [
-    {
-      path: join(outputPath, 'rsbuild.config.mjs'),
-      label: 'Rsbuild Config',
-      content: rawRsbuildConfig,
-    },
-    ...bundlerConfigs.map((content, index) => {
-      const suffix = rsbuildConfig.output.targets[index];
-      const outputFile = `${configType}.config.${suffix}.mjs`;
+    ...rawEnvironmentConfigs.map(({ name, content }) => {
+      if (rawEnvironmentConfigs.length === 1) {
+        const outputFile = 'rsbuild.config.mjs';
+        const outputFilePath = join(outputPath, outputFile);
+
+        return {
+          path: outputFilePath,
+          label: 'Rsbuild Config',
+          content,
+        };
+      }
+      const outputFile = `rsbuild.config.${name}.mjs`;
+      const outputFilePath = join(outputPath, outputFile);
+
+      return {
+        path: outputFilePath,
+        label: `Rsbuild Config (${name})`,
+        content,
+      };
+    }),
+    ...rawBundlerConfigs.map(({ name, content }) => {
+      const outputFile = `${configType}.config.${name}.mjs`;
       let outputFilePath = join(outputPath, outputFile);
 
       // if filename is conflict, add a random id to the filename.
-      if (fse.existsSync(outputFilePath)) {
+      if (fs.existsSync(outputFilePath)) {
         outputFilePath = outputFilePath.replace(/\.mjs$/, `.${Date.now()}.mjs`);
       }
 
       return {
         path: outputFilePath,
-        label: `${upperFirst(configType)} Config (${suffix})`,
+        label: `${upperFirst(configType)} Config (${name})`,
         content,
       };
     }),
   ];
 
+  await fs.promises.mkdir(outputPath, { recursive: true });
+
   await Promise.all(
-    files.map((item) =>
-      fse.outputFile(item.path, `export default ${item.content}`),
-    ),
+    files.map(async (item) => {
+      return fs.promises.writeFile(item.path, `export default ${item.content}`);
+    }),
   );
 
   const fileInfos = files
@@ -451,7 +556,7 @@ export async function outputInspectConfigFiles({
   );
 }
 
-export async function stringifyConfig(config: unknown, verbose?: boolean) {
+export function stringifyConfig(config: unknown, verbose?: boolean): string {
   // webpackChain.toString can be used as a common stringify method
   const stringify = RspackChain.toString as (
     config: unknown,

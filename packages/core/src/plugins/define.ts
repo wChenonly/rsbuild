@@ -1,13 +1,12 @@
-import { type Define, getNodeEnv } from '@rsbuild/shared';
-import { getPublicPathFromChain } from '../helpers';
-import type { RsbuildPlugin } from '../types';
+import { getNodeEnv, getPublicPathFromChain } from '../helpers';
+import type { Define, RsbuildPlugin } from '../types';
 
 export const pluginDefine = (): RsbuildPlugin => ({
   name: 'rsbuild:define',
 
   setup(api) {
-    api.modifyBundlerChain((chain, { CHAIN_ID, bundler }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyBundlerChain((chain, { CHAIN_ID, bundler, environment }) => {
+      const { config } = environment;
       const builtinVars: Define = {
         'process.env.NODE_ENV': JSON.stringify(getNodeEnv()),
         'process.env.ASSET_PREFIX': JSON.stringify(

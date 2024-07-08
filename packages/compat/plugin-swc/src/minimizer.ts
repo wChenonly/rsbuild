@@ -1,6 +1,11 @@
-import { type NormalizedConfig, __internalHelper, logger } from '@rsbuild/core';
-import { color, deepmerge } from '@rsbuild/shared';
+import {
+  type NormalizedEnvironmentConfig,
+  __internalHelper,
+  logger,
+} from '@rsbuild/core';
 import type { webpack } from '@rsbuild/webpack';
+import deepmerge from 'deepmerge';
+import color from 'picocolors';
 import { minify, minifyCss } from './binding';
 import { JS_REGEX } from './constants';
 import type { CssMinifyOptions, JsMinifyOptions, Output } from './types';
@@ -33,13 +38,13 @@ export class SwcMinimizerPlugin {
   constructor(options: {
     jsMinify?: boolean | JsMinifyOptions;
     cssMinify?: boolean | CssMinifyOptions;
-    rsbuildConfig: NormalizedConfig;
+    environmentConfig: NormalizedEnvironmentConfig;
   }) {
     this.minifyOptions = {
       jsMinify: options.jsMinify
-        ? deepmerge(
-            this.getDefaultJsMinifyOptions(options.rsbuildConfig),
-            normalize(options.jsMinify, {}),
+        ? deepmerge<JsMinifyOptions>(
+            this.getDefaultJsMinifyOptions(options.environmentConfig),
+            normalize(options.jsMinify, {}) ?? {},
           )
         : undefined,
       cssMinify: options.cssMinify
@@ -48,9 +53,11 @@ export class SwcMinimizerPlugin {
     };
   }
 
-  getDefaultJsMinifyOptions(rsbuildConfig: NormalizedConfig): JsMinifyOptions {
+  getDefaultJsMinifyOptions(
+    environmentConfig: NormalizedEnvironmentConfig,
+  ): JsMinifyOptions {
     const options = {
-      ...__internalHelper.getSwcMinimizerOptions(rsbuildConfig),
+      ...__internalHelper.getSwcMinimizerOptions(environmentConfig),
       mangle: true,
     };
 

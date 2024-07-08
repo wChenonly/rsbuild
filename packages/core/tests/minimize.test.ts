@@ -32,24 +32,36 @@ describe('plugin-minimize', () => {
       [
         SwcJsMinimizerRspackPlugin {
           "_options": {
-            "compress": "{"passes":1,"pure_funcs":[],"drop_console":false}",
+            "compress": {
+              "passes": 1,
+            },
             "exclude": undefined,
             "extractComments": {
               "condition": "@preserve|@lic|@cc_on|^/**!",
             },
-            "format": "{"comments":false,"asciiOnly":true}",
+            "format": {
+              "asciiOnly": true,
+              "comments": false,
+            },
             "include": undefined,
-            "mangle": "{"keep_classnames":false,"keep_fnames":false}",
+            "mangle": true,
             "module": undefined,
             "test": undefined,
           },
           "affectedHooks": "compilation",
           "name": "SwcJsMinimizerRspackPlugin",
         },
-        SwcCssMinimizerRspackPlugin {
-          "_options": undefined,
+        LightningCssMinimizerRspackPlugin {
+          "_options": {
+            "browserslist": [
+              "defaults",
+            ],
+            "errorRecovery": true,
+            "removeUnusedLocalIdents": true,
+            "unusedSymbols": [],
+          },
           "affectedHooks": undefined,
-          "name": "SwcCssMinimizerRspackPlugin",
+          "name": "LightningCssMinimizerRspackPlugin",
         },
       ]
     `,
@@ -76,7 +88,7 @@ describe('plugin-minimize', () => {
 
     expect(bundlerConfigs[0].optimization?.minimizer?.length).toBe(1);
     expect(bundlerConfigs[0].optimization?.minimizer?.[0]).toMatchObject({
-      name: 'SwcCssMinimizerRspackPlugin',
+      name: 'LightningCssMinimizerRspackPlugin',
     });
 
     process.env.NODE_ENV = 'test';
@@ -102,31 +114,6 @@ describe('plugin-minimize', () => {
     expect(bundlerConfigs[0].optimization?.minimizer?.[0]).toMatchObject({
       name: 'SwcJsMinimizerRspackPlugin',
     });
-
-    process.env.NODE_ENV = 'test';
-  });
-
-  it('should not minimizer for HTML when output.minify.html is false', async () => {
-    process.env.NODE_ENV = 'production';
-
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginEntry(), pluginHtml()],
-      rsbuildConfig: {
-        output: {
-          minify: {
-            html: false,
-          },
-        },
-      },
-    });
-
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toMatchObject(
-      {
-        options: {
-          minify: false,
-        },
-      },
-    );
 
     process.env.NODE_ENV = 'test';
   });
@@ -160,35 +147,6 @@ describe('plugin-minimize', () => {
     process.env.NODE_ENV = 'test';
   });
 
-  it('should accept and merge options for HTML minimizer', async () => {
-    process.env.NODE_ENV = 'production';
-
-    const rsbuild = await createStubRsbuild({
-      plugins: [pluginEntry(), pluginHtml()],
-      rsbuildConfig: {
-        output: {
-          minify: {
-            htmlOptions: {
-              minifyJS: false,
-            },
-          },
-        },
-      },
-    });
-
-    expect(await rsbuild.matchBundlerPlugin('HtmlWebpackPlugin')).toMatchObject(
-      {
-        options: {
-          minify: {
-            minifyJS: false,
-          },
-        },
-      },
-    );
-
-    process.env.NODE_ENV = 'test';
-  });
-
   it('should dropConsole when performance.removeConsole is true', async () => {
     process.env.NODE_ENV = 'production';
 
@@ -208,24 +166,37 @@ describe('plugin-minimize', () => {
       [
         SwcJsMinimizerRspackPlugin {
           "_options": {
-            "compress": "{"passes":1,"pure_funcs":[],"drop_console":true}",
+            "compress": {
+              "drop_console": true,
+              "passes": 1,
+            },
             "exclude": undefined,
             "extractComments": {
               "condition": "@preserve|@lic|@cc_on|^/**!",
             },
-            "format": "{"comments":false,"asciiOnly":true}",
+            "format": {
+              "asciiOnly": true,
+              "comments": false,
+            },
             "include": undefined,
-            "mangle": "{"keep_classnames":false,"keep_fnames":false}",
+            "mangle": true,
             "module": undefined,
             "test": undefined,
           },
           "affectedHooks": "compilation",
           "name": "SwcJsMinimizerRspackPlugin",
         },
-        SwcCssMinimizerRspackPlugin {
-          "_options": undefined,
+        LightningCssMinimizerRspackPlugin {
+          "_options": {
+            "browserslist": [
+              "defaults",
+            ],
+            "errorRecovery": true,
+            "removeUnusedLocalIdents": true,
+            "unusedSymbols": [],
+          },
           "affectedHooks": undefined,
-          "name": "SwcCssMinimizerRspackPlugin",
+          "name": "LightningCssMinimizerRspackPlugin",
         },
       ]
     `,
@@ -253,24 +224,40 @@ describe('plugin-minimize', () => {
       [
         SwcJsMinimizerRspackPlugin {
           "_options": {
-            "compress": "{"passes":1,"pure_funcs":["console.log","console.warn"],"drop_console":false}",
+            "compress": {
+              "passes": 1,
+              "pure_funcs": [
+                "console.log",
+                "console.warn",
+              ],
+            },
             "exclude": undefined,
             "extractComments": {
               "condition": "@preserve|@lic|@cc_on|^/**!",
             },
-            "format": "{"comments":false,"asciiOnly":true}",
+            "format": {
+              "asciiOnly": true,
+              "comments": false,
+            },
             "include": undefined,
-            "mangle": "{"keep_classnames":false,"keep_fnames":false}",
+            "mangle": true,
             "module": undefined,
             "test": undefined,
           },
           "affectedHooks": "compilation",
           "name": "SwcJsMinimizerRspackPlugin",
         },
-        SwcCssMinimizerRspackPlugin {
-          "_options": undefined,
+        LightningCssMinimizerRspackPlugin {
+          "_options": {
+            "browserslist": [
+              "defaults",
+            ],
+            "errorRecovery": true,
+            "removeUnusedLocalIdents": true,
+            "unusedSymbols": [],
+          },
           "affectedHooks": undefined,
-          "name": "SwcCssMinimizerRspackPlugin",
+          "name": "LightningCssMinimizerRspackPlugin",
         },
       ]
     `,
@@ -298,24 +285,36 @@ describe('plugin-minimize', () => {
       [
         SwcJsMinimizerRspackPlugin {
           "_options": {
-            "compress": "{"passes":1,"pure_funcs":[],"drop_console":false}",
+            "compress": {
+              "passes": 1,
+            },
             "exclude": undefined,
             "extractComments": {
               "condition": "@preserve|@lic|@cc_on|^/**!",
             },
-            "format": "{"comments":false,"asciiOnly":false}",
+            "format": {
+              "asciiOnly": false,
+              "comments": false,
+            },
             "include": undefined,
-            "mangle": "{"keep_classnames":false,"keep_fnames":false}",
+            "mangle": true,
             "module": undefined,
             "test": undefined,
           },
           "affectedHooks": "compilation",
           "name": "SwcJsMinimizerRspackPlugin",
         },
-        SwcCssMinimizerRspackPlugin {
-          "_options": undefined,
+        LightningCssMinimizerRspackPlugin {
+          "_options": {
+            "browserslist": [
+              "defaults",
+            ],
+            "errorRecovery": true,
+            "removeUnusedLocalIdents": true,
+            "unusedSymbols": [],
+          },
           "affectedHooks": undefined,
-          "name": "SwcCssMinimizerRspackPlugin",
+          "name": "LightningCssMinimizerRspackPlugin",
         },
       ]
     `,

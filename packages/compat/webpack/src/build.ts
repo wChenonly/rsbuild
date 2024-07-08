@@ -1,25 +1,17 @@
-import { type Rspack, logger } from '@rsbuild/core';
-import {
-  type BuildOptions,
-  type MultiStats,
-  type RspackConfig,
-  type Stats,
-  getNodeEnv,
-  onCompileDone,
-  setNodeEnv,
-} from '@rsbuild/shared';
+import { logger } from '@rsbuild/core';
+import type { BuildOptions, Rspack } from '@rsbuild/core';
 import type { Configuration as WebpackConfig } from 'webpack';
-// @ts-expect-error
 import WebpackMultiStats from 'webpack/lib/MultiStats.js';
 import { createCompiler } from './createCompiler';
 import { type InitConfigsOptions, initConfigs } from './initConfigs';
+import { onCompileDone } from './shared';
 
 export const build = async (
   initOptions: InitConfigsOptions,
   { mode = 'production', watch, compiler: customCompiler }: BuildOptions = {},
 ) => {
-  if (!getNodeEnv()) {
-    setNodeEnv(mode);
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = mode;
   }
 
   const { context } = initOptions;
@@ -42,11 +34,16 @@ export const build = async (
 
   let isFirstCompile = true;
   await context.hooks.onBeforeBuild.call({
-    bundlerConfigs: bundlerConfigs as RspackConfig[],
+    bundlerConfigs: bundlerConfigs as Rspack.Configuration[],
+    environments: context.environments,
   });
 
-  const onDone = async (stats: Stats | MultiStats) => {
-    const p = context.hooks.onAfterBuild.call({ isFirstCompile, stats });
+  const onDone = async (stats: Rspack.Stats | Rspack.MultiStats) => {
+    const p = context.hooks.onAfterBuild.call({
+      isFirstCompile,
+      stats,
+      environments: context.environments,
+    });
     isFirstCompile = false;
     await p;
   };
@@ -62,24 +59,26 @@ export const build = async (
     return;
   }
 
-  await new Promise<{ stats: Stats | MultiStats }>((resolve, reject) => {
-    compiler.run((err, stats) => {
-      if (err || stats?.hasErrors()) {
-        const buildError = err || new Error('Webpack build failed!');
-        reject(buildError);
-      }
-      // If there is a compilation error, the close method should not be called.
-      // Otherwise bundler may generate an invalid cache.
-      else {
-        // When using run or watch, call close and wait for it to finish before calling run or watch again.
-        // Concurrent compilations will corrupt the output files.
-        compiler.close((closeErr) => {
-          closeErr && logger.error(closeErr);
+  await new Promise<{ stats: Rspack.Stats | Rspack.MultiStats }>(
+    (resolve, reject) => {
+      compiler.run((err, stats) => {
+        if (err || stats?.hasErrors()) {
+          const buildError = err || new Error('Webpack build failed!');
+          reject(buildError);
+        }
+        // If there is a compilation error, the close method should not be called.
+        // Otherwise bundler may generate an invalid cache.
+        else {
+          // When using run or watch, call close and wait for it to finish before calling run or watch again.
+          // Concurrent compilations will corrupt the output files.
+          compiler.close((closeErr) => {
+            closeErr && logger.error(closeErr);
 
-          // Assert type of stats must align to compiler.
-          resolve({ stats: stats as any });
-        });
-      }
-    });
-  });
+            // Assert type of stats must align to compiler.
+            resolve({ stats: stats as any });
+          });
+        }
+      });
+    },
+  );
 };

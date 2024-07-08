@@ -1,6 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { type Rspack, rspack } from '@rsbuild/core';
-import { fse, pick } from '@rsbuild/shared';
 import serialize from 'serialize-javascript';
 import type { PluginAssetsRetryOptions, RuntimeRetryOptions } from './types';
 
@@ -28,6 +28,18 @@ function appendRspackScript(
   }
 }
 
+function pick<T, U extends keyof T>(obj: T, keys: ReadonlyArray<U>) {
+  return keys.reduce(
+    (ret, key) => {
+      if (obj[key] !== undefined) {
+        ret[key] = obj[key];
+      }
+      return ret;
+    },
+    {} as Pick<T, U>,
+  );
+}
+
 class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
   readonly name = 'ASYNC_CHUNK_RETRY_PLUGIN';
   readonly options: PluginAssetsRetryOptions & { isRspack: boolean };
@@ -46,7 +58,7 @@ class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
     ]);
   }
 
-  getRawRuntimeRetryCode() {
+  getRawRuntimeRetryCode(): string {
     const { RuntimeGlobals } = rspack;
     const filename = 'asyncChunkRetry';
     const runtimeFilePath = path.join(
@@ -54,7 +66,7 @@ class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
       'runtime',
       this.options.minify ? `${filename}.min.js` : `${filename}.js`,
     );
-    const rawText = fse.readFileSync(runtimeFilePath, 'utf-8');
+    const rawText = fs.readFileSync(runtimeFilePath, 'utf-8');
 
     return rawText
       .replaceAll('__RUNTIME_GLOBALS_REQUIRE__', RuntimeGlobals.require)
@@ -66,21 +78,32 @@ class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
         '__RUNTIME_GLOBALS_GET_CHUNK_SCRIPT_FILENAME__',
         RuntimeGlobals.getChunkScriptFilename,
       )
+      .replaceAll(
+        '__RUNTIME_GLOBALS_GET_CSS_FILENAME__',
+        RuntimeGlobals.getChunkCssFilename,
+      )
+      .replaceAll(
+        '__RUNTIME_GLOBALS_GET_MINI_CSS_EXTRACT_FILENAME__',
+        '__webpack_require__.miniCssF'
+      )
       .replaceAll('__RUNTIME_GLOBALS_PUBLIC_PATH__', RuntimeGlobals.publicPath)
       .replaceAll('__RUNTIME_GLOBALS_LOAD_SCRIPT__', RuntimeGlobals.loadScript)
       .replaceAll('__RETRY_OPTIONS__', serialize(this.runtimeOptions));
   }
 
-  apply(compiler: Rspack.Compiler) {
+  apply(compiler: Rspack.Compiler): void {
     compiler.hooks.thisCompilation.tap(this.name, (compilation) => {
       compilation.hooks.runtimeModule.tap(this.name, (module) => {
         const { isRspack } = this.options;
         const constructorName = isRspack
           ? module.constructorName
           : module.constructor?.name;
+
         const isPublicPathModule =
           module.name === 'publicPath' ||
-          constructorName === 'PublicPathRuntimeModule';
+          constructorName === 'PublicPathRuntimeModule' ||
+          constructorName === 'AutoPublicPathRuntimeModule';
+
         if (!isPublicPathModule) {
           return;
         }
@@ -88,7 +111,7 @@ class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
         const runtimeCode = this.getRawRuntimeRetryCode();
 
         // Rspack currently does not have module.addRuntimeModule on the js side,
-        // so we insert our runtime code after PublicPathRuntimeModule.
+        // so we insert our runtime code after PublicPathRuntimeModule or AutoPublicPathRuntimeModule.
         if (isRspack) {
           appendRspackScript(module, runtimeCode);
         } else {

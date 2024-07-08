@@ -1,5 +1,5 @@
-import type { RsbuildPlugin } from '@rsbuild/shared';
 import { createStubRsbuild } from '@scripts/test-helper';
+import type { RsbuildPlugin } from '../src';
 
 describe('applyDefaultPlugins', () => {
   it('should apply default plugins correctly', async () => {
@@ -31,7 +31,7 @@ describe('applyDefaultPlugins', () => {
     const rsbuild = await createStubRsbuild({
       rsbuildConfig: {
         output: {
-          targets: ['node'],
+          target: 'node',
         },
       },
     });

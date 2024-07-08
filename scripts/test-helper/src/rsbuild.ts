@@ -1,49 +1,16 @@
 import type {
+  BundlerPluginInstance,
   CreateRsbuildOptions,
   RsbuildInstance,
   RsbuildPlugin,
+  Rspack,
 } from '@rsbuild/core';
-import type { BundlerPluginInstance, RspackConfig } from '@rsbuild/shared';
-
-export function baseMatchLoader({
-  config,
-  loader,
-  testFile,
-}: {
-  config: RspackConfig;
-  loader: string;
-  testFile: string;
-}): boolean {
-  if (!config.module?.rules) {
-    return false;
-  }
-  return config.module.rules.some((rule) => {
-    if (
-      rule &&
-      typeof rule === 'object' &&
-      rule.test &&
-      rule.test instanceof RegExp &&
-      rule.test.test(testFile)
-    ) {
-      return (
-        Array.isArray(rule.use) &&
-        rule.use.some((useOptions) => {
-          if (typeof useOptions === 'object' && useOptions !== null) {
-            return useOptions.loader?.includes(loader);
-          }
-          if (typeof useOptions === 'string') {
-            return useOptions.includes(loader);
-          }
-          return false;
-        })
-      );
-    }
-    return false;
-  });
-}
 
 /** Match plugin by constructor name. */
-export const matchPlugin = (config: RspackConfig, pluginName: string) => {
+export const matchPlugin = (
+  config: Rspack.Configuration,
+  pluginName: string,
+) => {
   const result = config.plugins?.filter(
     (item) => item?.constructor.name === pluginName,
   );
@@ -66,7 +33,6 @@ export async function createStubRsbuild({
 }): Promise<
   RsbuildInstance & {
     unwrapConfig: () => Promise<Record<string, any>>;
-    matchLoader: (loader: string, testFile: string) => Promise<boolean>;
     matchBundlerPlugin: (name: string) => Promise<BundlerPluginInstance | null>;
   }
 > {
@@ -78,7 +44,7 @@ export async function createStubRsbuild({
   };
 
   // mock default entry
-  if (!rsbuildConfig.source?.entry) {
+  if (!rsbuildConfig.source?.entry && !rsbuildConfig.environments) {
     rsbuildConfig.source ||= {};
     rsbuildConfig.source.entry = {
       index: './src/index.js',
@@ -105,13 +71,8 @@ export async function createStubRsbuild({
     return matchPlugin(config, pluginName) as BundlerPluginInstance;
   };
 
-  /** Check if a file handled by specific loader. */
-  const matchLoader = async (loader: string, testFile: string) =>
-    baseMatchLoader({ config: await unwrapConfig(), loader, testFile });
-
   return {
     ...rsbuild,
-    matchLoader,
     unwrapConfig,
     matchBundlerPlugin,
   };

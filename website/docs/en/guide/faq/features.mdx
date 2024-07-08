@@ -22,7 +22,7 @@ export default {
 
 ### How to run ESLint during compilation?
 
-For the sake of compilation performance, Rsbuild will not perform ESLint verification during the compilation process by default. If you require this feature, you can use Rsbuild's [ESLint plugin](/plugins/list/plugin-eslint).
+For the sake of compilation performance, Rsbuild will not perform ESLint verification during the compilation process by default. If you require this feature, you can use Rsbuild's [ESLint plugin](https://github.com/rspack-contrib/rsbuild-plugin-eslint).
 
 ---
 
@@ -79,8 +79,8 @@ If a large number of warning logs are generated due to the three-party package, 
 ```ts
 export default {
   tools: {
-    bundlerChain: (chain) => {
-      chain.ignoreWarnings([/Using \/ for division outside of calc()/]);
+    rspack: {
+      ignoreWarnings: [/Using \/ for division outside of calc()/],
     },
   },
 };

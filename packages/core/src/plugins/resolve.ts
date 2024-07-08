@@ -1,13 +1,12 @@
-import {
-  type ChainIdentifier,
-  type NormalizedConfig,
-  type RsbuildTarget,
-  type RspackChain,
-  castArray,
-  reduceConfigsWithContext,
-} from '@rsbuild/shared';
-import { ensureAbsolutePath } from '../helpers';
-import type { RsbuildPlugin } from '../types';
+import { reduceConfigs } from 'reduce-configs';
+import type { ChainIdentifier } from '../configChain';
+import { castArray } from '../helpers';
+import { ensureAbsolutePath } from '../helpers/path';
+import type {
+  NormalizedEnvironmentConfig,
+  RsbuildPlugin,
+  RspackChain,
+} from '../types';
 
 // compatible with legacy packages with type="module"
 // https://github.com/webpack/webpack/issues/11467
@@ -16,7 +15,7 @@ function applyFullySpecified({
   CHAIN_ID,
 }: {
   chain: RspackChain;
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   CHAIN_ID: ChainIdentifier;
 }) {
   chain.module
@@ -41,13 +40,11 @@ function applyExtensions({ chain }: { chain: RspackChain }) {
 
 function applyAlias({
   chain,
-  target,
   config,
   rootPath,
 }: {
   chain: RspackChain;
-  target: RsbuildTarget;
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   rootPath: string;
 }) {
   const { alias } = config.source;
@@ -56,10 +53,9 @@ function applyAlias({
     return;
   }
 
-  const mergedAlias = reduceConfigsWithContext({
+  const mergedAlias = reduceConfigs({
     initial: {},
     config: alias,
-    ctx: { target },
   });
 
   /**
@@ -91,14 +87,13 @@ export const pluginResolve = (): RsbuildPlugin => ({
   setup(api) {
     api.modifyBundlerChain({
       order: 'pre',
-      handler: (chain, { target, CHAIN_ID }) => {
-        const config = api.getNormalizedConfig();
+      handler: (chain, { environment, CHAIN_ID }) => {
+        const { config } = environment;
 
         applyExtensions({ chain });
 
         applyAlias({
           chain,
-          target,
           config,
           rootPath: api.context.rootPath,
         });
@@ -108,14 +103,20 @@ export const pluginResolve = (): RsbuildPlugin => ({
       },
     });
 
-    api.modifyRspackConfig(async (rspackConfig) => {
-      const isTsProject = Boolean(api.context.tsconfigPath);
-      const config = api.getNormalizedConfig();
+    api.modifyRspackConfig(async (rspackConfig, { environment }) => {
+      const { tsconfigPath, config } = environment;
 
-      rspackConfig.resolve ||= {};
+      if (tsconfigPath && config.source.aliasStrategy === 'prefer-tsconfig') {
+        rspackConfig.resolve ||= {};
 
-      if (isTsProject && config.source.aliasStrategy === 'prefer-tsconfig') {
-        rspackConfig.resolve.tsConfigPath = api.context.tsconfigPath;
+        if (typeof rspackConfig.resolve.tsConfig === 'string') {
+          return;
+        }
+
+        rspackConfig.resolve.tsConfig = {
+          configFile: tsconfigPath,
+          ...rspackConfig.resolve.tsConfig,
+        };
       }
     });
   },

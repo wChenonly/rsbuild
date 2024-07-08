@@ -4,14 +4,12 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "rootDir": "src",
-    "composite": true
+    "composite": true,
+    "isolatedDeclarations": true
   },
   "references": [
     {
       "path": "../core"
-    },
-    {
-      "path": "../shared"
     }
   ],
   "include": ["src"]

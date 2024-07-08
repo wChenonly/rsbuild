@@ -1,9 +1,14 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { fse } from '@rsbuild/shared';
-import type { BuildCacheOptions, RsbuildContext } from '@rsbuild/shared';
 import { findExists, isFileExists } from '../helpers';
-import type { NormalizedConfig, RsbuildPlugin } from '../types';
+import type {
+  BuildCacheOptions,
+  EnvironmentContext,
+  NormalizedEnvironmentConfig,
+  RsbuildContext,
+  RsbuildPlugin,
+} from '../types';
 
 async function validateCache(
   cacheDirectory: string,
@@ -12,7 +17,8 @@ async function validateCache(
   const configFile = join(cacheDirectory, 'buildDependencies.json');
 
   if (await isFileExists(configFile)) {
-    const prevBuildDependencies = await fse.readJSON(configFile);
+    const rawConfigFile = await fs.promises.readFile(configFile, 'utf-8');
+    const prevBuildDependencies = JSON.parse(rawConfigFile);
 
     if (
       JSON.stringify(prevBuildDependencies) ===
@@ -25,10 +31,11 @@ async function validateCache(
      * If the filenames in the buildDependencies are changed, webpack will not invalidate the previous cache.
      * So we need to remove the cache directory to make sure the cache is invalidated.
      */
-    await fse.remove(cacheDirectory);
+    await fs.promises.rm(cacheDirectory, { force: true, recursive: true });
   }
 
-  await fse.outputJSON(configFile, buildDependencies);
+  await fs.promises.mkdir(cacheDirectory, { recursive: true });
+  await fs.promises.writeFile(configFile, JSON.stringify(buildDependencies));
 }
 
 function getDigestHash(digest: Array<string | undefined>) {
@@ -55,7 +62,8 @@ function getCacheDirectory(
  */
 async function getBuildDependencies(
   context: Readonly<RsbuildContext>,
-  config: NormalizedConfig,
+  config: NormalizedEnvironmentConfig,
+  environmentContext: EnvironmentContext,
 ) {
   const rootPackageJson = join(context.rootPath, 'package.json');
   const browserslistConfig = join(context.rootPath, '.browserslistrc');
@@ -65,9 +73,10 @@ async function getBuildDependencies(
   if (await isFileExists(rootPackageJson)) {
     buildDependencies.packageJson = [rootPackageJson];
   }
+  const { tsconfigPath } = environmentContext;
 
-  if (context.tsconfigPath) {
-    buildDependencies.tsconfig = [context.tsconfigPath];
+  if (tsconfigPath) {
+    buildDependencies.tsconfig = [tsconfigPath];
   }
 
   if (config._privateMeta?.configFilePath) {
@@ -100,8 +109,8 @@ export const pluginCache = (): RsbuildPlugin => ({
       return;
     }
 
-    api.modifyBundlerChain(async (chain, { target, env }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyBundlerChain(async (chain, { environment, env }) => {
+      const { config } = environment;
       const { buildCache } = config.performance;
 
       if (buildCache === false) {
@@ -112,7 +121,11 @@ export const pluginCache = (): RsbuildPlugin => ({
       const { context } = api;
       const cacheConfig = typeof buildCache === 'boolean' ? {} : buildCache;
       const cacheDirectory = getCacheDirectory(cacheConfig, context);
-      const buildDependencies = await getBuildDependencies(context, config);
+      const buildDependencies = await getBuildDependencies(
+        context,
+        config,
+        environment,
+      );
 
       await validateCache(cacheDirectory, buildDependencies);
 
@@ -124,8 +137,8 @@ export const pluginCache = (): RsbuildPlugin => ({
         // The default cache name of webpack is '${name}-${env}', and the `name` is `default` by default.
         // We set cache name to avoid cache conflicts of different targets.
         name: useDigest
-          ? `${target}-${env}-${getDigestHash(cacheConfig.cacheDigest!)}`
-          : `${target}-${env}`,
+          ? `${environment.name}-${env}-${getDigestHash(cacheConfig.cacheDigest!)}`
+          : `${environment.name}-${env}`,
         type: 'filesystem',
         cacheDirectory,
         buildDependencies,

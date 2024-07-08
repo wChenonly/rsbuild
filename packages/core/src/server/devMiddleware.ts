@@ -1,18 +1,44 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import {
-  type CompilerTapFn,
-  type DevConfig,
-  type NextFunction,
-  applyToCompiler,
-  isClientCompiler,
-  isNodeCompiler,
-} from '@rsbuild/shared';
 import type { Compiler, MultiCompiler } from '@rspack/core';
+import { applyToCompiler } from '../helpers';
 import type { DevMiddlewareOptions } from '../provider/createCompiler';
+import type { DevConfig, NextFunction } from '../types';
 
 type ServerCallbacks = {
   onInvalid: () => void;
   onDone: (stats: any) => void;
+};
+
+export const isClientCompiler = (compiler: {
+  options: {
+    target?: Compiler['options']['target'];
+  };
+}): boolean => {
+  const { target } = compiler.options;
+
+  if (target) {
+    return Array.isArray(target) ? target.includes('web') : target === 'web';
+  }
+
+  return false;
+};
+
+const isNodeCompiler = (compiler: {
+  options: {
+    target?: Compiler['options']['target'];
+  };
+}) => {
+  const { target } = compiler.options;
+
+  if (target) {
+    return Array.isArray(target) ? target.includes('node') : target === 'node';
+  }
+
+  return false;
+};
+
+type CompilerTapFn<CallBack extends (...args: any[]) => void = () => void> = {
+  tap: (name: string, cb: CallBack) => void;
 };
 
 export const setupServerHooks = (
@@ -27,7 +53,7 @@ export const setupServerHooks = (
     };
   },
   hookCallbacks: ServerCallbacks,
-) => {
+): void => {
   // TODO: node SSR HMR is not supported yet
   if (isNodeCompiler(compiler)) {
     return;

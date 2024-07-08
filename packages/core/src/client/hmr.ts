@@ -4,14 +4,8 @@
  *
  * Tips: this package will be bundled and running in the browser, do not import any Node.js modules.
  */
-import type { StatsError } from '@rsbuild/shared';
-import type { ClientConfig } from '@rsbuild/shared';
+import type { ClientConfig, StatsError } from '../types';
 import { formatStatsMessages } from './format';
-
-/**
- * hmr socket connect path
- */
-export const HMR_SOCK_PATH = '/rsbuild-hmr';
 
 function formatURL({
   port,
@@ -46,7 +40,7 @@ function getSocketUrl(urlParts: ClientConfig) {
     protocol: protocol || (location.protocol === 'https:' ? 'wss' : 'ws'),
     hostname: host || location.hostname,
     port: port || location.port,
-    pathname: path || HMR_SOCK_PATH,
+    pathname: path || '/rsbuild-hmr',
   });
 }
 
@@ -68,7 +62,7 @@ let clearOverlay: undefined | (() => void);
 export const registerOverlay = (
   createFn: (err: string[]) => void,
   clearFn: () => void,
-) => {
+): void => {
   createOverlay = createFn;
   clearOverlay = clearFn;
 };

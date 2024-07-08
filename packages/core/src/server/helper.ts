@@ -2,16 +2,19 @@ import type { IncomingMessage } from 'node:http';
 import net from 'node:net';
 import type { Socket } from 'node:net';
 import os from 'node:os';
-import { color, deepmerge, isFunction, logger } from '@rsbuild/shared';
+import { posix } from 'node:path';
+import color from 'picocolors';
+import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
+import { isFunction } from '../helpers';
+import { logger } from '../logger';
 import type {
-  DevConfig,
+  InternalContext,
   NormalizedConfig,
   OutputStructure,
   PrintUrls,
   Routes,
   RsbuildEntry,
-} from '@rsbuild/shared';
-import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
+} from '../types';
 
 /**
  * It used to subscribe http upgrade event
@@ -31,7 +34,8 @@ export type StartServerResult = {
 };
 
 // remove repeat '/'
-export const normalizeUrl = (url: string) => url.replace(/([^:]\/)\/+/g, '$1');
+export const normalizeUrl = (url: string): string =>
+  url.replace(/([^:]\/)\/+/g, '$1');
 
 /**
  * Make sure there is slash before and after prefix
@@ -44,6 +48,23 @@ const formatPrefix = (prefix: string | undefined) => {
   const hasLeadingSlash = prefix.startsWith('/');
   const hasTailSlash = prefix.endsWith('/');
   return `${hasLeadingSlash ? '' : '/'}${prefix}${hasTailSlash ? '' : '/'}`;
+};
+
+export const getRoutes = (context: InternalContext): Routes => {
+  return Object.values(context.environments).reduce<Routes>(
+    (prev, environmentContext) => {
+      const { distPath, config } = environmentContext;
+      const distPrefix = posix.relative(context.distPath, distPath);
+
+      const routes = formatRoutes(
+        environmentContext.htmlPaths,
+        posix.join(distPrefix, config.output.distPath.html),
+        config.html.outputStructure,
+      );
+      return prev.concat(...routes);
+    },
+    [],
+  );
 };
 
 /*
@@ -117,9 +138,9 @@ export function printServerURLs({
   routes: Routes;
   protocol: string;
   printUrls?: PrintUrls;
-}) {
+}): string | null {
   if (printUrls === false) {
-    return;
+    return null;
   }
 
   let urls = originalUrls;
@@ -133,7 +154,7 @@ export function printServerURLs({
     });
 
     if (!newUrls) {
-      return;
+      return null;
     }
 
     if (!Array.isArray(newUrls)) {
@@ -148,8 +169,8 @@ export function printServerURLs({
     }));
   }
 
-  if (urls.length === 0) {
-    return;
+  if (urls.length === 0 || routes.length === 0) {
+    return null;
   }
 
   const message = getURLMessages(urls, routes);
@@ -157,11 +178,6 @@ export function printServerURLs({
 
   return message;
 }
-
-/**
- * hmr socket connect path
- */
-export const HMR_SOCK_PATH = '/rsbuild-hmr';
 
 /**
  * Get available free port.
@@ -237,7 +253,11 @@ export const getServerConfig = async ({
 }: {
   config: NormalizedConfig;
   getPortSilently?: boolean;
-}) => {
+}): Promise<{
+  port: number;
+  host: string;
+  https: boolean;
+}> => {
   const host = config.server.host || DEFAULT_DEV_HOST;
   const port = await getPort({
     host,
@@ -247,33 +267,6 @@ export const getServerConfig = async ({
   });
   const https = Boolean(config.server.https) || false;
   return { port, host, https };
-};
-
-export const getDevConfig = ({
-  config,
-  port,
-}: {
-  config: NormalizedConfig;
-  port: number;
-}): DevConfig => {
-  const defaultDevConfig: DevConfig = {
-    client: {
-      path: HMR_SOCK_PATH,
-      port: port.toString(),
-      // By default it is set to "location.hostname"
-      host: '',
-      // By default it is set to "location.protocol === 'https:' ? 'wss' : 'ws'""
-      protocol: undefined,
-    },
-    writeToDisk: false,
-    liveReload: true,
-  };
-
-  const devConfig = config.dev
-    ? deepmerge(defaultDevConfig, config.dev)
-    : defaultDevConfig;
-
-  return devConfig;
 };
 
 const getIpv4Interfaces = () => {
@@ -327,7 +320,7 @@ const concatUrl = ({
 const LOCAL_LABEL = 'Local:  ';
 const NETWORK_LABEL = 'Network:  ';
 
-export const getUrlLabel = (url: string) => {
+const getUrlLabel = (url: string) => {
   try {
     const { host } = new URL(url);
     return isLoopbackHost(host) ? LOCAL_LABEL : NETWORK_LABEL;

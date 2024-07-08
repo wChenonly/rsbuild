@@ -5,12 +5,7 @@ import {
   ensureAssetPrefix,
   logger,
 } from '@rsbuild/core';
-import {
-  generateScriptTag,
-  getPublicPathFromCompiler,
-  isProd,
-} from '@rsbuild/shared';
-import type HtmlWebpackPlugin from 'html-webpack-plugin';
+import type HtmlWebpackPlugin from 'html-rspack-plugin';
 import type { PluginRemOptions } from './types';
 
 type AutoSetRootFontSizeOptions = Omit<
@@ -24,7 +19,7 @@ type AutoSetRootFontSizeOptions = Omit<
 export async function getRootPixelCode(
   options: Required<AutoSetRootFontSizeOptions>,
   isCompress = false,
-) {
+): Promise<string> {
   const code = genJSTemplate(options);
 
   if (!isCompress) {
@@ -40,6 +35,13 @@ export async function getRootPixelCode(
       ecma: 5,
     },
   );
+
+  if (!minifiedRuntimeCode) {
+    throw new Error(
+      '[AutoSetRootFontSizePlugin] Failed to minify runtime code.',
+    );
+  }
+
   return minifiedRuntimeCode;
 }
 
@@ -85,7 +87,7 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
     this.scriptLoading = scriptLoading;
   }
 
-  async getScriptPath() {
+  async getScriptPath(): Promise<string> {
     if (!this.scriptPath) {
       this.scriptPath = path.posix.join(
         this.distDir,
@@ -96,12 +98,12 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
     return this.scriptPath;
   }
 
-  apply(compiler: Rspack.Compiler) {
+  apply(compiler: Rspack.Compiler): void {
     let runtimeCode: string | undefined;
 
     const getRuntimeCode = async () => {
       if (!runtimeCode) {
-        const isCompress = isProd();
+        const isCompress = process.env.NODE_ENV === 'production';
         runtimeCode = await getRootPixelCode(this.options, isCompress);
       }
       return runtimeCode;
@@ -151,7 +153,12 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
             return data;
           }
 
-          const scriptTag = generateScriptTag();
+          const scriptTag = {
+            tagName: 'script',
+            attributes: {},
+            voidTag: false,
+            meta: {},
+          };
 
           if (this.options.inlineRuntime) {
             data.assetTags.scripts.unshift({
@@ -159,7 +166,7 @@ export class AutoSetRootFontSizePlugin implements Rspack.RspackPluginInstance {
               innerHTML: await getRuntimeCode(),
             });
           } else {
-            const publicPath = getPublicPathFromCompiler(compiler);
+            const { publicPath } = compilation.outputOptions;
             const url = ensureAssetPrefix(
               await this.getScriptPath(),
               publicPath,

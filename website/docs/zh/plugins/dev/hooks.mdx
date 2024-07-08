@@ -193,6 +193,70 @@ const myPlugin = () => ({
 });
 ```
 
+### modifyEnvironmentConfig
+
+修改特定 environment 的 Rsbuild 配置。
+
+在回调函数中，入参里的 config 对象已经合并了公共的 Rsbuild 配置，你可以直接修改这个 config 对象，也可以返回一个新的对象来替换它。
+
+- **类型：**
+
+```ts
+type ModifyEnvironmentConfigUtils = {
+  /** 当前 environment 名称 */
+  name: string;
+  mergeEnvironmentConfig: (
+    ...configs: EnvironmentConfig[]
+  ) => EnvironmentConfig;
+};
+
+function ModifyEnvironmentConfig(
+  callback: (
+    config: EnvironmentConfig,
+    utils: ModifyEnvironmentConfigUtils,
+  ) => MaybePromise<EnvironmentConfig | void>,
+): void;
+```
+
+- **示例：** 为指定 environment 的 Rsbuild config 设置一个默认值：
+
+```ts
+const myPlugin = () => ({
+  setup: (api) => {
+    api.modifyEnvironmentConfig((config, { name }) => {
+      if (name !== 'web') {
+        return config;
+      }
+      config.html ||= {};
+      config.html.title = 'My Default Title';
+    });
+  },
+});
+```
+
+- **示例：** 通过 `mergeEnvironmentConfig` 合并配置多个对象，并返回合并后的对象。
+
+```ts
+import type { EnvironmentConfig } from '@rsbuild/core';
+
+const myPlugin = () => ({
+  setup: (api) => {
+    api.modifyEnvironmentConfig((userConfig, { mergeEnvironmentConfig }) => {
+      const extraConfig: EnvironmentConfig = {
+        source: {
+          // ...
+        },
+        output: {
+          // ...
+        },
+      };
+
+      return mergeEnvironmentConfig(userConfig, extraConfig);
+    });
+  },
+});
+```
+
 ### modifyRspackConfig
 
 修改最终的 Rspack 配置对象，你可以直接修改传入的 config 对象，也可以返回一个新的对象来替换传入的对象。
@@ -201,6 +265,7 @@ const myPlugin = () => ({
 
 ```ts
 type ModifyRspackConfigUtils = {
+  environment: EnvironmentContext;
   env: NodeEnv;
   isDev: boolean;
   isProd: boolean;
@@ -244,6 +309,7 @@ import RspackChain from '@zh/shared/rspackChain.mdx';
 
 ```ts
 type ModifyBundlerChainUtils = {
+  environment: EnvironmentContext;
   env: NodeEnv;
   isDev: boolean;
   isProd: boolean;
@@ -251,7 +317,7 @@ type ModifyBundlerChainUtils = {
   isServer: boolean;
   isWebWorker: boolean;
   CHAIN_ID: ChainIdentifier;
-  HtmlPlugin: typeof import('html-webpack-plugin');
+  HtmlPlugin: typeof import('html-rspack-plugin');
   bundler: {
     BannerPlugin: rspack.BannerPlugin;
     DefinePlugin: rspack.DefinePlugin;
@@ -325,6 +391,10 @@ type Context = {
    * @example 'index.html'
    */
   filename: string;
+  /**
+   * 本次构建的 environment 上下文
+   */
+  environment: EnvironmentContext;
 };
 
 function ModifyHTMLTags(

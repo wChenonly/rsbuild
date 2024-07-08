@@ -1,18 +1,25 @@
 import fs from 'node:fs';
+import type Connect from 'connect';
+import { ROOT_DIST_DIR } from '../constants';
 import {
-  type CreateDevServerOptions,
-  type Rspack,
-  type StartDevServerOptions,
-  debug,
   getNodeEnv,
   getPublicPathFromCompiler,
   isMultiCompiler,
   setNodeEnv,
-} from '@rsbuild/shared';
-import type Connect from 'connect';
-import { ROOT_DIST_DIR } from '../constants';
+} from '../helpers';
+import { logger } from '../logger';
 import type { CreateDevMiddlewareReturns } from '../provider/createCompiler';
-import type { InternalContext, NormalizedConfig } from '../types';
+import type {
+  CreateDevServerOptions,
+  EnvironmentAPI,
+  InternalContext,
+  NormalizedConfig,
+  NormalizedDevConfig,
+  Rspack,
+  StartDevServerOptions,
+  Stats,
+} from '../types';
+import { getTransformedHtml, loadBundle } from './environment';
 import {
   type RsbuildDevMiddlewareOptions,
   getMiddlewares,
@@ -20,9 +27,8 @@ import {
 import {
   type StartServerResult,
   type UpgradeEvent,
-  formatRoutes,
   getAddressUrls,
-  getDevConfig,
+  getRoutes,
   getServerConfig,
   printServerURLs,
 } from './helper';
@@ -44,6 +50,9 @@ export type RsbuildDevServer = {
   }>;
 
   /** The following APIs will be used when you use a custom server */
+
+  /** The Rsbuild server environment API */
+  environments: EnvironmentAPI;
 
   /**
    * The resolved port.
@@ -75,6 +84,14 @@ export type RsbuildDevServer = {
   close: () => Promise<void>;
 };
 
+const formatDevConfig = (config: NormalizedDevConfig, port: number) => {
+  // replace port placeholder
+  if (config.client.port === '<port>') {
+    config.client.port = String(port);
+  }
+  return config;
+};
+
 export async function createDevServer<
   Options extends {
     context: InternalContext;
@@ -96,23 +113,15 @@ export async function createDevServer<
     setNodeEnv('development');
   }
 
-  debug('create dev server');
+  logger.debug('create dev server');
 
-  const serverConfig = config.server;
   const { port, host, https } = await getServerConfig({
     config,
     getPortSilently,
   });
-  const devConfig = getDevConfig({
-    config,
-    port,
-  });
+  const devConfig = formatDevConfig(config.dev, port);
 
-  const routes = formatRoutes(
-    options.context.entry,
-    config.output.distPath.html,
-    config.html.outputStructure,
-  );
+  const routes = getRoutes(options.context);
 
   options.context.devServer = {
     hostname: host,
@@ -121,6 +130,24 @@ export async function createDevServer<
   };
 
   let outputFileSystem: Rspack.OutputFileSystem = fs;
+
+  let lastStats: Stats[];
+
+  // should register onDevCompileDone hook before startCompile
+  const waitFirstCompileDone = runCompile
+    ? new Promise<void>((resolve) => {
+        options.context.hooks.onDevCompileDone.tap(
+          ({ stats, isFirstCompile }) => {
+            lastStats = 'stats' in stats ? stats.stats : [stats];
+
+            if (!isFirstCompile) {
+              return;
+            }
+            resolve();
+          },
+        );
+      })
+    : Promise.resolve();
 
   const startCompile: () => Promise<
     RsbuildDevMiddlewareOptions['compileMiddlewareAPI']
@@ -138,7 +165,7 @@ export async function createDevServer<
     // create dev middleware instance
     const compilerDevMiddleware = new CompilerDevMiddleware({
       dev: devConfig,
-      server: serverConfig,
+      server: config.server,
       publicPaths: publicPaths,
       devMiddleware,
     });
@@ -161,7 +188,9 @@ export async function createDevServer<
   const protocol = https ? 'https' : 'http';
   const urls = getAddressUrls({ protocol, port, host });
 
-  await options.context.hooks.onBeforeStartDevServer.call();
+  await options.context.hooks.onBeforeStartDevServer.call({
+    environments: options.context.environments,
+  });
 
   if (runCompile) {
     options.context.hooks.onBeforeCreateCompiler.tap(() => {
@@ -171,7 +200,7 @@ export async function createDevServer<
         port,
         routes,
         protocol,
-        printUrls: serverConfig.printUrls,
+        printUrls: config.server.printUrls,
       });
     });
   } else {
@@ -180,7 +209,7 @@ export async function createDevServer<
       port,
       routes,
       protocol,
-      printUrls: serverConfig.printUrls,
+      printUrls: config.server.printUrls,
     });
   }
 
@@ -188,17 +217,64 @@ export async function createDevServer<
 
   const fileWatcher = await setupWatchFiles({
     dev: devConfig,
-    server: serverConfig,
+    server: config.server,
     compileMiddlewareAPI,
   });
 
+  const pwd = options.context.rootPath;
+
+  const readFileSync = (fileName: string) => {
+    if ('readFileSync' in outputFileSystem) {
+      // bundle require needs a synchronous method, although readFileSync is not within the outputFileSystem type definition, but nodejs fs API implemented.
+      // @ts-expect-error
+      return outputFileSystem.readFileSync(fileName, 'utf-8');
+    }
+    return fs.readFileSync(fileName, 'utf-8');
+  };
+
+  const environmentAPI = Object.fromEntries(
+    Object.entries(options.context.environments).map(
+      ([name, environment], index) => {
+        return [
+          name,
+          {
+            getStats: async () => {
+              if (!runCompile) {
+                throw new Error(
+                  "can't get stats info when runCompile is false",
+                );
+              }
+              await waitFirstCompileDone;
+              return lastStats[index];
+            },
+            loadBundle: async <T>(entryName: string) => {
+              await waitFirstCompileDone;
+              return loadBundle<T>(lastStats[index], entryName, {
+                readFileSync,
+                environment,
+              });
+            },
+            getTransformedHtml: async (entryName: string) => {
+              await waitFirstCompileDone;
+              return getTransformedHtml(entryName, {
+                readFileSync,
+                environment,
+              });
+            },
+          },
+        ];
+      },
+    ),
+  );
+
   const devMiddlewares = await getMiddlewares({
-    pwd: options.context.rootPath,
+    pwd,
     compileMiddlewareAPI,
     dev: devConfig,
-    server: serverConfig,
+    server: config.server,
+    environments: environmentAPI,
     output: {
-      distPath: config.output.distPath.root || ROOT_DIST_DIR,
+      distPath: options.context.distPath || ROOT_DIST_DIR,
     },
     outputFileSystem,
   });
@@ -218,12 +294,13 @@ export async function createDevServer<
     port,
     middlewares,
     outputFileSystem,
+    environments: environmentAPI,
     listen: async () => {
       const httpServer = await createHttpServer({
-        serverConfig,
+        serverConfig: config.server,
         middlewares,
       });
-      debug('listen dev server');
+      logger.debug('listen dev server');
 
       return new Promise<StartServerResult>((resolve) => {
         httpServer.listen(
@@ -240,7 +317,7 @@ export async function createDevServer<
 
             httpServer.on('upgrade', devMiddlewares.onUpgrade);
 
-            debug('listen dev server done');
+            logger.debug('listen dev server done');
 
             await server.afterListen();
 
@@ -266,6 +343,7 @@ export async function createDevServer<
       await options.context.hooks.onAfterStartDevServer.call({
         port,
         routes,
+        environments: options.context.environments,
       });
     },
     onHTTPUpgrade: devMiddlewares.onUpgrade,
@@ -276,7 +354,7 @@ export async function createDevServer<
     },
   };
 
-  debug('create dev server done');
+  logger.debug('create dev server done');
 
   return server;
 }

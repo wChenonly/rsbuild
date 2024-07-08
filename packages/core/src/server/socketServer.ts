@@ -1,11 +1,25 @@
 import type { IncomingMessage } from 'node:http';
 import type { Socket } from 'node:net';
-import { type DevConfig, type Stats, logger } from '@rsbuild/shared';
 import type Ws from 'ws';
 import { getAllStatsErrors, getAllStatsWarnings } from '../helpers';
+import { logger } from '../logger';
+import type { DevConfig, Stats } from '../types';
 
 interface ExtWebSocket extends Ws {
   isAlive: boolean;
+}
+
+function isEqualSet(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) {
+    return false;
+  }
+
+  for (const v of a.values()) {
+    if (!b.has(v)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export class SocketServer {
@@ -16,6 +30,7 @@ export class SocketServer {
   private readonly options: DevConfig;
 
   private stats?: Stats;
+  private initialChunks?: Set<string>;
 
   private timer: ReturnType<typeof setInterval> | null = null;
 
@@ -23,7 +38,7 @@ export class SocketServer {
     this.options = options;
   }
 
-  public upgrade(req: IncomingMessage, sock: Socket, head: any) {
+  public upgrade(req: IncomingMessage, sock: Socket, head: any): void {
     // subscribe upgrade event to handle socket
 
     if (!this.wsServer.shouldHandle(req)) {
@@ -36,7 +51,7 @@ export class SocketServer {
   }
 
   // create socket, install socket handler, bind socket event
-  public async prepare() {
+  public async prepare(): Promise<void> {
     const { default: ws } = await import('ws');
     this.wsServer = new ws.Server({
       noServer: true,
@@ -67,7 +82,7 @@ export class SocketServer {
     });
   }
 
-  public updateStats(stats: Stats) {
+  public updateStats(stats: Stats): void {
     this.stats = stats;
     this.sendStats();
   }
@@ -76,13 +91,13 @@ export class SocketServer {
   public sockWrite(
     type: string,
     data?: Record<string, any> | string | boolean,
-  ) {
+  ): void {
     for (const socket of this.sockets) {
       this.send(socket, JSON.stringify({ type, data }));
     }
   }
 
-  public singleWrite(
+  private singleWrite(
     socket: Ws,
     type: string,
     data?: Record<string, any> | string | boolean,
@@ -90,7 +105,7 @@ export class SocketServer {
     this.send(socket, JSON.stringify({ type, data }));
   }
 
-  public close() {
+  public close(): void {
     for (const socket of this.sockets) {
       socket.close();
     }
@@ -150,6 +165,7 @@ export class SocketServer {
       errors: true,
       errorsCount: true,
       errorDetails: false,
+      entrypoints: true,
       children: true,
     };
 
@@ -163,6 +179,29 @@ export class SocketServer {
     // this should never happened
     if (!stats) {
       return null;
+    }
+
+    // web-infra-dev/rspack#6633
+    // when initial-chunks change, reload the page
+    // e.g: ['index.js'] -> ['index.js', 'lib-polyfill.js']
+    const newInitialChunks: Set<string> = new Set();
+    if (stats.entrypoints) {
+      for (const entrypoint of Object.values(stats.entrypoints)) {
+        const chunks = entrypoint.chunks;
+        if (Array.isArray(chunks)) {
+          for (const chunkName of chunks) {
+            chunkName && newInitialChunks.add(chunkName);
+          }
+        }
+      }
+    }
+    const shouldReload =
+      Boolean(stats.entrypoints) &&
+      Boolean(this.initialChunks) &&
+      !isEqualSet(this.initialChunks as Set<string>, newInitialChunks);
+    this.initialChunks = newInitialChunks;
+    if (shouldReload) {
+      return this.sockWrite('content-changed');
     }
 
     const shouldEmit =

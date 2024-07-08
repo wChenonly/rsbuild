@@ -1,10 +1,5 @@
 import path from 'node:path';
 import type { RsbuildPlugin } from '@rsbuild/core';
-import {
-  DEFAULT_BROWSERSLIST,
-  SCRIPT_REGEX,
-  applyScriptCondition,
-} from '@rsbuild/shared';
 import { SwcMinimizerPlugin } from './minimizer';
 import type {
   ObjPluginSwcOptions,
@@ -39,30 +34,23 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
       // loader should be applied in the pre stage for customizing
       order: 'pre',
       handler: async (chain, utils) => {
-        const { CHAIN_ID } = utils;
-        const rsbuildConfig = api.getNormalizedConfig();
+        const { CHAIN_ID, environment } = utils;
+        const { config: environmentConfig, browserslist } = environment;
         const { rootPath } = api.context;
 
         const swcConfigs = await applyPluginConfig(
           options,
           utils,
-          rsbuildConfig,
+          environmentConfig,
           rootPath,
+          browserslist,
         );
 
         // If babel plugin is used, replace babel-loader
-        if (chain.module.rules.get(CHAIN_ID.RULE.JS)) {
-          chain.module.rule(CHAIN_ID.RULE.JS).uses.delete(CHAIN_ID.USE.BABEL);
+        const jsRule = chain.module.rule(CHAIN_ID.RULE.JS);
+        if (jsRule.uses.has(CHAIN_ID.USE.BABEL)) {
+          jsRule.uses.delete(CHAIN_ID.USE.BABEL);
           chain.module.delete(CHAIN_ID.RULE.TS);
-        } else {
-          applyScriptCondition({
-            rule: chain.module.rule(CHAIN_ID.RULE.JS),
-            chain,
-            config: rsbuildConfig,
-            context: api.context,
-            includes: [],
-            excludes: [],
-          });
         }
 
         for (let i = 0; i < swcConfigs.length; i++) {
@@ -74,7 +62,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
 
           // Insert swc loader and plugin
           rule
-            .test(test || SCRIPT_REGEX)
+            .test(test || /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/)
             .use(CHAIN_ID.USE.SWC)
             .loader(path.resolve(__dirname, './loader.cjs'))
             .options(removeUselessOptions(swcConfig) satisfies TransformConfig);
@@ -117,11 +105,11 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
       },
     });
 
-    api.modifyBundlerChain((chain, { CHAIN_ID, isProd }) => {
-      const rsbuildConfig = api.getNormalizedConfig();
+    api.modifyBundlerChain((chain, { CHAIN_ID, isProd, environment }) => {
+      const environmentConfig = environment.config;
 
-      if (checkUseMinify(mainConfig, rsbuildConfig, isProd)) {
-        const { minify } = rsbuildConfig.output;
+      if (checkUseMinify(mainConfig, environmentConfig, isProd)) {
+        const { minify } = environmentConfig.output;
         const minifyJs =
           minify === true || (typeof minify === 'object' && minify.js);
         const minifyCss =
@@ -133,7 +121,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
             .use(SwcMinimizerPlugin, [
               {
                 jsMinify: mainConfig.jsMinify ?? mainConfig.jsc?.minify ?? true,
-                rsbuildConfig,
+                environmentConfig,
               },
             ]);
         }
@@ -144,7 +132,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
             .use(SwcMinimizerPlugin, [
               {
                 cssMinify: minifyCss ? mainConfig.cssMinify ?? true : false,
-                rsbuildConfig,
+                environmentConfig,
               },
             ]);
         }
@@ -173,9 +161,6 @@ export function getDefaultSwcConfig(): TransformConfig {
       // Avoid the webpack magic comment to be removed
       // https://github.com/swc-project/swc/issues/6403
       preserveAllComments: true,
-    },
-    env: {
-      targets: DEFAULT_BROWSERSLIST.web.join(', '),
     },
   };
 }

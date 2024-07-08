@@ -1,38 +1,33 @@
 import path from 'node:path';
-import {
-  type AutoprefixerOptions,
-  type CSSLoaderModulesMode,
-  type CSSLoaderOptions,
-  type ModifyChainUtils,
-  type PostCSSLoaderOptions,
-  type PostCSSOptions,
-  type RsbuildContext,
-  type RsbuildTarget,
-  type RspackChain,
-  deepmerge,
-  getBrowserslistWithDefault,
-  isFunction,
-  isPlainObject,
-  reduceConfigs,
-  reduceConfigsWithContext,
-} from '@rsbuild/shared';
+import deepmerge from 'deepmerge';
 import type { AcceptedPlugin } from 'postcss';
+import { reduceConfigs, reduceConfigsWithContext } from 'reduce-configs';
 import { CSS_REGEX, LOADER_PATH } from '../constants';
-import { getCompiledPath } from '../helpers';
+import { isFunction, isPlainObject } from '../helpers';
+import { getCompiledPath } from '../helpers/path';
 import { getCssExtractPlugin } from '../pluginHelper';
-import type { NormalizedConfig, RsbuildPlugin } from '../types';
-
-export const enableNativeCss = (config: NormalizedConfig) =>
-  !config.output.injectStyles;
+import type {
+  AutoprefixerOptions,
+  CSSLoaderModulesMode,
+  CSSLoaderOptions,
+  ModifyChainUtils,
+  NormalizedEnvironmentConfig,
+  PostCSSLoaderOptions,
+  PostCSSOptions,
+  RsbuildContext,
+  RsbuildPlugin,
+  RsbuildTarget,
+  RspackChain,
+} from '../types';
 
 export const isUseCssExtract = (
-  config: NormalizedConfig,
+  config: NormalizedEnvironmentConfig,
   target: RsbuildTarget,
-) =>
+): boolean =>
   !config.output.injectStyles && target !== 'node' && target !== 'web-worker';
 
 const getCSSModulesLocalIdentName = (
-  config: NormalizedConfig,
+  config: NormalizedEnvironmentConfig,
   isProd: boolean,
 ) =>
   config.output.cssModules.localIdentName ||
@@ -48,7 +43,7 @@ const getCSSModulesLocalIdentName = (
 export const normalizeCssLoaderOptions = (
   options: CSSLoaderOptions,
   exportOnlyLocals: boolean,
-) => {
+): CSSLoaderOptions => {
   if (options.modules && exportOnlyLocals) {
     let { modules } = options;
     if (modules === true) {
@@ -113,8 +108,8 @@ async function loadUserPostcssrc(root: string): Promise<PostCSSOptions> {
 export const applyAutoprefixer = async (
   plugins: unknown[],
   browserslist: string[],
-  config: NormalizedConfig,
-) => {
+  config: NormalizedEnvironmentConfig,
+): Promise<AcceptedPlugin[]> => {
   const pluginObjects: AcceptedPlugin[] = plugins.map((plugin) =>
     isFunction(plugin) ? plugin({}) : plugin,
   );
@@ -127,9 +122,7 @@ export const applyAutoprefixer = async (
   });
 
   if (!hasAutoprefixer) {
-    const { default: autoprefixer } = await import(
-      '@rsbuild/shared/autoprefixer'
-    );
+    const { default: autoprefixer } = await import('autoprefixer');
 
     const autoprefixerOptions = reduceConfigs<AutoprefixerOptions>({
       initial: {
@@ -153,7 +146,7 @@ const getPostcssLoaderOptions = async ({
   root,
 }: {
   browserslist: string[];
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   root: string;
 }): Promise<PostCSSLoaderOptions> => {
   const extraPlugins: AcceptedPlugin[] = [];
@@ -209,7 +202,7 @@ const getCSSLoaderOptions = ({
   target,
   localIdentName,
 }: {
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   importLoaders: number;
   target: RsbuildTarget;
   localIdentName: string;
@@ -243,20 +236,16 @@ async function applyCSSRule({
   rule,
   config,
   context,
-  utils: { target, isProd, CHAIN_ID },
+  utils: { target, isProd, CHAIN_ID, environment },
   importLoaders = 1,
 }: {
   rule: RspackChain.Rule;
-  config: NormalizedConfig;
+  config: NormalizedEnvironmentConfig;
   context: RsbuildContext;
   utils: ModifyChainUtils;
   importLoaders?: number;
 }) {
-  const browserslist = await getBrowserslistWithDefault(
-    context.rootPath,
-    config,
-    target,
-  );
+  const { browserslist } = environment;
 
   // 1. Check user config
   const enableExtractCSS = isUseCssExtract(config, target);
@@ -337,7 +326,7 @@ export const pluginCss = (): RsbuildPlugin => ({
       order: 'pre',
       handler: async (chain, utils) => {
         const rule = chain.module.rule(utils.CHAIN_ID.RULE.CSS);
-        const config = api.getNormalizedConfig();
+        const { config } = utils.environment;
         rule.test(CSS_REGEX);
         await applyCSSRule({
           rule,
@@ -346,11 +335,6 @@ export const pluginCss = (): RsbuildPlugin => ({
           context: api.context,
         });
       },
-    });
-
-    api.modifyRspackConfig(async (rspackConfig) => {
-      rspackConfig.experiments ||= {};
-      rspackConfig.experiments.css = false;
     });
   },
 });

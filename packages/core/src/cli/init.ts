@@ -1,7 +1,9 @@
-import { isDev, logger } from '@rsbuild/shared';
 import { loadConfig, watchFiles } from '../config';
+import { isDev } from '../helpers';
 import { loadEnv } from '../loadEnv';
+import { logger } from '../logger';
 import { onBeforeRestartServer } from '../server/restart';
+import type { RsbuildInstance } from '../types';
 import type { CommonOptions } from './commands';
 
 let commonOpts: CommonOptions = {};
@@ -12,7 +14,7 @@ export async function init({
 }: {
   cliOptions?: CommonOptions;
   isRestart?: boolean;
-}) {
+}): Promise<RsbuildInstance | undefined> {
   if (cliOptions) {
     commonOpts = cliOptions;
   }

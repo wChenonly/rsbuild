@@ -1,16 +1,15 @@
-import {
-  CHAIN_ID,
-  type HTMLPluginOptions,
-  type NormalizedConfig,
-  deepmerge,
-  isObject,
-} from '@rsbuild/shared';
 import { rspack } from '@rspack/core';
-import type { SwcJsMinimizerRspackPluginOptions } from '@rspack/core';
-import type { RsbuildPlugin } from '../types';
+import type {
+  LightningCssMinimizerRspackPluginOptions,
+  SwcJsMinimizerRspackPluginOptions,
+} from '@rspack/core';
+import deepmerge from 'deepmerge';
+import { isObject } from '../helpers';
+import type { NormalizedEnvironmentConfig, RsbuildPlugin } from '../types';
 
 export const getSwcMinimizerOptions = (
-  config: NormalizedConfig,
+  config: NormalizedEnvironmentConfig,
+  jsOptions?: SwcJsMinimizerRspackPluginOptions,
 ): SwcJsMinimizerRspackPluginOptions => {
   const options: SwcJsMinimizerRspackPluginOptions = {};
 
@@ -49,7 +48,6 @@ export const getSwcMinimizerOptions = (
 
   options.format.asciiOnly = config.output.charset === 'ascii';
 
-  const jsOptions = parseMinifyOptions(config).jsOptions;
   if (jsOptions) {
     return deepmerge(options, jsOptions);
   }
@@ -58,24 +56,20 @@ export const getSwcMinimizerOptions = (
 };
 
 export const parseMinifyOptions = (
-  config: NormalizedConfig,
+  config: NormalizedEnvironmentConfig,
   isProd = true,
 ): {
   minifyJs: boolean;
   minifyCss: boolean;
-  minifyHtml: boolean;
   jsOptions?: SwcJsMinimizerRspackPluginOptions;
-  htmlOptions?: HTMLPluginOptions['minify'];
+  cssOptions?: LightningCssMinimizerRspackPluginOptions;
 } => {
-  const minify = config.output.minify;
+  const { minify } = config.output;
 
   if (minify === false || !isProd) {
     return {
       minifyJs: false,
       minifyCss: false,
-      minifyHtml: false,
-      jsOptions: undefined,
-      htmlOptions: undefined,
     };
   }
 
@@ -83,18 +77,14 @@ export const parseMinifyOptions = (
     return {
       minifyJs: true,
       minifyCss: true,
-      minifyHtml: true,
-      jsOptions: undefined,
-      htmlOptions: undefined,
     };
   }
 
   return {
     minifyJs: minify.js !== false,
     minifyCss: minify.css !== false,
-    minifyHtml: minify.html !== false,
     jsOptions: minify.jsOptions,
-    htmlOptions: minify.htmlOptions,
+    cssOptions: minify.cssOptions,
   };
 };
 
@@ -107,30 +97,33 @@ export const pluginMinimize = (): RsbuildPlugin => ({
       return;
     }
 
-    api.modifyBundlerChain(async (chain, { isProd }) => {
-      const config = api.getNormalizedConfig();
+    api.modifyBundlerChain(async (chain, { isProd, environment, CHAIN_ID }) => {
+      const { config } = environment;
       const isMinimize = isProd && config.output.minify !== false;
 
       if (!isMinimize) {
         return;
       }
 
-      const { SwcJsMinimizerRspackPlugin, SwcCssMinimizerRspackPlugin } =
+      const { SwcJsMinimizerRspackPlugin, LightningCssMinimizerRspackPlugin } =
         rspack;
 
-      const { minifyJs, minifyCss } = parseMinifyOptions(config);
+      const { minifyJs, minifyCss, jsOptions, cssOptions } =
+        parseMinifyOptions(config);
 
       if (minifyJs) {
         chain.optimization
           .minimizer(CHAIN_ID.MINIMIZER.JS)
-          .use(SwcJsMinimizerRspackPlugin, [getSwcMinimizerOptions(config)])
+          .use(SwcJsMinimizerRspackPlugin, [
+            getSwcMinimizerOptions(config, jsOptions),
+          ])
           .end();
       }
 
       if (minifyCss) {
         chain.optimization
           .minimizer(CHAIN_ID.MINIMIZER.CSS)
-          .use(SwcCssMinimizerRspackPlugin, [])
+          .use(LightningCssMinimizerRspackPlugin, [cssOptions])
           .end();
       }
     });

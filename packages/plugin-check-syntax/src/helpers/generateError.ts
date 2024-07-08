@@ -1,4 +1,5 @@
-import { color, fse } from '@rsbuild/shared';
+import fs from 'node:fs';
+import color from 'picocolors';
 import { SourceMapConsumer } from 'source-map';
 import {
   type AcornParseError,
@@ -28,7 +29,7 @@ export async function generateError({
   filepath: string;
   rootPath: string;
   exclude?: CheckSyntaxExclude;
-}) {
+}): Promise<ECMASyntaxError | null> {
   let error = await tryGenerateErrorFromSourceMap({
     err,
     filepath,
@@ -82,12 +83,12 @@ async function tryGenerateErrorFromSourceMap({
   rootPath: string;
 }): Promise<ECMASyntaxError | null> {
   const sourceMapPath = `${filepath}.map`;
-  if (!fse.existsSync(sourceMapPath)) {
+  if (!fs.existsSync(sourceMapPath)) {
     return null;
   }
 
   try {
-    const sourcemap = await fse.readFile(sourceMapPath, 'utf-8');
+    const sourcemap = await fs.promises.readFile(sourceMapPath, 'utf-8');
     const consumer = await new SourceMapConsumer(sourcemap);
     const sm = consumer.originalPositionFor({
       line: err.loc.line,
