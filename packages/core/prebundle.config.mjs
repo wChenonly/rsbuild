@@ -29,12 +29,14 @@ function replaceFileContent(filePath, replaceFn) {
 
 /** @type {import('prebundle').Config} */
 export default {
+  prettier: true,
   externals: {
     // External caniuse-lite data, so users can update it manually.
     'caniuse-lite': 'caniuse-lite',
     '/^caniuse-lite(/.*)/': 'caniuse-lite$1',
+    '@rspack/core': '@rspack/core',
+    '@rspack/lite-tapable': '@rspack/lite-tapable',
     webpack: 'webpack',
-    postcss: 'postcss',
     typescript: 'typescript',
   },
   dependencies: [
@@ -47,6 +49,8 @@ export default {
     'connect',
     'rspack-manifest-plugin',
     'webpack-merge',
+    'html-rspack-plugin',
+    'mrmime',
     {
       name: 'chokidar',
       externals: {
@@ -75,6 +79,8 @@ export default {
     },
     {
       name: 'jiti',
+      // jiti has been minified, we do not need to prettier it
+      prettier: false,
       ignoreDts: true,
     },
     {
@@ -85,15 +91,7 @@ export default {
       },
     },
     {
-      name: 'postcss-value-parser',
-      ignoreDts: true,
-    },
-    {
       name: 'sirv',
-      ignoreDts: true,
-    },
-    {
-      name: 'http-compression',
       ignoreDts: true,
     },
     {
@@ -141,22 +139,11 @@ export default {
       name: 'webpack-bundle-analyzer',
     },
     {
-      name: 'autoprefixer',
+      name: 'rsbuild-dev-middleware',
       externals: {
-        browserslist: '../browserslist',
-        'postcss-value-parser': '../postcss-value-parser',
-        picocolors: '../picocolors',
-      },
-    },
-    {
-      name: 'webpack-dev-middleware',
-      externals: {
-        'schema-utils': './schema-utils',
-        'schema-utils/declarations/validate':
-          'schema-utils/declarations/validate',
+        mrmime: '../mrmime',
       },
       ignoreDts: true,
-      afterBundle: writeEmptySchemaUtils,
     },
     {
       name: 'style-loader',
@@ -170,11 +157,16 @@ export default {
       },
     },
     {
+      name: 'postcss',
+      ignoreDts: true,
+    },
+    {
       name: 'css-loader',
       ignoreDts: true,
       externals: {
-        'postcss-value-parser': '../postcss-value-parser',
         semver: './semver',
+        postcss: '../postcss',
+        picocolors: '../picocolors',
       },
       afterBundle: writeEmptySemver,
     },
@@ -183,8 +175,16 @@ export default {
       externals: {
         jiti: '../jiti',
         semver: './semver',
+        postcss: '../postcss',
       },
       ignoreDts: true,
+      beforeBundle(task) {
+        replaceFileContent(join(task.depPath, 'dist/utils.js'), (content) =>
+          // Rsbuild uses `postcss-load-config` and no need to use `cosmiconfig`.
+          // the ralevent code will never be executed, so we can replace it with an empty object.
+          content.replaceAll('require("cosmiconfig")', '{}'),
+        );
+      },
       afterBundle: writeEmptySemver,
     },
     {

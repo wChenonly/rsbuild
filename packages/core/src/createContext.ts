@@ -1,27 +1,22 @@
-import { isAbsolute, join } from 'node:path';
+import { join } from 'node:path';
 import browserslist from 'browserslist';
 import { withDefaultConfig } from './config';
 import { DEFAULT_BROWSERSLIST, ROOT_DIST_DIR } from './constants';
-import { getCommonParentPath } from './helpers/path';
-import { initHooks } from './initHooks';
+import { getAbsolutePath, getCommonParentPath } from './helpers/path';
+import { initHooks } from './hooks';
 import { getHTMLPathByEntry } from './initPlugins';
 import { logger } from './logger';
 import type {
   BundlerType,
-  CreateRsbuildOptions,
   EnvironmentContext,
   InternalContext,
   NormalizedConfig,
   NormalizedEnvironmentConfig,
+  ResolvedCreateRsbuildOptions,
   RsbuildConfig,
   RsbuildContext,
   RsbuildEntry,
-  RsbuildTarget,
 } from './types';
-
-function getAbsolutePath(root: string, filepath: string) {
-  return isAbsolute(filepath) ? filepath : join(root, filepath);
-}
 
 function getAbsoluteDistPath(
   cwd: string,
@@ -29,26 +24,6 @@ function getAbsoluteDistPath(
 ) {
   const dirRoot = config.output?.distPath?.root ?? ROOT_DIST_DIR;
   return getAbsolutePath(cwd, dirRoot);
-}
-
-/**
- * Create context by config.
- */
-async function createContextByConfig(
-  options: Required<CreateRsbuildOptions>,
-  bundlerType: BundlerType,
-): Promise<RsbuildContext> {
-  const { cwd } = options;
-  const rootPath = cwd;
-  const cachePath = join(rootPath, 'node_modules', '.cache');
-
-  return {
-    version: RSBUILD_VERSION,
-    rootPath,
-    distPath: '',
-    cachePath,
-    bundlerType,
-  };
 }
 
 // using cache to avoid multiple calls to loadConfig
@@ -93,30 +68,26 @@ export async function getBrowserslistByEnvironment(
   return DEFAULT_BROWSERSLIST[target];
 }
 
-const hasHTML = (
-  config: NormalizedEnvironmentConfig,
-  target: RsbuildTarget,
-) => {
-  const { htmlPlugin } = config.tools as {
-    htmlPlugin: boolean | Array<unknown>;
-  };
-  const pluginDisabled =
-    htmlPlugin === false ||
-    (Array.isArray(htmlPlugin) && htmlPlugin.includes(false));
-
-  return target === 'web' && !pluginDisabled;
-};
-
 const getEnvironmentHTMLPaths = (
   entry: RsbuildEntry,
   config: NormalizedEnvironmentConfig,
 ) => {
-  if (!hasHTML(config, config.output.target)) {
+  if (config.output.target !== 'web' || config.tools.htmlPlugin === false) {
     return {};
   }
 
   return Object.keys(entry).reduce<Record<string, string>>((prev, key) => {
-    prev[key] = getHTMLPathByEntry(key, config);
+    const entryValue = entry[key];
+
+    // Should not generate HTML file for the entry if `html` is false
+    if (
+      typeof entryValue === 'string' ||
+      Array.isArray(entryValue) ||
+      entryValue.html !== false
+    ) {
+      prev[key] = getHTMLPathByEntry(key, config);
+    }
+
     return prev;
   }, {});
 };
@@ -210,18 +181,27 @@ export function createPublicContext(
  * which can have a lot of overhead and take some side effects.
  */
 export async function createContext(
-  options: Required<CreateRsbuildOptions>,
-  userRsbuildConfig: RsbuildConfig,
+  options: ResolvedCreateRsbuildOptions,
+  userConfig: RsbuildConfig,
   bundlerType: BundlerType,
 ): Promise<InternalContext> {
-  const rsbuildConfig = await withDefaultConfig(options.cwd, userRsbuildConfig);
-  const context = await createContextByConfig(options, bundlerType);
+  const { cwd } = options;
+  const rootPath = userConfig.root
+    ? getAbsolutePath(cwd, userConfig.root)
+    : cwd;
+  const rsbuildConfig = await withDefaultConfig(rootPath, userConfig);
+  const cachePath = join(rootPath, 'node_modules', '.cache');
 
   return {
-    ...context,
+    version: RSBUILD_VERSION,
+    rootPath,
+    distPath: '',
+    cachePath,
+    bundlerType,
     environments: {},
     hooks: initHooks(),
     config: { ...rsbuildConfig },
-    originalConfig: userRsbuildConfig,
+    originalConfig: userConfig,
+    specifiedEnvironments: options.environment,
   };
 }

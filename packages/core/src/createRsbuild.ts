@@ -1,17 +1,25 @@
+import { isPromise } from 'node:util/types';
 import { createContext } from './createContext';
-import { pick } from './helpers';
-import { getPluginAPI } from './initPlugins';
+import { getNodeEnv, pick, setNodeEnv } from './helpers';
+import { initPluginAPI } from './initPlugins';
 import { initRsbuildConfig } from './internal';
 import { logger } from './logger';
 import { setCssExtractPlugin } from './pluginHelper';
 import { createPluginManager } from './pluginManager';
 import type {
+  Build,
+  CreateDevServer,
   CreateRsbuildOptions,
+  Falsy,
   InternalContext,
   PluginManager,
   PreviewServerOptions,
+  ResolvedCreateRsbuildOptions,
   RsbuildInstance,
+  RsbuildPlugin,
+  RsbuildPlugins,
   RsbuildProvider,
+  StartDevServer,
 } from './types';
 
 const getRspackProvider = async () => {
@@ -37,11 +45,15 @@ async function applyDefaultPlugins(
     ),
     import('./plugins/asset').then(({ pluginAsset }) => pluginAsset()),
     import('./plugins/html').then(({ pluginHtml }) =>
-      pluginHtml(async (...args) => {
-        const result = await context.hooks.modifyHTMLTags.call(...args);
+      pluginHtml((environment: string) => async (...args) => {
+        const result = await context.hooks.modifyHTMLTags.callInEnvironment({
+          environment,
+          args,
+        });
         return result[0];
       }),
     ),
+    import('./plugins/appIcon').then(({ pluginAppIcon }) => pluginAppIcon()),
     import('./plugins/wasm').then(({ pluginWasm }) => pluginWasm()),
     import('./plugins/moment').then(({ pluginMoment }) => pluginMoment()),
     import('./plugins/nodeAddons').then(({ pluginNodeAddons }) =>
@@ -95,7 +107,7 @@ export async function createRsbuild(
 ): Promise<RsbuildInstance> {
   const { rsbuildConfig = {} } = options;
 
-  const rsbuildOptions: Required<CreateRsbuildOptions> = {
+  const rsbuildOptions: ResolvedCreateRsbuildOptions = {
     cwd: process.cwd(),
     rsbuildConfig,
     ...options,
@@ -109,8 +121,9 @@ export async function createRsbuild(
     rsbuildConfig.provider ? 'webpack' : 'rspack',
   );
 
-  const pluginAPI = getPluginAPI({ context, pluginManager });
-  context.pluginAPI = pluginAPI;
+  const getPluginAPI = initPluginAPI({ context, pluginManager });
+  context.getPluginAPI = getPluginAPI;
+  const globalPluginAPI = getPluginAPI();
 
   logger.debug('add default plugins');
   await applyDefaultPlugins(pluginManager, context);
@@ -127,19 +140,48 @@ export async function createRsbuild(
   });
 
   const preview = async (options?: PreviewServerOptions) => {
+    if (!getNodeEnv()) {
+      setNodeEnv('production');
+    }
     const { startProdServer } = await import('./server/prodServer');
     const config = await initRsbuildConfig({ context, pluginManager });
     return startProdServer(context, config, options);
   };
 
+  const build: Build = (...args) => {
+    if (!getNodeEnv()) {
+      setNodeEnv('production');
+    }
+    return providerInstance.build(...args);
+  };
+
+  const startDevServer: StartDevServer = (...args) => {
+    if (!getNodeEnv()) {
+      setNodeEnv('development');
+    }
+    return providerInstance.startDevServer(...args);
+  };
+
+  const createDevServer: CreateDevServer = (...args) => {
+    if (!getNodeEnv()) {
+      setNodeEnv('development');
+    }
+    return providerInstance.createDevServer(...args);
+  };
+
   const rsbuild = {
+    build,
+    preview,
+    startDevServer,
+    createDevServer,
     ...pick(pluginManager, [
       'addPlugins',
       'getPlugins',
       'removePlugins',
       'isPluginExists',
     ]),
-    ...pick(pluginAPI, [
+    ...pick(globalPluginAPI, [
+      'context',
       'onBeforeBuild',
       'onBeforeCreateCompiler',
       'onBeforeStartDevServer',
@@ -155,20 +197,43 @@ export async function createRsbuild(
       'getNormalizedConfig',
     ]),
     ...pick(providerInstance, [
-      'build',
       'initConfigs',
       'inspectConfig',
       'createCompiler',
-      'createDevServer',
-      'startDevServer',
     ]),
-    preview,
-    context: pluginAPI.context,
+  };
+
+  const getFlattenedPlugins = async (pluginOptions: RsbuildPlugins) => {
+    let plugins = pluginOptions;
+    do {
+      plugins = (await Promise.all(plugins)).flat(
+        Number.POSITIVE_INFINITY as 1,
+      );
+    } while (plugins.some((v) => isPromise(v)));
+
+    return plugins as Array<RsbuildPlugin | Falsy>;
   };
 
   if (rsbuildConfig.plugins) {
-    const plugins = await Promise.all(rsbuildConfig.plugins);
+    const plugins = await getFlattenedPlugins(rsbuildConfig.plugins);
     rsbuild.addPlugins(plugins);
+  }
+
+  // Register environment plugin
+  if (rsbuildConfig.environments) {
+    await Promise.all(
+      Object.entries(rsbuildConfig.environments).map(async ([name, config]) => {
+        const isEnvironmentEnabled =
+          !rsbuildOptions.environment ||
+          rsbuildOptions.environment.includes(name);
+        if (config.plugins && isEnvironmentEnabled) {
+          const plugins = await getFlattenedPlugins(config.plugins);
+          rsbuild.addPlugins(plugins, {
+            environment: name,
+          });
+        }
+      }),
+    );
   }
 
   return rsbuild;

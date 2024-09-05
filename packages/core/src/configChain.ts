@@ -2,14 +2,10 @@ import RspackChain from 'rspack-chain';
 import { castArray, isPlainObject } from './helpers';
 import { logger } from './logger';
 import type {
-  CreateAsyncHook,
-  ModifyBundlerChainFn,
+  InternalContext,
   ModifyBundlerChainUtils,
-  RsbuildConfig,
-  RsbuildContext,
   RsbuildEntry,
   Rspack,
-  RspackConfig,
 } from './types';
 
 export function getBundlerChain(): RspackChain {
@@ -19,22 +15,18 @@ export function getBundlerChain(): RspackChain {
 }
 
 export async function modifyBundlerChain(
-  context: RsbuildContext & {
-    hooks: {
-      modifyBundlerChain: CreateAsyncHook<ModifyBundlerChainFn>;
-    };
-    config: Readonly<RsbuildConfig>;
-  },
+  context: InternalContext,
   utils: ModifyBundlerChainUtils,
 ): Promise<RspackChain> {
   logger.debug('modify bundler chain');
 
   const bundlerChain = getBundlerChain();
 
-  const [modifiedBundlerChain] = await context.hooks.modifyBundlerChain.call(
-    bundlerChain,
-    utils,
-  );
+  const [modifiedBundlerChain] =
+    await context.hooks.modifyBundlerChain.callInEnvironment({
+      environment: utils.environment.name,
+      args: [bundlerChain, utils],
+    });
 
   if (utils.environment.config.tools?.bundlerChain) {
     for (const item of castArray(utils.environment.config.tools.bundlerChain)) {
@@ -47,12 +39,12 @@ export async function modifyBundlerChain(
   return modifiedBundlerChain;
 }
 
-export function chainToConfig(chain: RspackChain): RspackConfig {
+export function chainToConfig(chain: RspackChain): Rspack.Configuration {
   const config = chain.toConfig();
   const { entry } = config;
 
   if (!isPlainObject(entry)) {
-    return config as RspackConfig;
+    return config as Rspack.Configuration;
   }
 
   const formattedEntry: RsbuildEntry = {};
@@ -93,7 +85,7 @@ export function chainToConfig(chain: RspackChain): RspackConfig {
 
   config.entry = formattedEntry;
 
-  return config as RspackConfig;
+  return config as Rspack.Configuration;
 }
 
 export const CHAIN_ID = {
@@ -127,6 +119,7 @@ export const CHAIN_ID = {
     PUG: 'pug',
     /** Rule for Vue */
     VUE: 'vue',
+    // TODO: remove
     /** Rule for yaml */
     YAML: 'yaml',
     /** Rule for wasm */
@@ -164,8 +157,7 @@ export const CHAIN_ID = {
     SWC: 'swc',
     /** svgr */
     SVGR: 'svgr',
-    /** plugin-image-compress svgo-loader */
-    SVGO: 'svgo',
+    // TODO: remove
     /** yaml-loader */
     YAML: 'yaml',
     /** babel-loader */
@@ -186,37 +178,30 @@ export const CHAIN_ID = {
     MINI_CSS_EXTRACT: 'mini-css-extract',
     /** resolve-url-loader */
     RESOLVE_URL: 'resolve-url-loader',
-    /** plugin-image-compress.loader */
-    IMAGE_COMPRESS: 'image-compress',
   },
   /** Predefined plugins */
   PLUGIN: {
     /** HotModuleReplacementPlugin */
     HMR: 'hmr',
-    /** CopyWebpackPlugin */
+    /** CopyRspackPlugin */
     COPY: 'copy',
-    /** HtmlWebpackPlugin */
+    /** HtmlRspackPlugin */
     HTML: 'html',
+    // TODO: remove
     /** ESLintWebpackPlugin */
     ESLINT: 'eslint',
     /** DefinePlugin */
     DEFINE: 'define',
     /** ProgressPlugin */
     PROGRESS: 'progress',
-    /** AppIconPlugin */
-    APP_ICON: 'app-icon',
     /** WebpackManifestPlugin */
     MANIFEST: 'webpack-manifest',
     /** ForkTsCheckerWebpackPlugin */
     TS_CHECKER: 'ts-checker',
-    /** InlineChunkHtmlPlugin */
-    INLINE_HTML: 'inline-html',
     /** WebpackBundleAnalyzer */
     BUNDLE_ANALYZER: 'bundle-analyze',
     /** ModuleFederationPlugin */
     MODULE_FEDERATION: 'module-federation',
-    /** HtmlBasicPlugin */
-    HTML_BASIC: 'html-basic-plugin',
     /** htmlPrefetchPlugin */
     HTML_PREFETCH: 'html-prefetch-plugin',
     /** htmlPreloadPlugin */
@@ -227,14 +212,11 @@ export const CHAIN_ID = {
     VUE_LOADER_PLUGIN: 'vue-loader-plugin',
     /** ReactFastRefreshPlugin */
     REACT_FAST_REFRESH: 'react-fast-refresh',
+    // TODO: remove
     /** ProvidePlugin for node polyfill */
     NODE_POLYFILL_PROVIDE: 'node-polyfill-provide',
     /** WebpackSRIPlugin */
     SUBRESOURCE_INTEGRITY: 'subresource-integrity',
-    /** AssetsRetryPlugin */
-    ASSETS_RETRY: 'assets-retry',
-    /** AsyncChunkRetryPlugin */
-    ASYNC_CHUNK_RETRY: 'async-chunk-retry',
     /** AutoSetRootFontSizePlugin */
     AUTO_SET_ROOT_SIZE: 'auto-set-root-size',
   },

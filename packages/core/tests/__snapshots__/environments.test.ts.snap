@@ -9,6 +9,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
       "overlay": true,
       "path": "/rsbuild-hmr",
       "port": "",
+      "reconnect": 100,
     },
     "hmr": true,
     "lazyCompilation": true,
@@ -29,9 +30,11 @@ exports[`environment config > should normalize environment config correctly 1`] 
     "scriptLoading": "defer",
     "title": "Rsbuild App",
   },
+  "mode": "development",
   "output": {
     "assetPrefix": "/",
-    "charset": "ascii",
+    "charset": "utf8",
+    "cleanDistPath": "auto",
     "cssModules": {
       "auto": true,
       "exportGlobals": false,
@@ -81,6 +84,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
     "removeConsole": false,
     "removeMomentLocale": false,
   },
+  "root": "<ROOT>",
   "security": {
     "nonce": "",
     "sri": {
@@ -98,7 +102,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
   },
   "source": {
     "alias": {
-      "@common": "src/common",
+      "@common": "./src/common",
     },
     "aliasStrategy": "prefer-tsconfig",
     "decorators": {
@@ -106,7 +110,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
     },
     "define": {},
     "entry": {
-      "index": "src/index.client.js",
+      "index": "./src/index.client.js",
     },
     "preEntry": [],
   },
@@ -130,6 +134,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
       "overlay": true,
       "path": "/rsbuild-hmr",
       "port": "",
+      "reconnect": 100,
     },
     "hmr": true,
     "lazyCompilation": false,
@@ -150,9 +155,11 @@ exports[`environment config > should normalize environment config correctly 2`] 
     "scriptLoading": "defer",
     "title": "Rsbuild App",
   },
+  "mode": "development",
   "output": {
     "assetPrefix": "/",
-    "charset": "ascii",
+    "charset": "utf8",
+    "cleanDistPath": "auto",
     "cssModules": {
       "auto": true,
       "exportGlobals": false,
@@ -202,6 +209,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
     "removeConsole": false,
     "removeMomentLocale": false,
   },
+  "root": "<ROOT>",
   "security": {
     "nonce": "",
     "sri": {
@@ -219,7 +227,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
   },
   "source": {
     "alias": {
-      "@common": "src/common",
+      "@common": "./src/common",
     },
     "aliasStrategy": "prefer-tsconfig",
     "decorators": {
@@ -227,7 +235,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
     },
     "define": {},
     "entry": {
-      "index": "src/index.server.js",
+      "index": "./src/index.server.js",
     },
     "preEntry": [],
   },
@@ -252,6 +260,7 @@ exports[`environment config > should print environment config when inspect confi
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -272,9 +281,11 @@ exports[`environment config > should print environment config when inspect confi
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -335,6 +346,7 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -359,6 +371,7 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:sri",
       "rsbuild:nonce",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -376,7 +389,7 @@ exports[`environment config > should print environment config when inspect confi
     },
     "source": {
       "alias": {
-        "@common": "src/common",
+        "@common": "./src/common",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -384,7 +397,7 @@ exports[`environment config > should print environment config when inspect confi
       },
       "define": {},
       "entry": {
-        "index": "src/index.server.js",
+        "index": "./src/index.server.js",
       },
       "preEntry": [],
     },
@@ -405,6 +418,7 @@ exports[`environment config > should print environment config when inspect confi
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -425,9 +439,11 @@ exports[`environment config > should print environment config when inspect confi
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -488,6 +504,7 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -512,6 +529,7 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:sri",
       "rsbuild:nonce",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -529,7 +547,7 @@ exports[`environment config > should print environment config when inspect confi
     },
     "source": {
       "alias": {
-        "@common": "src/common",
+        "@common": "./src/common",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -537,7 +555,7 @@ exports[`environment config > should print environment config when inspect confi
       },
       "define": {},
       "entry": {
-        "index": "src/index.client.js",
+        "index": "./src/index.client.js",
       },
       "preEntry": [],
     },
@@ -553,6 +571,19 @@ exports[`environment config > should print environment config when inspect confi
 }
 `;
 
+exports[`environment config > should support add single environment plugin 1`] = `
+{
+  "ssr": {
+    "global": "ssr",
+    "ssr": "ssr",
+  },
+  "web": {
+    "global": "web",
+    "web": "web",
+  },
+}
+`;
+
 exports[`environment config > should support modify environment config by api.modifyRsbuildConfig 1`] = `
 {
   "ssr": {
@@ -563,6 +594,7 @@ exports[`environment config > should support modify environment config by api.mo
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -583,9 +615,11 @@ exports[`environment config > should support modify environment config by api.mo
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -646,6 +680,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -671,6 +706,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:nonce",
       "test-environment",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -688,7 +724,7 @@ exports[`environment config > should support modify environment config by api.mo
     },
     "source": {
       "alias": {
-        "@common": "src/common",
+        "@common": "./src/common",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -696,7 +732,7 @@ exports[`environment config > should support modify environment config by api.mo
       },
       "define": {},
       "entry": {
-        "index": "src/index.server.js",
+        "index": "./src/index.server.js",
       },
       "preEntry": [],
     },
@@ -717,6 +753,7 @@ exports[`environment config > should support modify environment config by api.mo
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -737,9 +774,11 @@ exports[`environment config > should support modify environment config by api.mo
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -800,6 +839,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -825,6 +865,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:nonce",
       "test-environment",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -842,8 +883,8 @@ exports[`environment config > should support modify environment config by api.mo
     },
     "source": {
       "alias": {
-        "@common": "src/common",
-        "@common1": "src/common1",
+        "@common": "./src/common",
+        "@common1": "./src/common1",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -851,7 +892,7 @@ exports[`environment config > should support modify environment config by api.mo
       },
       "define": {},
       "entry": {
-        "index": "src/index.client.js",
+        "index": "./src/index.client.js",
       },
       "preEntry": [],
     },
@@ -872,6 +913,7 @@ exports[`environment config > should support modify environment config by api.mo
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -892,9 +934,11 @@ exports[`environment config > should support modify environment config by api.mo
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -955,6 +999,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -980,6 +1025,7 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:nonce",
       "test-environment",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -997,8 +1043,8 @@ exports[`environment config > should support modify environment config by api.mo
     },
     "source": {
       "alias": {
-        "@common": "src/common",
-        "@common1": "src/common1",
+        "@common": "./src/common",
+        "@common1": "./src/common1",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1030,6 +1076,7 @@ exports[`environment config > should support modify single environment config by
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -1050,9 +1097,11 @@ exports[`environment config > should support modify single environment config by
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -1113,6 +1162,7 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -1138,6 +1188,7 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:nonce",
       "test-environment",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -1155,7 +1206,7 @@ exports[`environment config > should support modify single environment config by
     },
     "source": {
       "alias": {
-        "@common": "src/common",
+        "@common": "./src/common",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1163,7 +1214,7 @@ exports[`environment config > should support modify single environment config by
       },
       "define": {},
       "entry": {
-        "index": "src/index.server.js",
+        "index": "./src/index.server.js",
       },
       "preEntry": [],
     },
@@ -1184,6 +1235,7 @@ exports[`environment config > should support modify single environment config by
         "overlay": true,
         "path": "/rsbuild-hmr",
         "port": "",
+        "reconnect": 100,
       },
       "hmr": true,
       "lazyCompilation": undefined,
@@ -1204,9 +1256,11 @@ exports[`environment config > should support modify single environment config by
       "scriptLoading": "defer",
       "title": "Rsbuild App",
     },
+    "mode": "development",
     "output": {
       "assetPrefix": "/",
-      "charset": "ascii",
+      "charset": "utf8",
+      "cleanDistPath": "auto",
       "cssModules": {
         "auto": true,
         "exportGlobals": false,
@@ -1267,6 +1321,7 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:clean-output",
       "rsbuild:asset",
       "rsbuild:html",
+      "rsbuild:app-icon",
       "rsbuild:wasm",
       "rsbuild:moment",
       "rsbuild:node-addons",
@@ -1292,6 +1347,7 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:nonce",
       "test-environment",
     ],
+    "root": "<ROOT>",
     "security": {
       "nonce": "",
       "sri": {
@@ -1309,8 +1365,8 @@ exports[`environment config > should support modify single environment config by
     },
     "source": {
       "alias": {
-        "@common": "src/common",
-        "@common1": "src/common1",
+        "@common": "./src/common",
+        "@common1": "./src/common1",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1318,7 +1374,7 @@ exports[`environment config > should support modify single environment config by
       },
       "define": {},
       "entry": {
-        "index": "src/index.client.js",
+        "index": "./src/index.client.js",
       },
       "preEntry": [],
     },
@@ -1365,12 +1421,13 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
           },
           "sideEffects": true,
           "test": /\\\\\\.css\\$/,
+          "type": "javascript/auto",
           "use": [
             {
               "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/builtin-plugin/css-extract/loader.js",
             },
             {
-              "loader": "<ROOT>/packages/core/compiled/css-loader",
+              "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
               "options": {
                 "importLoaders": 1,
                 "modules": {
@@ -1384,34 +1441,14 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
               },
             },
             {
-              "loader": "<ROOT>/packages/core/compiled/postcss-loader",
+              "loader": "builtin:lightningcss-loader",
               "options": {
-                "postcssOptions": {
-                  "config": false,
-                  "plugins": [
-                    {
-                      "browsers": [
-                        "chrome >= 87",
-                        "edge >= 88",
-                        "firefox >= 78",
-                        "safari >= 14",
-                      ],
-                      "info": [Function],
-                      "options": {
-                        "flexbox": "no-2009",
-                        "overrideBrowserslist": [
-                          "chrome >= 87",
-                          "edge >= 88",
-                          "firefox >= 78",
-                          "safari >= 14",
-                        ],
-                      },
-                      "postcssPlugin": "autoprefixer",
-                      "prepare": [Function],
-                    },
-                  ],
-                },
-                "sourceMap": false,
+                "targets": [
+                  "chrome >= 87",
+                  "edge >= 88",
+                  "firefox >= 78",
+                  "safari >= 14",
+                ],
               },
             },
           ],
@@ -1445,6 +1482,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                 },
                 "isModule": "unknown",
                 "jsc": {
+                  "experimental": {
+                    "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  },
                   "externalHelpers": true,
                   "parser": {
                     "decorators": true,
@@ -1486,6 +1526,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                 },
                 "isModule": "unknown",
                 "jsc": {
+                  "experimental": {
+                    "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  },
                   "externalHelpers": true,
                   "parser": {
                     "decorators": true,
@@ -1630,14 +1673,8 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
             "priority": 0,
             "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
           },
-          "lib-lodash": {
-            "name": "lib-lodash",
-            "priority": 0,
-            "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-          },
         },
         "chunks": "all",
-        "enforceSizeThreshold": 50000,
       },
     },
     "output": {
@@ -1654,6 +1691,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       "hints": false,
     },
     "plugins": [
+      RsbuildCorePlugin {},
       HotModuleReplacementPlugin {
         "name": "HotModuleReplacementPlugin",
       },
@@ -1665,10 +1703,14 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
         },
       },
       DefinePlugin {
-        "_options": {
-          "process.env.ASSET_PREFIX": """",
-          "process.env.NODE_ENV": ""development"",
-        },
+        "_args": [
+          {
+            "import.meta.env.DEV": true,
+            "import.meta.env.MODE": ""development"",
+            "import.meta.env.PROD": false,
+            "process.env.ASSET_PREFIX": """",
+          },
+        ],
         "affectedHooks": "compilation",
         "name": "DefinePlugin",
       },
@@ -1680,9 +1722,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       "extensions": [
         ".ts",
         ".tsx",
+        ".mjs",
         ".js",
         ".jsx",
-        ".mjs",
         ".json",
       ],
     },
@@ -1720,14 +1762,15 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
           },
           "sideEffects": true,
           "test": /\\\\\\.css\\$/,
+          "type": "javascript/auto",
           "use": [
             {
               "loader": "<ROOT>/packages/core/src/ignoreCssLoader.cjs",
             },
             {
-              "loader": "<ROOT>/packages/core/compiled/css-loader",
+              "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
               "options": {
-                "importLoaders": 1,
+                "importLoaders": 0,
                 "modules": {
                   "auto": true,
                   "exportGlobals": false,
@@ -1766,6 +1809,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                 },
                 "isModule": "unknown",
                 "jsc": {
+                  "experimental": {
+                    "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  },
                   "externalHelpers": true,
                   "parser": {
                     "decorators": true,
@@ -1803,6 +1849,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                 },
                 "isModule": "unknown",
                 "jsc": {
+                  "experimental": {
+                    "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  },
                   "externalHelpers": true,
                   "parser": {
                     "decorators": true,
@@ -1941,6 +1990,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
             {
               "loader": "<ROOT>/packages/core/src/transformRawLoader.cjs",
               "options": {
+                "getEnvironment": [Function],
                 "id": "rsbuild-transform-0",
               },
             },
@@ -1970,12 +2020,16 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       "hints": false,
     },
     "plugins": [
-      RsbuildTransformPlugin {},
+      RsbuildCorePlugin {},
       DefinePlugin {
-        "_options": {
-          "process.env.ASSET_PREFIX": """",
-          "process.env.NODE_ENV": ""development"",
-        },
+        "_args": [
+          {
+            "import.meta.env.DEV": true,
+            "import.meta.env.MODE": ""development"",
+            "import.meta.env.PROD": false,
+            "process.env.ASSET_PREFIX": """",
+          },
+        ],
         "affectedHooks": "compilation",
         "name": "DefinePlugin",
       },
@@ -1987,9 +2041,9 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       "extensions": [
         ".ts",
         ".tsx",
+        ".mjs",
         ".js",
         ".jsx",
-        ".mjs",
         ".json",
       ],
     },

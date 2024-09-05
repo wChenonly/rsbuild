@@ -1,6 +1,10 @@
 import { isAbsolute, join, resolve, sep } from 'node:path';
 import { COMPILED_PATH } from '../constants';
 
+export function getAbsolutePath(base: string, filepath: string): string {
+  return isAbsolute(filepath) ? filepath : join(base, filepath);
+}
+
 export function getCommonParentPath(paths: string[]): string {
   const uniquePaths = [...new Set(paths)];
 
@@ -23,7 +27,7 @@ export function getCommonParentPath(paths: string[]): string {
 }
 
 export const getCompiledPath = (packageName: string): string =>
-  join(COMPILED_PATH, packageName);
+  join(COMPILED_PATH, packageName, 'index.js');
 
 /**
  * ensure absolute file path.

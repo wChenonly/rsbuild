@@ -1,4 +1,3 @@
-import type { EntryDescription } from '@rspack/core';
 import type { Compiler, MultiCompiler } from '@rspack/core';
 import type { RsbuildDevServer } from '../server/devServer';
 import type { StartServerResult } from '../server/helper';
@@ -6,7 +5,7 @@ import type { RsbuildConfig } from './config';
 import type { NormalizedConfig, NormalizedEnvironmentConfig } from './config';
 import type { InternalContext, RsbuildContext } from './context';
 import type { PluginManager, RsbuildPluginAPI } from './plugin';
-import type { RspackConfig } from './rspack';
+import type { Rspack } from './rspack';
 import type { WebpackConfig } from './thirdParty';
 
 export type Bundler = 'rspack' | 'webpack';
@@ -32,13 +31,30 @@ export type PreviewServerOptions = {
 };
 
 export type BuildOptions = {
-  mode?: RsbuildMode;
+  /**
+   * Whether to watch for file changes and rebuild.
+   * @default false
+   */
   watch?: boolean;
+  /**
+   * Using a custom Rspack Compiler object.
+   */
   compiler?: Compiler | MultiCompiler;
 };
 
+export type Build = (options?: BuildOptions) => Promise<{
+  /**
+   * Stop watching when in watch mode.
+   */
+  close: () => Promise<void>;
+  /**
+   * Rspack's [stats](https://rspack.dev/api/javascript-api/stats) object.
+   */
+  stats?: Rspack.Stats | Rspack.MultiStats;
+}>;
+
 export type InspectConfigOptions = {
-  env?: RsbuildMode;
+  mode?: RsbuildMode;
   verbose?: boolean;
   outputPath?: string;
   writeToDisk?: boolean;
@@ -58,7 +74,9 @@ export type InspectConfigResult<B extends 'rspack' | 'webpack' = 'rspack'> = {
         pluginNames: string[];
       }
     >;
-    bundlerConfigs: B extends 'rspack' ? RspackConfig[] : WebpackConfig[];
+    bundlerConfigs: B extends 'rspack'
+      ? Rspack.Configuration[]
+      : WebpackConfig[];
   };
 };
 
@@ -71,7 +89,20 @@ export type CreateRsbuildOptions = {
   cwd?: string;
   /** Configurations of Rsbuild. */
   rsbuildConfig?: RsbuildConfig;
+  /** Only build specified environment. */
+  environment?: string[];
 };
+
+export type ResolvedCreateRsbuildOptions = CreateRsbuildOptions &
+  Required<Omit<CreateRsbuildOptions, 'environment'>>;
+
+export type CreateDevServer = (
+  options?: CreateDevServerOptions,
+) => Promise<RsbuildDevServer>;
+
+export type StartDevServer = (
+  options?: StartDevServerOptions,
+) => Promise<StartServerResult>;
 
 export type ProviderInstance<B extends 'rspack' | 'webpack' = 'rspack'> = {
   readonly bundler: Bundler;
@@ -79,20 +110,16 @@ export type ProviderInstance<B extends 'rspack' | 'webpack' = 'rspack'> = {
   createCompiler: CreateCompiler;
 
   /**
-   * It is designed for high-level frameworks that require a custom server
+   * It is designed for higher-level frameworks that require a custom server
    */
-  createDevServer: (
-    options?: CreateDevServerOptions,
-  ) => Promise<RsbuildDevServer>;
+  createDevServer: CreateDevServer;
 
-  startDevServer: (
-    options?: StartDevServerOptions,
-  ) => Promise<StartServerResult>;
+  startDevServer: StartDevServer;
 
-  build: (options?: BuildOptions) => Promise<void>;
+  build: Build;
 
   initConfigs: () => Promise<
-    B extends 'rspack' ? RspackConfig[] : WebpackConfig[]
+    B extends 'rspack' ? Rspack.Configuration[] : WebpackConfig[]
   >;
 
   inspectConfig: (
@@ -104,7 +131,7 @@ export type RsbuildProvider<B extends 'rspack' | 'webpack' = 'rspack'> =
   (options: {
     context: InternalContext;
     pluginManager: PluginManager;
-    rsbuildOptions: Required<CreateRsbuildOptions>;
+    rsbuildOptions: ResolvedCreateRsbuildOptions;
     setCssExtractPlugin: (plugin: unknown) => void;
   }) => Promise<ProviderInstance<B>>;
 
@@ -142,6 +169,18 @@ export type RsbuildInstance = {
 
 export type RsbuildTarget = 'web' | 'node' | 'web-worker';
 
-export type RsbuildEntry = Record<string, string | string[] | EntryDescription>;
+export type RsbuildEntryDescription = Rspack.EntryDescription & {
+  /**
+   * Whether to generate an HTML file for the entry.
+   *
+   * @default true
+   */
+  html?: boolean;
+};
 
-export type RsbuildMode = 'development' | 'production';
+export type RsbuildEntry = Record<
+  string,
+  string | string[] | RsbuildEntryDescription
+>;
+
+export type RsbuildMode = 'development' | 'production' | 'none';

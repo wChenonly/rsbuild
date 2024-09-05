@@ -7,8 +7,8 @@ import type {
   EnvironmentAPI,
   RequestHandler,
   Rspack,
-  ServerAPIs,
   ServerConfig,
+  SetupMiddlewaresServer,
 } from '../types';
 import type { UpgradeEvent } from './helper';
 import {
@@ -20,7 +20,7 @@ import {
 
 export type CompileMiddlewareAPI = {
   middleware: RequestHandler;
-  sockWrite: ServerAPIs['sockWrite'];
+  sockWrite: SetupMiddlewaresServer['sockWrite'];
   onUpgrade: UpgradeEvent;
   close: () => void;
 };
@@ -44,7 +44,7 @@ const applySetupMiddlewares = (
 ) => {
   const setupMiddlewares = dev.setupMiddlewares || [];
 
-  const serverOptions: ServerAPIs = {
+  const serverOptions: SetupMiddlewaresServer = {
     sockWrite: (type, data) => compileMiddlewareAPI?.sockWrite(type, data),
     environments,
   };
@@ -82,13 +82,8 @@ const applyDefaultMiddlewares = async ({
   const upgradeEvents: UpgradeEvent[] = [];
   // compression should be the first middleware
   if (server.compress) {
-    const { default: compression } = await import('http-compression');
-    middlewares.push((req, res, next) => {
-      compression({
-        gzip: true,
-        brotli: false,
-      })(req, res, next);
-    });
+    const { gzipMiddleware } = await import('./gzipMiddleware');
+    middlewares.push(gzipMiddleware());
   }
 
   middlewares.push((req, res, next) => {
@@ -136,7 +131,7 @@ const applyDefaultMiddlewares = async ({
 
     middlewares.push((req, res, next) => {
       // [prevFullHash].hot-update.json will 404 (expected) when rsbuild restart and some file changed
-      if (req.url?.endsWith('.hot-update.json')) {
+      if (req.url?.endsWith('.hot-update.json') && req.method !== 'OPTIONS') {
         res.statusCode = 404;
         res.end();
       } else {
@@ -194,12 +189,26 @@ const applyDefaultMiddlewares = async ({
 
     middlewares.push(historyApiFallbackMiddleware);
 
-    // ensure fallback request can be handled by webpack-dev-middleware
+    // ensure fallback request can be handled by rsbuild-dev-middleware
     compileMiddlewareAPI?.middleware &&
       middlewares.push(compileMiddlewareAPI.middleware);
   }
 
   middlewares.push(faviconFallbackMiddleware);
+
+  // OPTIONS request fallback middleware
+  // Should register this middleware as the last
+  // see: https://github.com/web-infra-dev/rsbuild/pull/2867
+  middlewares.push((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      // Use 204 as no content to send in the response body
+      res.statusCode = 204;
+      res.setHeader('Content-Length', '0');
+      res.end();
+      return;
+    }
+    next();
+  });
 
   return {
     onUpgrade: (...args) => {

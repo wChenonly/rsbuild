@@ -13,6 +13,9 @@ exports[`plugin-output > output config should works when target is node 1`] = `
     "pathinfo": false,
     "publicPath": "/",
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -29,6 +32,9 @@ exports[`plugin-output > should allow to custom server directory with distPath.r
     "pathinfo": false,
     "publicPath": "/",
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -43,6 +49,7 @@ exports[`plugin-output > should allow to set distPath.js and distPath.css to emp
     "publicPath": "/",
   },
   "plugins": [
+    RsbuildCorePlugin {},
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "async/[name].css",
@@ -65,18 +72,17 @@ exports[`plugin-output > should allow to use copy plugin 1`] = `
     "publicPath": "/",
   },
   "plugins": [
+    RsbuildCorePlugin {},
     CopyRspackPlugin {
-      "_options": {
-        "patterns": [
-          {
-            "force": false,
-            "from": "test",
-            "globOptions": {},
-            "noErrorOnMissing": false,
-            "priority": 0,
-          },
-        ],
-      },
+      "_args": [
+        {
+          "patterns": [
+            {
+              "from": "test",
+            },
+          ],
+        },
+      ],
       "affectedHooks": undefined,
       "name": "CopyRspackPlugin",
     },
@@ -102,32 +108,19 @@ exports[`plugin-output > should allow to use copy plugin with multiple config 1`
     "publicPath": "/",
   },
   "plugins": [
+    RsbuildCorePlugin {},
     CopyRspackPlugin {
-      "_options": {
-        "patterns": [
-          {
-            "force": false,
-            "from": "test",
-            "globOptions": {},
-            "noErrorOnMissing": false,
-            "priority": 0,
-          },
-          {
-            "force": false,
-            "from": "src/assets/",
-            "globOptions": {},
-            "noErrorOnMissing": false,
-            "priority": 0,
-          },
-          {
-            "force": false,
-            "from": "tests/",
-            "globOptions": {},
-            "noErrorOnMissing": false,
-            "priority": 0,
-          },
-        ],
-      },
+      "_args": [
+        {
+          "patterns": [
+            {
+              "from": "test",
+            },
+            "src/assets/",
+            "tests/",
+          ],
+        },
+      ],
       "affectedHooks": undefined,
       "name": "CopyRspackPlugin",
     },
@@ -153,6 +146,7 @@ exports[`plugin-output > should allow to use filename.js to modify filename 1`] 
     "publicPath": "/",
   },
   "plugins": [
+    RsbuildCorePlugin {},
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].css",
@@ -175,6 +169,7 @@ exports[`plugin-output > should set output correctly 1`] = `
     "publicPath": "/",
   },
   "plugins": [
+    RsbuildCorePlugin {},
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].css",

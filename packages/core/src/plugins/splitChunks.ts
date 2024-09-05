@@ -68,7 +68,6 @@ function splitByExperience(ctx: SplitChunksContext): SplitChunks {
   const experienceCacheGroup: CacheGroups = {};
 
   const packageRegExps: Record<string, RegExp> = {
-    lodash: /node_modules[\\/]lodash(-es)?[\\/]/,
     axios: /node_modules[\\/]axios(-.+)?[\\/]/,
   };
 
@@ -238,14 +237,23 @@ export const pluginSplitChunks = (): RsbuildPlugin => ({
         }
 
         const { config } = environment;
+
         const defaultConfig: Exclude<SplitChunks, false> = {
-          // Optimize both `initial` and `async` chunks
-          chunks: 'all',
-          // When chunk size >= 50000 bytes, split it into separate chunk
-          // @ts-expect-error Rspack type missing
-          enforceSizeThreshold: 50000,
+          chunks: config.moduleFederation?.options?.exposes
+            ? // split only `async` chunks for module federation provider app
+              // this ensures that remote entries are not affected by chunk splitting
+              'async'
+            : // split both `initial` and `async` chunks for normal app
+              'all',
           cacheGroups: {},
         };
+
+        if (api.context.bundlerType === 'webpack') {
+          // When chunk size >= 50000 bytes, split it into separate chunk
+          // @ts-expect-error Rspack does not support enforceSizeThreshold yet
+          // https://github.com/web-infra-dev/rspack/issues/3565
+          defaultConfig.enforceSizeThreshold = 50000;
+        }
 
         const { chunkSplit } = config.performance;
         let forceSplittingGroups = {};
@@ -259,7 +267,7 @@ export const pluginSplitChunks = (): RsbuildPlugin => ({
         // Patch the override config difference between the `custom` strategy and other strategy.
         const override =
           chunkSplit.strategy === 'custom'
-            ? chunkSplit.splitChunks ?? chunkSplit.override
+            ? (chunkSplit.splitChunks ?? chunkSplit.override)
             : chunkSplit.override;
 
         // Apply different strategy

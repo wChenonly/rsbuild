@@ -4,33 +4,23 @@ import color from 'picocolors';
 import {
   formatStats,
   getStatsOptions,
-  isDev,
-  isProd,
   isSatisfyRspackVersion,
-  onCompileDone,
   prettyTime,
   rspackMinVersion,
 } from '../helpers';
+import { registerDevHook } from '../hooks';
 import { logger } from '../logger';
-import type { DevMiddlewareAPI } from '../server/devMiddleware';
-import type {
-  DevConfig,
-  InternalContext,
-  MultiStats,
-  Rspack,
-  RspackConfig,
-  Stats,
-} from '../types';
+import type { DevConfig, Rspack } from '../types';
 import { type InitConfigsOptions, initConfigs } from './initConfigs';
 
-export async function createCompiler({
-  context,
-  rspackConfigs,
-}: {
-  context: InternalContext;
-  rspackConfigs: RspackConfig[];
-}): Promise<Rspack.Compiler | Rspack.MultiCompiler> {
+export async function createCompiler(options: InitConfigsOptions): Promise<{
+  compiler: Rspack.Compiler | Rspack.MultiCompiler;
+  rspackConfigs: Rspack.Configuration[];
+}> {
   logger.debug('create compiler');
+  const { context } = options;
+  const { rspackConfigs } = await initConfigs(options);
+
   await context.hooks.onBeforeCreateCompiler.call({
     bundlerConfigs: rspackConfigs,
     environments: context.environments,
@@ -49,7 +39,6 @@ export async function createCompiler({
       ? rspack(rspackConfigs[0])
       : rspack(rspackConfigs);
 
-  let isFirstCompile = true;
   let isVersionLogged = false;
   let isCompiling = false;
 
@@ -68,11 +57,11 @@ export async function createCompiler({
     isCompiling = true;
   });
 
-  if (isProd()) {
+  if (context.normalizedConfig?.mode === 'production') {
     compiler.hooks.run.tap('rsbuild:run', logRspackVersion);
   }
 
-  const done = async (stats: Stats | MultiStats) => {
+  const done = (stats: Rspack.Stats | Rspack.MultiStats) => {
     const statsJson = stats.toJson({
       all: false,
       timings: true,
@@ -106,19 +95,24 @@ export async function createCompiler({
       logger.warn(message);
     }
 
-    if (isDev()) {
-      await context.hooks.onDevCompileDone.call({
-        isFirstCompile,
-        stats: stats,
-        environments: context.environments,
-      });
-    }
-
     isCompiling = false;
-    isFirstCompile = false;
   };
 
-  onCompileDone(compiler, done, rspack.MultiStats);
+  compiler.hooks.done.tap(
+    'rsbuild:done',
+    (stats: Rspack.Stats | Rspack.MultiStats) => {
+      done(stats);
+    },
+  );
+
+  if (context.normalizedConfig?.mode === 'development') {
+    registerDevHook({
+      context,
+      compiler,
+      bundlerConfigs: rspackConfigs,
+      MultiStatsCtor: rspack.MultiStats,
+    });
+  }
 
   await context.hooks.onAfterCreateCompiler.call({
     compiler,
@@ -126,7 +120,10 @@ export async function createCompiler({
   });
   logger.debug('create compiler done');
 
-  return compiler;
+  return {
+    compiler,
+    rspackConfigs,
+  };
 }
 
 export type MiddlewareCallbacks = {
@@ -156,30 +153,3 @@ export type DevMiddlewareOptions = {
   /** whether use Server Side Render */
   serverSideRender?: boolean;
 };
-
-export type CreateDevMiddlewareReturns = {
-  devMiddleware: (options: DevMiddlewareOptions) => DevMiddlewareAPI;
-  compiler: Rspack.Compiler | Rspack.MultiCompiler;
-};
-
-export async function createDevMiddleware(
-  options: InitConfigsOptions,
-  customCompiler?: Rspack.Compiler | Rspack.MultiCompiler,
-): Promise<CreateDevMiddlewareReturns> {
-  let compiler: Rspack.Compiler | Rspack.MultiCompiler;
-  if (customCompiler) {
-    compiler = customCompiler;
-  } else {
-    const { rspackConfigs } = await initConfigs(options);
-    compiler = await createCompiler({
-      context: options.context,
-      rspackConfigs,
-    });
-  }
-
-  const { getDevMiddleware } = await import('../server/devMiddleware');
-  return {
-    devMiddleware: await getDevMiddleware(compiler),
-    compiler,
-  };
-}

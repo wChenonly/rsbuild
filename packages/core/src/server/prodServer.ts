@@ -1,7 +1,6 @@
 import type { Server } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
 import type Connect from 'connect';
-import { getNodeEnv, setNodeEnv } from '../helpers';
 import { pathnameParse } from '../helpers/path';
 import { logger } from '../logger';
 import type {
@@ -16,6 +15,7 @@ import {
   getAddressUrls,
   getRoutes,
   getServerConfig,
+  getServerTerminator,
   printServerURLs,
 } from './helper';
 import { createHttpServer } from './httpServer';
@@ -60,13 +60,13 @@ export class RsbuildProdServer {
 
     // compression should be the first middleware
     if (compress) {
-      const { default: compression } = await import('http-compression');
-      this.middlewares.use((req, res, next) => {
-        compression({
-          gzip: true,
-          brotli: false,
-        })(req, res, next);
-      });
+      const { gzipMiddleware } = await import('./gzipMiddleware');
+      this.middlewares.use(
+        gzipMiddleware({
+          // simulates the common gzip compression rates
+          level: 6,
+        }),
+      );
     }
 
     if (headers) {
@@ -141,7 +141,7 @@ export class RsbuildProdServer {
     });
   }
 
-  public close(): void {}
+  public async close(): Promise<void> {}
 }
 
 export async function startProdServer(
@@ -149,10 +149,6 @@ export async function startProdServer(
   config: NormalizedConfig,
   { getPortSilently }: PreviewServerOptions = {},
 ): Promise<StartServerResult> {
-  if (!getNodeEnv()) {
-    setNodeEnv('production');
-  }
-
   const { port, host, https } = await getServerConfig({
     config,
     getPortSilently,
@@ -182,6 +178,7 @@ export async function startProdServer(
     serverConfig,
     middlewares: server.middlewares,
   });
+  const serverTerminator = getServerTerminator(httpServer);
 
   await server.onInit(httpServer);
 
@@ -196,6 +193,7 @@ export async function startProdServer(
         await context.hooks.onAfterStartProdServer.call({
           port,
           routes,
+          environments: context.environments,
         });
 
         const protocol = https ? 'https' : 'http';
@@ -209,18 +207,15 @@ export async function startProdServer(
           printUrls: serverConfig.printUrls,
         });
 
-        const onClose = () => {
-          server.close();
-          httpServer.close();
+        const onClose = async () => {
+          await Promise.all([server.close(), serverTerminator()]);
         };
 
         resolve({
           port,
           urls: urls.map((item) => item.url),
           server: {
-            close: async () => {
-              onClose();
-            },
+            close: onClose,
           },
         });
       },

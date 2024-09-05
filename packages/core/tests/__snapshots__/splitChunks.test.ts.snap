@@ -14,9 +14,11 @@ exports[`plugin-split-chunks > should allow forceSplitting to be an object 1`] =
         },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -25,6 +27,9 @@ exports[`plugin-split-chunks > should not split chunks when target is node 1`] =
   "optimization": {
     "splitChunks": false,
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -33,6 +38,9 @@ exports[`plugin-split-chunks > should set all-in-one config 1`] = `
   "optimization": {
     "splitChunks": false,
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -50,9 +58,11 @@ exports[`plugin-split-chunks > should set custom config 1`] = `
         },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -62,11 +72,13 @@ exports[`plugin-split-chunks > should set single-size config 1`] = `
     "splitChunks": {
       "cacheGroups": {},
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
       "maxSize": 5000,
       "minSize": 1000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -84,9 +96,11 @@ exports[`plugin-split-chunks > should set single-vendor config 1`] = `
         },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -100,11 +114,6 @@ exports[`plugin-split-chunks > should set split-by-experience config 1`] = `
           "priority": 0,
           "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
-        "lib-lodash": {
-          "name": "lib-lodash",
-          "priority": 0,
-          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-        },
         "lib-polyfill": {
           "name": "lib-polyfill",
           "priority": 0,
@@ -112,9 +121,11 @@ exports[`plugin-split-chunks > should set split-by-experience config 1`] = `
         },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -128,16 +139,13 @@ exports[`plugin-split-chunks > should set split-by-experience config correctly w
           "priority": 0,
           "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
-        "lib-lodash": {
-          "name": "lib-lodash",
-          "priority": 0,
-          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-        },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;
 
@@ -153,10 +161,12 @@ exports[`plugin-split-chunks > should set split-by-module config 1`] = `
         },
       },
       "chunks": "all",
-      "enforceSizeThreshold": 50000,
       "maxInitialRequests": Infinity,
       "minSize": 0,
     },
   },
+  "plugins": [
+    RsbuildCorePlugin {},
+  ],
 }
 `;

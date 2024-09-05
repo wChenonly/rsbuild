@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
+import type { WatchOptions } from 'chokidar';
 import color from 'picocolors';
 import RspackChain from 'rspack-chain';
 import {
@@ -48,6 +49,7 @@ import type {
   PublicDirOptions,
   RsbuildConfig,
   RsbuildEntry,
+  RsbuildMode,
 } from './types';
 
 const getDefaultDevConfig = (): NormalizedDevConfig => ({
@@ -57,11 +59,10 @@ const getDefaultDevConfig = (): NormalizedDevConfig => ({
   writeToDisk: false,
   client: {
     path: HMR_SOCKET_PATH,
-    // By default it is set to "location.port"
     port: '',
-    // By default it is set to "location.hostname"
     host: '',
     overlay: true,
+    reconnect: 100,
   },
 });
 
@@ -127,6 +128,7 @@ const getDefaultPerformanceConfig = (): NormalizedPerformanceConfig => ({
 
 const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
   target: 'web',
+  cleanDistPath: 'auto',
   distPath: {
     root: ROOT_DIST_DIR,
     css: CSS_DIST_DIR,
@@ -139,7 +141,7 @@ const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
   },
   assetPrefix: DEFAULT_ASSET_PREFIX,
   filename: {},
-  charset: 'ascii',
+  charset: 'utf8',
   polyfill: 'off',
   dataUriLimit: {
     svg: DEFAULT_DATA_URL_SIZE,
@@ -208,6 +210,7 @@ export const withDefaultConfig = async (
 ): Promise<RsbuildConfig> => {
   const merged = mergeRsbuildConfig(createDefaultConfig(), config);
 
+  merged.root ||= rootPath;
   merged.source ||= {};
 
   if (!merged.source.tsconfigPath) {
@@ -226,11 +229,25 @@ export const withDefaultConfig = async (
  * 2. Object value that should not be empty.
  * 3. Meaningful and can be filled by constant value.
  */
-export const normalizeConfig = (config: RsbuildConfig): NormalizedConfig =>
-  mergeRsbuildConfig(
-    createDefaultConfig(),
+export const normalizeConfig = (config: RsbuildConfig): NormalizedConfig => {
+  const getMode = (): RsbuildMode => {
+    if (config.mode) {
+      return config.mode;
+    }
+    const nodeEnv = getNodeEnv();
+    return nodeEnv === 'production' || nodeEnv === 'development'
+      ? nodeEnv
+      : 'none';
+  };
+
+  return mergeRsbuildConfig(
+    {
+      ...createDefaultConfig(),
+      mode: getMode(),
+    },
     config,
   ) as unknown as NormalizedConfig;
+};
 
 export type ConfigParams = {
   env: string;
@@ -296,7 +313,10 @@ const resolveConfigPath = (root: string, customConfig?: string) => {
   return null;
 };
 
-export async function watchFiles(files: string[]): Promise<void> {
+export async function watchFiles(
+  files: string[],
+  watchOptions?: WatchOptions,
+): Promise<void> {
   if (!files.length) {
     return;
   }
@@ -307,6 +327,7 @@ export async function watchFiles(files: string[]): Promise<void> {
     ignoreInitial: true,
     // If watching fails due to read permissions, the errors will be suppressed silently.
     ignorePermissionErrors: true,
+    ...watchOptions,
   });
 
   const callback = debounce(
@@ -378,10 +399,11 @@ export async function loadConfig({
 
   if (typeof configExport === 'function') {
     const command = process.argv[2];
+    const nodeEnv = getNodeEnv();
     const params: ConfigParams = {
-      env: getNodeEnv(),
+      env: nodeEnv,
       command,
-      envMode: envMode || getNodeEnv(),
+      envMode: envMode || nodeEnv,
     };
 
     const result = await configExport(params);
@@ -458,7 +480,9 @@ export const getRsbuildInspectConfig = ({
   for (const [name, config] of Object.entries(environments)) {
     const debugConfig = {
       ...config,
-      pluginNames,
+      pluginNames: pluginManager
+        .getPlugins({ environment: name })
+        .map((p) => p.name),
     };
     rawEnvironmentConfigs.push({
       name,
@@ -563,7 +587,7 @@ export function stringifyConfig(config: unknown, verbose?: boolean): string {
     options: { verbose?: boolean },
   ) => string;
 
-  return stringify(config as any, { verbose });
+  return stringify(config, { verbose });
 }
 
 export const normalizePublicDirs = (

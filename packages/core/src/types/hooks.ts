@@ -1,4 +1,3 @@
-import type HtmlWebpackPlugin from 'html-rspack-plugin';
 import type RspackChain from 'rspack-chain';
 import type { ChainIdentifier } from '..';
 import type {
@@ -10,28 +9,49 @@ import type {
 } from './config';
 import type { RsbuildEntry, RsbuildTarget } from './rsbuild';
 import type { Rspack } from './rspack';
-import type { MultiStats, Stats } from './stats';
-import type { WebpackConfig } from './thirdParty';
-import type { MaybePromise, NodeEnv } from './utils';
+import type { HtmlRspackPlugin, WebpackConfig } from './thirdParty';
+import type { MaybePromise } from './utils';
 
-export type OnBeforeBuildFn<B = 'rspack'> = (params: {
-  bundlerConfigs?: B extends 'rspack'
-    ? Rspack.Configuration[]
-    : WebpackConfig[];
-  environments: Record<string, EnvironmentContext>;
-}) => MaybePromise<void>;
-
-export type OnAfterBuildFn = (params: {
+type CompileCommonParams = {
   isFirstCompile: boolean;
-  stats?: Stats | MultiStats;
-  environments: Record<string, EnvironmentContext>;
-}) => MaybePromise<void>;
+  isWatch: boolean;
+};
+
+export type OnBeforeEnvironmentCompile<B = 'rspack'> = (
+  params: CompileCommonParams & {
+    environment: EnvironmentContext;
+    bundlerConfig?: B extends 'rspack' ? Rspack.Configuration : WebpackConfig;
+  },
+) => MaybePromise<void>;
+
+export type OnBeforeBuildFn<B = 'rspack'> = (
+  params: CompileCommonParams & {
+    environments: Record<string, EnvironmentContext>;
+    bundlerConfigs?: B extends 'rspack'
+      ? Rspack.Configuration[]
+      : WebpackConfig[];
+  },
+) => MaybePromise<void>;
+
+export type OnAfterEnvironmentCompileFn = (
+  params: CompileCommonParams & {
+    stats?: Rspack.Stats;
+    environment: EnvironmentContext;
+  },
+) => MaybePromise<void>;
+
+export type OnAfterBuildFn = (
+  params: CompileCommonParams & {
+    stats?: Rspack.Stats | Rspack.MultiStats;
+    environments: Record<string, EnvironmentContext>;
+  },
+) => MaybePromise<void>;
 
 export type OnCloseDevServerFn = () => MaybePromise<void>;
 
 export type OnDevCompileDoneFn = (params: {
   isFirstCompile: boolean;
-  stats: Stats | MultiStats;
+  stats: Rspack.Stats | Rspack.MultiStats;
   environments: Record<string, EnvironmentContext>;
 }) => MaybePromise<void>;
 
@@ -55,6 +75,7 @@ export type OnAfterStartDevServerFn = (params: {
 export type OnAfterStartProdServerFn = (params: {
   port: number;
   routes: Routes;
+  environments: Record<string, EnvironmentContext>;
 }) => MaybePromise<void>;
 
 export type OnBeforeCreateCompilerFn<B = 'rspack'> = (params: {
@@ -82,6 +103,10 @@ export type ModifyHTMLTagsContext = {
    */
   compilation: Rspack.Compilation;
   /**
+   * The Compiler object of Rspack.
+   */
+  compiler: Rspack.Compiler;
+  /**
    * URL prefix of assets.
    * @example 'https://example.com/'
    */
@@ -91,7 +116,9 @@ export type ModifyHTMLTagsContext = {
    * @example 'index.html'
    */
   filename: string;
-  /** The related environment context. */
+  /**
+   * The environment context for current build.
+   */
   environment: EnvironmentContext;
 };
 
@@ -105,13 +132,14 @@ export type ModifyRsbuildConfigUtils = {
   mergeRsbuildConfig: (...configs: RsbuildConfig[]) => RsbuildConfig;
 };
 
+type ArrayAtLeastOne<A, B> = [A, ...Array<A | B>] | [...Array<A | B>, A];
+
 export type ModifyEnvironmentConfigUtils = {
   /** environment name. */
   name: string;
   /** Merge multiple Rsbuild environment config objects into one. */
   mergeEnvironmentConfig: (
-    config: MergedEnvironmentConfig,
-    ...configs: EnvironmentConfig[]
+    ...configs: ArrayAtLeastOne<MergedEnvironmentConfig, EnvironmentConfig>
   ) => MergedEnvironmentConfig;
 };
 
@@ -137,7 +165,10 @@ export type EnvironmentContext = {
 };
 
 export type ModifyChainUtils = {
-  env: NodeEnv;
+  /**
+   * The value of `process.env.NODE_ENV`
+   */
+  env: string;
   isDev: boolean;
   isProd: boolean;
   target: RsbuildTarget;
@@ -145,7 +176,7 @@ export type ModifyChainUtils = {
   isWebWorker: boolean;
   CHAIN_ID: ChainIdentifier;
   environment: EnvironmentContext;
-  HtmlPlugin: typeof HtmlWebpackPlugin;
+  HtmlPlugin: typeof HtmlRspackPlugin;
 };
 
 interface PluginInstance {

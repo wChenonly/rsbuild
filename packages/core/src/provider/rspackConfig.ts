@@ -11,19 +11,19 @@ import type {
   ModifyRspackConfigUtils,
   RsbuildTarget,
   Rspack,
-  RspackConfig,
 } from '../types';
 
 async function modifyRspackConfig(
   context: InternalContext,
-  rspackConfig: RspackConfig,
+  rspackConfig: Rspack.Configuration,
   utils: ModifyRspackConfigUtils,
 ) {
   logger.debug('modify Rspack config');
-  let [modifiedConfig] = await context.hooks.modifyRspackConfig.call(
-    rspackConfig,
-    utils,
-  );
+  let [modifiedConfig] =
+    await context.hooks.modifyRspackConfig.callInEnvironment({
+      environment: utils.environment.name,
+      args: [rspackConfig, utils],
+    });
 
   if (utils.environment.config.tools?.rspack) {
     modifiedConfig = await reduceConfigsAsyncWithContext({
@@ -103,8 +103,8 @@ export function getChainUtils(
     environment,
     env: nodeEnv,
     target,
-    isDev: nodeEnv === 'development',
-    isProd: nodeEnv === 'production',
+    isDev: environment.config.mode === 'development',
+    isProd: environment.config.mode === 'production',
     isServer: target === 'node',
     isWebWorker: target === 'web-worker',
     CHAIN_ID,
@@ -120,7 +120,7 @@ export async function generateRspackConfig({
   environment: string;
   target: RsbuildTarget;
   context: InternalContext;
-}): Promise<RspackConfig> {
+}): Promise<Rspack.Configuration> {
   const chainUtils = getChainUtils(target, context.environments[environment]);
   const {
     BannerPlugin,

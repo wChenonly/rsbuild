@@ -4,6 +4,8 @@ import { __internalHelper } from '@rsbuild/core';
 import type {
   ModifyChainUtils,
   NormalizedEnvironmentConfig,
+  NormalizedSourceConfig,
+  TransformImport,
 } from '@rsbuild/core';
 import _ from 'lodash';
 import semver from 'semver';
@@ -16,6 +18,13 @@ import type {
 } from './types';
 
 const { applySwcDecoratorConfig } = __internalHelper;
+
+const castArray = <T>(arr?: T | T[]): T[] => {
+  if (arr === undefined) {
+    return [];
+  }
+  return Array.isArray(arr) ? arr : [arr];
+};
 
 async function findUp({
   filename,
@@ -41,6 +50,10 @@ async function findUp({
   }
 }
 
+export const isVersionBeyond17 = (version: string): boolean => {
+  return semver.gte(semver.minVersion(version)!, '17.0.0');
+};
+
 const isBeyondReact17 = async (cwd: string) => {
   const pkgPath = await findUp({ cwd, filename: 'package.json' });
 
@@ -58,7 +71,7 @@ const isBeyondReact17 = async (cwd: string) => {
     return false;
   }
 
-  return semver.satisfies(semver.minVersion(deps.react)!, '>=17.0.0');
+  return isVersionBeyond17(deps.react);
 };
 
 /**
@@ -184,6 +197,24 @@ const getCoreJsVersion = (corejsPkgPath: string) => {
   }
 };
 
+const reduceTransformImportConfig = (
+  options: NormalizedSourceConfig['transformImport'],
+): TransformImport[] => {
+  if (!options) {
+    return [];
+  }
+
+  let imports: TransformImport[] = [];
+  for (const item of castArray(options)) {
+    if (typeof item === 'function') {
+      imports = item(imports) ?? imports;
+    } else {
+      imports.push(item);
+    }
+  }
+  return imports;
+};
+
 export async function applyPluginConfig(
   rawOptions: PluginSwcOptions,
   utils: ModifyChainUtils,
@@ -248,9 +279,13 @@ export async function applyPluginConfig(
 
   const extensions = swc.extensions;
 
-  if (rsbuildConfig.source?.transformImport) {
+  const finalPluginImport = reduceTransformImportConfig(
+    rsbuildConfig.source?.transformImport,
+  );
+
+  if (finalPluginImport?.length) {
     extensions.pluginImport ??= [];
-    extensions.pluginImport.push(...rsbuildConfig.source.transformImport);
+    extensions.pluginImport.push(...finalPluginImport);
   }
 
   if (pluginOptions?.transformLodash !== false) {

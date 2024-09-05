@@ -4,8 +4,6 @@
   "plugin-svgr",
   "plugin-vue",
   "plugin-vue-jsx",
-  "plugin-vue2",
-  "plugin-vue2-jsx",
   "plugin-preact",
   "plugin-svelte",
   "plugin-solid",
@@ -14,12 +12,5 @@
   "plugin-less",
   "plugin-stylus",
   "plugin-assets-retry",
-  "plugin-type-check",
-  "plugin-image-compress",
-  "plugin-lightningcss",
-  "plugin-source-build",
-  "plugin-styled-components",
-  "plugin-check-syntax",
-  "plugin-typed-css-modules",
-  "plugin-rem"
+  "plugin-type-check"
 ]

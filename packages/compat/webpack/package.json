@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/webpack",
-  "version": "1.0.0-alpha.6",
+  "version": "1.0.1-rc.4",
   "homepage": "https://rsbuild.dev",
   "repository": {
     "type": "git",
@@ -11,16 +11,17 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist-types/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist-types/index.d.ts",
   "files": [
     "static",
-    "dist"
+    "dist",
+    "dist-types"
   ],
   "scripts": {
     "build": "modern build",
@@ -29,11 +30,11 @@
   "dependencies": {
     "@rsbuild/core": "workspace:*",
     "copy-webpack-plugin": "11.0.0",
-    "mini-css-extract-plugin": "2.9.0",
-    "picocolors": "^1.0.1",
+    "mini-css-extract-plugin": "2.9.1",
+    "picocolors": "^1.1.0",
     "reduce-configs": "^1.0.0",
     "tsconfig-paths-webpack-plugin": "4.1.0",
-    "webpack": "^5.92.1"
+    "webpack": "^5.94.0"
   },
   "devDependencies": {
     "@scripts/test-helper": "workspace:*",

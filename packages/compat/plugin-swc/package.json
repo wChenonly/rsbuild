@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-swc",
-  "version": "1.0.0-alpha.6",
+  "version": "1.0.1-rc.4",
   "description": "SWC plugin for Rsbuild",
   "repository": {
     "type": "git",
@@ -27,24 +27,24 @@
     "dev": "modern build --watch"
   },
   "dependencies": {
-    "@modern-js/swc-plugins": "0.6.7",
-    "@swc/helpers": "0.5.11",
-    "core-js": "~3.37.1",
+    "@modern-js/swc-plugins": "0.6.10",
+    "@swc/helpers": "^0.5.12",
+    "core-js": "~3.38.1",
     "deepmerge": "^4.3.1",
     "lodash": "^4.17.21",
-    "picocolors": "^1.0.1",
-    "semver": "^7.6.2"
+    "picocolors": "^1.1.0",
+    "semver": "^7.6.3"
   },
   "devDependencies": {
     "@rsbuild/core": "workspace:*",
     "@rsbuild/webpack": "workspace:*",
-    "@types/lodash": "^4.17.6",
+    "@types/lodash": "^4.17.7",
     "@types/semver": "^7.5.8",
     "typescript": "^5.5.2",
-    "webpack": "^5.92.1"
+    "webpack": "^5.94.0"
   },
   "peerDependencies": {
-    "@rsbuild/core": "workspace:^1.0.0-alpha.6"
+    "@rsbuild/core": "workspace:^1.0.1-rc.4"
   },
   "publishConfig": {
     "access": "public",

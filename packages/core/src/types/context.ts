@@ -1,4 +1,4 @@
-import type { Hooks } from '../initHooks';
+import type { Hooks } from '../hooks';
 import type { NormalizedConfig, RsbuildConfig } from './config';
 import type { EnvironmentContext } from './hooks';
 import type { RsbuildPluginAPI } from './plugin';
@@ -34,8 +34,14 @@ export type InternalContext = RsbuildContext & {
   originalConfig: Readonly<RsbuildConfig>;
   /** The normalized Rsbuild config. */
   normalizedConfig?: NormalizedConfig;
-  /** The plugin API. */
-  pluginAPI?: RsbuildPluginAPI;
+  /**
+   * Get the plugin API.
+   *
+   * When environment is undefined, the global plugin API is returned, which can be used in all environments.
+   * */
+  getPluginAPI?: (environment?: string) => RsbuildPluginAPI;
   /** The environment context. */
   environments: Record<string, EnvironmentContext>;
+  /** Only build specified environment. */
+  specifiedEnvironments?: string[];
 };

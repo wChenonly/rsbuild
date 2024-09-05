@@ -9,12 +9,7 @@ import zlib from 'node:zlib';
 import color from 'picocolors';
 import { CSS_REGEX, HTML_REGEX, JS_REGEX } from '../constants';
 import { logger } from '../logger';
-import type {
-  PrintFileSizeOptions,
-  RsbuildPlugin,
-  Stats,
-  StatsAsset,
-} from '../types';
+import type { PrintFileSizeOptions, RsbuildPlugin, Rspack } from '../types';
 
 const gzip = promisify(zlib.gzip);
 
@@ -37,9 +32,19 @@ const getAssetColor = (size: number) => {
   return color.green;
 };
 
-function getHeader(longestFileLength: number, longestLabelLength: number) {
+function getHeader(
+  longestFileLength: number,
+  longestLabelLength: number,
+  options: PrintFileSizeOptions,
+) {
   const longestLengths = [longestFileLength, longestLabelLength];
-  const headerRow = ['File', 'Size', 'Gzipped'].reduce((prev, cur, index) => {
+  const rowTypes = ['File', 'Size'];
+
+  if (options.compressed) {
+    rowTypes.push('Gzipped');
+  }
+
+  const headerRow = rowTypes.reduce((prev, cur, index) => {
     const length = longestLengths[index];
     let curLabel = cur;
     if (length) {
@@ -71,24 +76,27 @@ const coloringAssetName = (assetName: string) => {
 };
 
 async function printFileSizes(
-  config: PrintFileSizeOptions,
-  stats: Stats,
+  options: PrintFileSizeOptions,
+  stats: Rspack.Stats,
   rootPath: string,
 ) {
   const logs: string[] = [];
-  if (config.detail === false && config.total === false) {
+  if (options.detail === false && options.total === false) {
     return logs;
   }
 
   const formatAsset = async (
-    asset: StatsAsset,
+    asset: Rspack.StatsAsset,
     distPath: string,
     distFolder: string,
   ) => {
     const fileName = asset.name.split('?')[0];
     const contents = await fs.promises.readFile(path.join(distPath, fileName));
     const size = contents.length;
-    const gzippedSize = await gzipSize(contents);
+    const gzippedSize = options.compressed ? await gzipSize(contents) : null;
+    const gzipSizeLabel = gzippedSize
+      ? getAssetColor(gzippedSize)(calcFileSize(gzippedSize))
+      : null;
 
     return {
       size,
@@ -96,7 +104,7 @@ async function printFileSizes(
       name: path.basename(fileName),
       gzippedSize,
       sizeLabel: calcFileSize(size),
-      gzipSizeLabel: getAssetColor(gzippedSize)(calcFileSize(gzippedSize)),
+      gzipSizeLabel,
     };
   };
 
@@ -110,8 +118,6 @@ async function printFileSizes(
     const origin = stats.toJson({
       all: false,
       assets: true,
-      // TODO: need supported in rspack
-      // @ts-expect-error
       cachedAssets: true,
       groupAssetsByInfo: false,
       groupAssetsByPath: false,
@@ -143,8 +149,8 @@ async function printFileSizes(
     ...assets.map((a) => (a.folder + path.sep + a.name).length),
   );
 
-  if (config.detail !== false) {
-    logs.push(getHeader(longestFileLength, longestLabelLength));
+  if (options.detail !== false) {
+    logs.push(getHeader(longestFileLength, longestLabelLength, options));
   }
 
   let totalSize = 0;
@@ -157,9 +163,12 @@ async function printFileSizes(
     const sizeLength = sizeLabel.length;
 
     totalSize += asset.size;
-    totalGzipSize += asset.gzippedSize;
 
-    if (config.detail !== false) {
+    if (asset.gzippedSize) {
+      totalGzipSize += asset.gzippedSize;
+    }
+
+    if (options.detail !== false) {
       if (sizeLength < longestLabelLength) {
         const rightPadding = ' '.repeat(longestLabelLength - sizeLength);
         sizeLabel += rightPadding;
@@ -173,18 +182,31 @@ async function printFileSizes(
         fileNameLabel += rightPadding;
       }
 
-      logs.push(`  ${fileNameLabel}    ${sizeLabel}    ${gzipSizeLabel}`);
+      let log = `  ${fileNameLabel}    ${sizeLabel}`;
+
+      if (gzipSizeLabel) {
+        log += `    ${gzipSizeLabel}`;
+      }
+
+      logs.push(log);
     }
   }
 
-  if (config.total !== false) {
+  if (options.total !== false) {
     const totalSizeLabel = `${color.bold(
       color.blue('Total size:'),
     )}  ${calcFileSize(totalSize)}`;
-    const gzippedSizeLabel = `${color.bold(
-      color.blue('Gzipped size:'),
-    )}  ${calcFileSize(totalGzipSize)}`;
-    logs.push(`\n  ${totalSizeLabel}\n  ${gzippedSizeLabel}\n`);
+
+    let log = `\n  ${totalSizeLabel}\n`;
+
+    if (options.compressed) {
+      const gzippedSizeLabel = `${color.bold(
+        color.blue('Gzipped size:'),
+      )}  ${calcFileSize(totalGzipSize)}`;
+      log += `  ${gzippedSizeLabel}\n`;
+    }
+
+    logs.push(log);
   }
 
   return logs;
@@ -194,8 +216,9 @@ export const pluginFileSize = (): RsbuildPlugin => ({
   name: 'rsbuild:file-size',
 
   setup(api) {
-    api.onAfterBuild(async ({ stats, environments }) => {
-      if (!stats) {
+    api.onAfterBuild(async ({ stats, environments, isFirstCompile }) => {
+      // No need to print file sizes if there is any compilation error
+      if (!stats || stats.hasErrors() || !isFirstCompile) {
         return;
       }
 
@@ -203,29 +226,37 @@ export const pluginFileSize = (): RsbuildPlugin => ({
         Object.values(environments).map(async (environment, index) => {
           const { printFileSize } = environment.config.performance;
 
+          if (printFileSize === false) {
+            return;
+          }
+
           const multiStats = 'stats' in stats ? stats.stats : [stats];
 
-          const printFileSizeConfig =
-            typeof printFileSize === 'boolean'
-              ? {
-                  total: true,
-                  detail: true,
-                }
-              : printFileSize;
+          const defaultConfig = {
+            total: true,
+            detail: true,
+            compressed: true,
+          };
 
-          if (printFileSize) {
-            const statsLog = await printFileSizes(
-              printFileSizeConfig,
-              multiStats[index],
-              api.context.rootPath,
-            );
+          const mergedConfig =
+            printFileSize === true
+              ? defaultConfig
+              : {
+                  ...defaultConfig,
+                  ...printFileSize,
+                };
 
-            const name = color.green(environment.name);
-            logger.info(`Production file sizes for ${name}:\n`);
+          const statsLog = await printFileSizes(
+            mergedConfig,
+            multiStats[index],
+            api.context.rootPath,
+          );
 
-            for (const log of statsLog) {
-              logger.log(log);
-            }
+          const name = color.green(environment.name);
+          logger.info(`Production file sizes for ${name}:\n`);
+
+          for (const log of statsLog) {
+            logger.log(log);
           }
         }),
       ).catch((err) => {

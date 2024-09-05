@@ -1,3 +1,4 @@
+import color from 'picocolors';
 import { getDefaultEntry, normalizeConfig } from '../config';
 import { JS_DIST_DIR } from '../constants';
 import {
@@ -9,7 +10,6 @@ import { isDebug, logger } from '../logger';
 import { mergeRsbuildConfig } from '../mergeConfig';
 import { initPlugins } from '../pluginManager';
 import type {
-  CreateRsbuildOptions,
   InspectConfigOptions,
   InternalContext,
   MergedEnvironmentConfig,
@@ -17,8 +17,9 @@ import type {
   NormalizedConfig,
   NormalizedEnvironmentConfig,
   PluginManager,
+  ResolvedCreateRsbuildOptions,
   RsbuildEntry,
-  RspackConfig,
+  Rspack,
 } from '../types';
 import { inspectConfig } from './inspectConfig';
 import { generateRspackConfig } from './rspackConfig';
@@ -40,11 +41,19 @@ async function modifyEnvironmentConfig(
   name: string,
 ) {
   logger.debug(`modify Rsbuild environment(${name}) config`);
-  const [modified] = await context.hooks.modifyEnvironmentConfig.call(config, {
-    name,
-    mergeEnvironmentConfig:
-      mergeRsbuildConfig<MergedEnvironmentConfig> as ModifyEnvironmentConfigUtils['mergeEnvironmentConfig'],
-  });
+
+  const [modified] =
+    await context.hooks.modifyEnvironmentConfig.callInEnvironment({
+      environment: name,
+      args: [
+        config,
+        {
+          name,
+          mergeEnvironmentConfig:
+            mergeRsbuildConfig<MergedEnvironmentConfig> as ModifyEnvironmentConfigUtils['mergeEnvironmentConfig'],
+        },
+      ],
+    });
 
   logger.debug(`modify Rsbuild environment(${name}) config done`);
 
@@ -54,12 +63,13 @@ async function modifyEnvironmentConfig(
 export type InitConfigsOptions = {
   context: InternalContext;
   pluginManager: PluginManager;
-  rsbuildOptions: Required<CreateRsbuildOptions>;
+  rsbuildOptions: ResolvedCreateRsbuildOptions;
 };
 
 const initEnvironmentConfigs = (
   normalizedConfig: NormalizedConfig,
   rootPath: string,
+  specifiedEnvironments?: string[],
 ): Record<string, MergedEnvironmentConfig> => {
   let defaultEntry: RsbuildEntry;
   const getDefaultEntryWithMemo = () => {
@@ -72,8 +82,11 @@ const initEnvironmentConfigs = (
     normalizedConfig;
   const { assetPrefix, lazyCompilation } = dev;
 
+  const isEnvironmentEnabled = (name: string) =>
+    !specifiedEnvironments || specifiedEnvironments.includes(name);
+
   const applyEnvironmentDefaultConfig = (config: MergedEnvironmentConfig) => {
-    if (!config.source.entry) {
+    if (!config.source.entry || Object.keys(config.source.entry).length === 0) {
       config.source.entry = getDefaultEntryWithMemo();
     }
 
@@ -86,35 +99,51 @@ const initEnvironmentConfigs = (
   };
 
   if (environments && Object.keys(environments).length) {
-    return Object.fromEntries(
-      Object.entries(environments).map(([name, config]) => {
-        const environmentConfig: MergedEnvironmentConfig = {
-          ...(mergeRsbuildConfig(
-            {
-              ...rsbuildSharedConfig,
-              dev: {
-                assetPrefix,
-                lazyCompilation,
-              },
-            } as unknown as MergedEnvironmentConfig,
-            config as unknown as MergedEnvironmentConfig,
-          ) as unknown as MergedEnvironmentConfig),
-        };
+    const resolvedEnvironments = Object.fromEntries(
+      Object.entries(environments)
+        .filter(([name]) => isEnvironmentEnabled(name))
+        .map(([name, config]) => {
+          const environmentConfig: MergedEnvironmentConfig = {
+            ...(mergeRsbuildConfig(
+              {
+                ...rsbuildSharedConfig,
+                dev: {
+                  assetPrefix,
+                  lazyCompilation,
+                },
+              } as unknown as MergedEnvironmentConfig,
+              config as unknown as MergedEnvironmentConfig,
+            ) as unknown as MergedEnvironmentConfig),
+          };
 
-        return [name, applyEnvironmentDefaultConfig(environmentConfig)];
-      }),
+          return [name, applyEnvironmentDefaultConfig(environmentConfig)];
+        }),
+    );
+
+    if (!Object.keys(resolvedEnvironments).length) {
+      throw new Error(
+        `The current build is specified to run only in the ${color.yellow(specifiedEnvironments?.join(','))} environment, but the configuration of the specified environment was not found.`,
+      );
+    }
+    return resolvedEnvironments;
+  }
+
+  const defaultEnvironmentName = camelCase(rsbuildSharedConfig.output.target);
+
+  if (!isEnvironmentEnabled(defaultEnvironmentName)) {
+    throw new Error(
+      `The current build is specified to run only in the ${color.yellow(specifiedEnvironments?.join(','))} environment, but the configuration of the specified environment was not found.`,
     );
   }
 
   return {
-    [camelCase(rsbuildSharedConfig.output.target)]:
-      applyEnvironmentDefaultConfig({
-        ...rsbuildSharedConfig,
-        dev: {
-          assetPrefix,
-          lazyCompilation,
-        },
-      } as MergedEnvironmentConfig),
+    [defaultEnvironmentName]: applyEnvironmentDefaultConfig({
+      ...rsbuildSharedConfig,
+      dev: {
+        assetPrefix,
+        lazyCompilation,
+      },
+    } as MergedEnvironmentConfig),
   };
 };
 
@@ -131,7 +160,7 @@ export async function initRsbuildConfig({
   }
 
   await initPlugins({
-    pluginAPI: context.pluginAPI,
+    getPluginAPI: context.getPluginAPI!,
     pluginManager,
   });
 
@@ -143,6 +172,7 @@ export async function initRsbuildConfig({
   const mergedEnvironments = initEnvironmentConfigs(
     normalizeBaseConfig,
     context.rootPath,
+    context.specifiedEnvironments,
   );
 
   const {
@@ -183,7 +213,7 @@ export async function initConfigs({
   pluginManager,
   rsbuildOptions,
 }: InitConfigsOptions): Promise<{
-  rspackConfigs: RspackConfig[];
+  rspackConfigs: Rspack.Configuration[];
 }> {
   const normalizedConfig = await initRsbuildConfig({ context, pluginManager });
 
@@ -214,7 +244,11 @@ export async function initConfigs({
     };
 
     // run inspect later to avoid cleaned by cleanOutput plugin
-    context.hooks.onBeforeBuild.tap(inspect);
+    context.hooks.onBeforeBuild.tap(({ isFirstCompile }) => {
+      if (isFirstCompile) {
+        inspect();
+      }
+    });
     context.hooks.onAfterStartDevServer.tap(inspect);
   }
 

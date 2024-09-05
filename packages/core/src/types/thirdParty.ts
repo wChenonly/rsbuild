@@ -2,19 +2,19 @@ import type {
   CssExtractRspackLoaderOptions,
   CssExtractRspackPluginOptions,
 } from '@rspack/core';
-import type Autoprefixer from 'autoprefixer';
+import type HtmlRspackPlugin from 'html-rspack-plugin';
 import type { AcceptedPlugin, ProcessOptions } from 'postcss';
 import type { Configuration as WebpackConfig } from 'webpack';
 import type { Rspack } from './rspack';
 
-type AutoprefixerOptions = Autoprefixer.Options;
+export type { HtmlRspackPlugin };
 
 export interface CSSExtractOptions {
   pluginOptions?: CssExtractRspackPluginOptions;
   loaderOptions?: CssExtractRspackLoaderOptions;
 }
 
-export type { WebpackConfig, AutoprefixerOptions };
+export type { WebpackConfig };
 
 export type PostCSSOptions = ProcessOptions & {
   config?: boolean;
@@ -125,24 +125,43 @@ export interface CSSLoaderModulesOptions {
    * Enables/disables ES modules named export for locals.
    */
   namedExport?: boolean;
+  /**
+   * Enables a callback to output the CSS modules mapping JSON.
+   */
+  getJSON?: (context: {
+    resourcePath: string;
+    imports: object[];
+    exports: object[];
+    replacements: object[];
+  }) => Promise<void> | void;
 }
 
 export interface CSSLoaderOptions {
   /**
    * Allow to enable/disables handling the CSS functions url and image-set.
    * If set to false, css-loader will not parse any paths specified in url or image-set
-   *
    * @default true
    */
-  url?: boolean | ((url: string, resourcePath: string) => boolean);
+  url?:
+    | boolean
+    | {
+        filter: (url: string, resourcePath: string) => boolean;
+      };
   /**
    * Allows to enables/disables @import at-rules handling.
-   *
    * @default true
    */
   import?:
     | boolean
-    | ((url: string, media: string, resourcePath: string) => boolean);
+    | {
+        filter: (
+          url: string,
+          media: string,
+          resourcePath: string,
+          supports?: string,
+          layer?: string,
+        ) => boolean;
+      };
   /**
    * Allows to enable/disable CSS Modules or ICSS and setup configuration:
    */
@@ -154,20 +173,17 @@ export interface CSSLoaderOptions {
   /**
    * Allows to enables/disables or setups number of loaders applied before CSS loader for @import at-rules,
    * CSS Modules and ICSS imports, i.e. @import/composes/@value value from './values.css'/etc.
-   *
    * @default 0
    */
   importLoaders?: number;
   /**
    * By default, css-loader generates JS modules that use the ES modules syntax.
    * There are some cases in which using ES modules is beneficial, like in the case of module concatenation and tree shaking.
-   *
    * @default true
    */
   esModule?: boolean;
   /**
    * Allows exporting styles as array with modules, string or constructable stylesheet (i.e. CSSStyleSheet)
-   *
    * @default 'array'
    */
   exportType?: 'array' | 'string' | 'css-style-sheet';
@@ -184,13 +200,11 @@ export interface StyleLoaderOptions {
   /**
    * By default, style-loader generates JS modules that use the ES modules syntax.
    * There are some cases in which using ES modules is beneficial, like in the case of module concatenation and tree shaking.
-   *
    * @default true
    */
   esModule?: boolean;
   /**
    * Allows to setup how styles will be injected into the DOM.
-   *
    * @default 'styleTag'
    */
   injectType?: StyleLoaderInjectType;

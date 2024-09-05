@@ -1,5 +1,3 @@
-import type { RuleSetCondition } from '@rspack/core';
-import type HtmlWebpackPlugin from 'html-rspack-plugin';
 import type RspackChain from 'rspack-chain';
 import type {
   RuleSetRule,
@@ -15,6 +13,7 @@ import type {
 } from './config';
 import type { RsbuildContext } from './context';
 import type {
+  EnvironmentContext,
   ModifyBundlerChainFn,
   ModifyChainUtils,
   ModifyEnvironmentConfigFn,
@@ -22,10 +21,12 @@ import type {
   ModifyRsbuildConfigFn,
   OnAfterBuildFn,
   OnAfterCreateCompilerFn,
+  OnAfterEnvironmentCompileFn,
   OnAfterStartDevServerFn,
   OnAfterStartProdServerFn,
   OnBeforeBuildFn,
   OnBeforeCreateCompilerFn,
+  OnBeforeEnvironmentCompile,
   OnBeforeStartDevServerFn,
   OnBeforeStartProdServerFn,
   OnCloseDevServerFn,
@@ -33,7 +34,8 @@ import type {
   OnExitFn,
 } from './hooks';
 import type { RsbuildTarget } from './rsbuild';
-import type { RspackConfig, RspackSourceMap } from './rspack';
+import type { Rspack } from './rspack';
+import type { HtmlRspackPlugin } from './thirdParty';
 import type { Falsy } from './utils';
 import type { MaybePromise } from './utils';
 
@@ -44,15 +46,34 @@ export type HookDescriptor<T extends (...args: any[]) => any> = {
   order: HookOrder;
 };
 
+export type EnvironmentAsyncHook<Callback extends (...args: any[]) => any> = {
+  tapEnvironment: (params: {
+    /**
+     * Specify that the callback will only be executed under the specified environment
+     */
+    environment?: string;
+    handler: Callback | HookDescriptor<Callback>;
+  }) => void;
+  /**
+   *  Triggered in all environments by default.
+   *  If you need to specify the environment, please use `tapEnvironment`
+   */
+  tap: (cb: Callback | HookDescriptor<Callback>) => void;
+  callInEnvironment: (params: {
+    environment?: string;
+    args: Parameters<Callback>;
+  }) => Promise<Parameters<Callback>>;
+};
+
 export type AsyncHook<Callback extends (...args: any[]) => any> = {
   tap: (cb: Callback | HookDescriptor<Callback>) => void;
   call: (...args: Parameters<Callback>) => Promise<Parameters<Callback>>;
 };
 
 export type ModifyRspackConfigFn = (
-  config: RspackConfig,
+  config: Rspack.Configuration,
   utils: ModifyRspackConfigUtils,
-) => Promise<RspackConfig | void> | RspackConfig | void;
+) => MaybePromise<Rspack.Configuration | void>;
 
 export type ModifyWebpackChainUtils = ModifyChainUtils & {
   webpack: typeof import('webpack');
@@ -64,7 +85,7 @@ export type ModifyWebpackChainUtils = ModifyChainUtils & {
   /**
    * @deprecated Use HtmlPlugin instead.
    */
-  HtmlWebpackPlugin: typeof HtmlWebpackPlugin;
+  HtmlWebpackPlugin: typeof HtmlRspackPlugin;
 };
 
 export type ModifyWebpackConfigUtils = ModifyWebpackChainUtils & {
@@ -89,16 +110,56 @@ export type ModifyWebpackConfigFn = (
   utils: ModifyWebpackConfigUtils,
 ) => Promise<WebpackConfig | void> | WebpackConfig | void;
 
+export type PluginMeta = {
+  environment: string;
+  instance: RsbuildPlugin;
+};
+
 export type PluginManager = {
-  getPlugins: () => RsbuildPlugin[];
+  getPlugins: (options?: {
+    /**
+     * Get the plugins in the specified environment.
+     *
+     * If environment is not specified, get the global plugins.
+     */
+    environment: string;
+  }) => RsbuildPlugin[];
   addPlugins: (
     plugins: Array<RsbuildPlugin | Falsy>,
-    options?: { before?: string },
+    options?: {
+      before?: string;
+      /**
+       * Add a plugin for the specified environment.
+       *
+       * If environment is not specified, it will be registered as a global plugin (effective in all environments)
+       */
+      environment?: string;
+    },
   ) => void;
-  removePlugins: (pluginNames: string[]) => void;
-  isPluginExists: (pluginName: string) => boolean;
-  /** The plugin API. */
-  pluginAPI?: RsbuildPluginAPI;
+  removePlugins: (
+    pluginNames: string[],
+    options?: {
+      /**
+       * Remove the plugin in the specified environment.
+       *
+       * If environment is not specified, remove it in all environments.
+       */
+      environment: string;
+    },
+  ) => void;
+  isPluginExists: (
+    pluginName: string,
+    options?: {
+      /**
+       * Whether it exists in the specified environment.
+       *
+       * If environment is not specified, determine whether the plugin is a global plugin.
+       */
+      environment: string;
+    },
+  ) => boolean;
+  /** Get all plugins with environment info */
+  getAllPluginsWithMeta: () => PluginMeta[];
 };
 
 /**
@@ -129,10 +190,19 @@ export type RsbuildPlugin = {
   remove?: string[];
 };
 
+// Support for registering lower version Rsbuild plugins in the new version of
+// Rsbuild core without throwing type mismatches. In most cases, Rsbuild core
+// only adds new methods or properties to the API object, which means that lower
+// version plugins will usually work fine.
+type LooseRsbuildPlugin = Omit<RsbuildPlugin, 'setup'> & {
+  setup: (api: any) => MaybePromise<void>;
+};
+
 export type RsbuildPlugins = (
-  | RsbuildPlugin
+  | LooseRsbuildPlugin
   | Falsy
-  | Promise<RsbuildPlugin | Falsy>
+  | Promise<LooseRsbuildPlugin | Falsy | RsbuildPlugins>
+  | RsbuildPlugins
 )[];
 
 export type GetRsbuildConfig = {
@@ -149,7 +219,7 @@ type TransformResult =
   | string
   | {
       code: string;
-      map?: string | RspackSourceMap | null;
+      map?: string | Rspack.sources.RawSourceMap | null;
     };
 
 export type TransformContext = {
@@ -172,6 +242,10 @@ export type TransformContext = {
    * @example '?foo=123'
    */
   resourceQuery: string;
+  /**
+   * The environment context for current build.
+   */
+  environment: EnvironmentContext;
   /**
    * Add an additional file as the dependency.
    * The file will be watched and changes to the file will trigger rebuild.
@@ -202,20 +276,25 @@ export type TransformDescriptor = {
    * Include modules that match the test assertion, the same as `rule.test`
    * @see https://rspack.dev/config/module#ruletest
    */
-  test?: RuleSetCondition;
+  test?: Rspack.RuleSetCondition;
   /**
    * A condition that matches the resource query.
    * @see https://rspack.dev/config/module#ruleresourcequery
    */
-  resourceQuery?: RuleSetCondition;
+  resourceQuery?: Rspack.RuleSetCondition;
   /**
    * Match based on the Rsbuild targets and only apply the transform to certain targets.
    * @see https://rsbuild.dev/config/output/targets
    */
   targets?: RsbuildTarget[];
   /**
+   * Match based on the Rsbuild environment names and only apply the transform to certain environments.
+   * @see https://rsbuild.dev/config/environments
+   */
+  environments?: string[];
+  /**
    * If raw is `true`, the transform handler will receive the Buffer type code instead of the string type.
-   * @see https://rspack.dev/api/loader-api#raw-loader
+   * @see https://rspack.dev/api/loader-api/examples#raw-loader
    */
   raw?: boolean;
 };
@@ -223,6 +302,74 @@ export type TransformDescriptor = {
 export type TransformFn = (
   descriptor: TransformDescriptor,
   handler: TransformHandler,
+) => void;
+
+export type ProcessAssetsStage =
+  | 'additional'
+  | 'pre-process'
+  | 'derived'
+  | 'additions'
+  | 'none'
+  | 'optimize'
+  | 'optimize-count'
+  | 'optimize-compatibility'
+  | 'optimize-size'
+  | 'dev-tooling'
+  | 'optimize-inline'
+  | 'summarize'
+  | 'optimize-hash'
+  | 'optimize-transfer'
+  | 'analyse'
+  | 'report';
+
+export type ProcessAssetsDescriptor = {
+  /**
+   * Specifies the order in which your asset processing logic should run relative to other plugins.
+   */
+  stage: ProcessAssetsStage;
+  /**
+   * Match based on the Rsbuild targets and only process the assets of certain targets.
+   * @see https://rsbuild.dev/config/output/targets
+   */
+  targets?: RsbuildTarget[];
+  /**
+   * Match based on the Rsbuild environment names and only process the assets of certain environments.
+   * @see https://rsbuild.dev/config/environments
+   */
+  environments?: string[];
+};
+
+export type RspackSources = Pick<
+  typeof Rspack.sources,
+  | 'Source'
+  | 'RawSource'
+  | 'OriginalSource'
+  | 'SourceMapSource'
+  | 'CachedSource'
+  | 'ConcatSource'
+  | 'ReplaceSource'
+  | 'PrefixSource'
+  | 'SizeOnlySource'
+  | 'CompatSource'
+>;
+
+export type ProcessAssetsHandler = (context: {
+  assets: Record<string, Rspack.sources.Source>;
+  compiler: Rspack.Compiler;
+  compilation: Rspack.Compilation;
+  /**
+   * The environment context for current build.
+   */
+  environment: EnvironmentContext;
+  /**
+   * Contains multiple classes which represent an Rspack `Source`.
+   */
+  sources: RspackSources;
+}) => Promise<void> | void;
+
+export type ProcessAssetsFn = (
+  descriptor: ProcessAssetsDescriptor,
+  handler: ProcessAssetsHandler,
 ) => void;
 
 declare function getNormalizedConfig(): NormalizedConfig;
@@ -240,6 +387,8 @@ export type RsbuildPluginAPI = Readonly<{
   onExit: PluginHook<OnExitFn>;
   onAfterBuild: PluginHook<OnAfterBuildFn>;
   onBeforeBuild: PluginHook<OnBeforeBuildFn>;
+  onAfterEnvironmentCompile: PluginHook<OnAfterEnvironmentCompileFn>;
+  onBeforeEnvironmentCompile: PluginHook<OnBeforeEnvironmentCompile>;
   onCloseDevServer: PluginHook<OnCloseDevServerFn>;
   onDevCompileDone: PluginHook<OnDevCompileDoneFn>;
   onAfterStartDevServer: PluginHook<OnAfterStartDevServerFn>;
@@ -273,4 +422,9 @@ export type RsbuildPluginAPI = Readonly<{
    * Used to transform the code of modules.
    */
   transform: TransformFn;
+
+  /**
+   * Process all the asset generated by Rspack.
+   */
+  processAssets: ProcessAssetsFn;
 }>;

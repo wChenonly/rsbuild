@@ -1,10 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Socket } from 'node:net';
 import { pathnameParse } from '../helpers/path';
-import type { DevConfig, NextFunction, ServerConfig } from '../types';
-import type {
-  DevMiddleware as CustomDevMiddleware,
-  DevMiddlewareAPI,
+import type { DevConfig, NextFunction, Rspack, ServerConfig } from '../types';
+import {
+  type DevMiddleware as CustomDevMiddleware,
+  type DevMiddlewareAPI,
+  getDevMiddleware,
 } from './devMiddleware';
 import { SocketServer } from './socketServer';
 
@@ -12,7 +13,7 @@ type Options = {
   publicPaths: string[];
   dev: DevConfig;
   server: ServerConfig;
-  devMiddleware: CustomDevMiddleware;
+  compiler: Rspack.Compiler | Rspack.MultiCompiler;
 };
 
 const noop = () => {
@@ -37,7 +38,7 @@ function getClientPaths(devConfig: DevConfig) {
 
 /**
  * Setup compiler-related logic:
- * 1. setup webpack-dev-middleware
+ * 1. setup rsbuild-dev-middleware
  * 2. establish webSocket connect
  */
 export class CompilerDevMiddleware {
@@ -47,30 +48,26 @@ export class CompilerDevMiddleware {
 
   private serverConfig: ServerConfig;
 
-  private devMiddleware: CustomDevMiddleware;
+  private compiler: Rspack.Compiler | Rspack.MultiCompiler;
 
   private publicPaths: string[];
 
   private socketServer: SocketServer;
 
-  constructor({ dev, server, devMiddleware, publicPaths }: Options) {
+  constructor({ dev, server, compiler, publicPaths }: Options) {
     this.devConfig = dev;
     this.serverConfig = server;
+    this.compiler = compiler;
     this.publicPaths = publicPaths;
 
     // init socket server
     this.socketServer = new SocketServer(dev);
-
-    this.devMiddleware = devMiddleware;
   }
 
   public async init(): Promise<void> {
     // start compiling
-    this.middleware = this.setupDevMiddleware(
-      this.devMiddleware,
-      this.publicPaths,
-    );
-
+    const devMiddleware = await getDevMiddleware(this.compiler);
+    this.middleware = this.setupDevMiddleware(devMiddleware, this.publicPaths);
     await this.socketServer.prepare();
   }
 
@@ -88,7 +85,10 @@ export class CompilerDevMiddleware {
     type: string,
     data?: Record<string, any> | string | boolean,
   ): void {
-    this.socketServer.sockWrite(type, data);
+    this.socketServer.sockWrite({
+      type,
+      data,
+    });
   }
 
   private setupDevMiddleware(
@@ -98,8 +98,11 @@ export class CompilerDevMiddleware {
     const { devConfig, serverConfig } = this;
 
     const callbacks = {
-      onInvalid: () => {
-        this.socketServer.sockWrite('invalid');
+      onInvalid: (compilationId?: string) => {
+        this.socketServer.sockWrite({
+          type: 'invalid',
+          compilationId,
+        });
       },
       onDone: (stats: any) => {
         this.socketServer.updateStats(stats);
@@ -149,7 +152,7 @@ export class CompilerDevMiddleware {
 
     warp.close = middleware.close;
 
-    // warp webpack-dev-middleware to handle html file（without publicPath）
+    // warp rsbuild-dev-middleware to handle html file（without publicPath）
     // maybe we should serve html file by sirv
     return warp;
   }

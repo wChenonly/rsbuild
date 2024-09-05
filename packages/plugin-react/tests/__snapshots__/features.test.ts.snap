@@ -8,11 +8,6 @@ exports[`splitChunks > should apply antd/semi/... splitChunks rule when pkg is i
       "priority": 0,
       "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
     },
-    "lib-lodash": {
-      "name": "lib-lodash",
-      "priority": 0,
-      "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-    },
     "react": {
       "name": "lib-react",
       "priority": 0,
@@ -25,7 +20,6 @@ exports[`splitChunks > should apply antd/semi/... splitChunks rule when pkg is i
     },
   },
   "chunks": "all",
-  "enforceSizeThreshold": 50000,
 }
 `;
 
@@ -37,14 +31,8 @@ exports[`splitChunks > should apply splitChunks.react/router plugin option when 
       "priority": 0,
       "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
     },
-    "lib-lodash": {
-      "name": "lib-lodash",
-      "priority": 0,
-      "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-    },
   },
   "chunks": "all",
-  "enforceSizeThreshold": 50000,
 }
 `;
 
@@ -60,6 +48,5 @@ exports[`splitChunks > should not apply splitChunks rule when strategy is not sp
     },
   },
   "chunks": "all",
-  "enforceSizeThreshold": 50000,
 }
 `;

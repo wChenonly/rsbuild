@@ -19,7 +19,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
   "devtool": "cheap-module-source-map",
   "entry": {
     "index": [
-      "src/index.js",
+      "./src/index.js",
     ],
   },
   "experiments": {
@@ -48,51 +48,21 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         },
         "sideEffects": true,
         "test": /\\\\\\.css\\$/,
+        "type": "javascript/auto",
         "use": [
           {
             "loader": "<ROOT>/node_modules/<PNPM_INNER>/mini-css-extract-plugin/dist/loader.js",
           },
           {
-            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
             "options": {
-              "importLoaders": 1,
+              "importLoaders": 0,
               "modules": {
                 "auto": true,
                 "exportGlobals": false,
                 "exportLocalsConvention": "camelCase",
                 "localIdentName": "[path][name]__[local]-[hash:base64:6]",
                 "namedExport": false,
-              },
-              "sourceMap": false,
-            },
-          },
-          {
-            "loader": "<ROOT>/packages/core/compiled/postcss-loader",
-            "options": {
-              "postcssOptions": {
-                "config": false,
-                "plugins": [
-                  {
-                    "browsers": [
-                      "chrome >= 87",
-                      "edge >= 88",
-                      "firefox >= 78",
-                      "safari >= 14",
-                    ],
-                    "info": [Function],
-                    "options": {
-                      "flexbox": "no-2009",
-                      "overrideBrowserslist": [
-                        "chrome >= 87",
-                        "edge >= 88",
-                        "firefox >= 78",
-                        "safari >= 14",
-                      ],
-                    },
-                    "postcssPlugin": "autoprefixer",
-                    "prepare": [Function],
-                  },
-                ],
               },
               "sourceMap": false,
             },
@@ -250,11 +220,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           "priority": 0,
           "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
-        "lib-lodash": {
-          "name": "lib-lodash",
-          "priority": 0,
-          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-        },
       },
       "chunks": "all",
       "enforceSizeThreshold": 50000,
@@ -274,6 +239,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "hints": false,
   },
   "plugins": [
+    RsbuildCorePlugin {},
     HotModuleReplacementPlugin {
       "options": {},
     },
@@ -316,44 +282,30 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
-        "template": "<ROOT>/packages/core/static/template.html",
-        "templateContent": false,
+        "template": "",
+        "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
         "templateParameters": [Function],
         "title": "Rsbuild App",
         "xhtml": false,
       },
-      "userOptions": {
-        "chunks": [
-          "index",
-        ],
-        "entryName": "index",
-        "filename": "index.html",
-        "inject": "head",
-        "meta": {
-          "charset": {
-            "charset": "UTF-8",
-          },
-          "viewport": "width=device-width, initial-scale=1.0",
-        },
-        "scriptLoading": "defer",
-        "template": "<ROOT>/packages/core/static/template.html",
-        "templateParameters": [Function],
-        "title": "Rsbuild App",
-      },
       "version": 6,
     },
-    HtmlBasicPlugin {
+    RsbuildHtmlPlugin {
       "getEnvironment": [Function],
       "modifyTagsFn": [Function],
-      "name": "HtmlBasicPlugin",
+      "name": "RsbuildHtmlPlugin",
       "options": {
-        "index": {},
+        "index": {
+          "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
+        },
       },
     },
     DefinePlugin {
       "definitions": {
+        "import.meta.env.DEV": true,
+        "import.meta.env.MODE": ""development"",
+        "import.meta.env.PROD": false,
         "process.env.ASSET_PREFIX": """",
-        "process.env.NODE_ENV": ""development"",
       },
     },
     ProgressPlugin {
@@ -376,9 +328,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "extensions": [
       ".ts",
       ".tsx",
+      ".mjs",
       ".js",
       ".jsx",
-      ".mjs",
       ".json",
     ],
     "plugins": [
@@ -388,9 +340,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "extensions": [
           ".ts",
           ".tsx",
+          ".mjs",
           ".js",
           ".jsx",
-          ".mjs",
           ".json",
         ],
         "log": {
@@ -429,7 +381,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
   "devtool": false,
   "entry": {
     "index": [
-      "src/index.js",
+      "./src/index.js",
     ],
   },
   "experiments": {
@@ -458,51 +410,21 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         },
         "sideEffects": true,
         "test": /\\\\\\.css\\$/,
+        "type": "javascript/auto",
         "use": [
           {
             "loader": "<ROOT>/node_modules/<PNPM_INNER>/mini-css-extract-plugin/dist/loader.js",
           },
           {
-            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
             "options": {
-              "importLoaders": 1,
+              "importLoaders": 0,
               "modules": {
                 "auto": true,
                 "exportGlobals": false,
                 "exportLocalsConvention": "camelCase",
                 "localIdentName": "[local]-[hash:base64:6]",
                 "namedExport": false,
-              },
-              "sourceMap": false,
-            },
-          },
-          {
-            "loader": "<ROOT>/packages/core/compiled/postcss-loader",
-            "options": {
-              "postcssOptions": {
-                "config": false,
-                "plugins": [
-                  {
-                    "browsers": [
-                      "chrome >= 87",
-                      "edge >= 88",
-                      "firefox >= 78",
-                      "safari >= 14",
-                    ],
-                    "info": [Function],
-                    "options": {
-                      "flexbox": "no-2009",
-                      "overrideBrowserslist": [
-                        "chrome >= 87",
-                        "edge >= 88",
-                        "firefox >= 78",
-                        "safari >= 14",
-                      ],
-                    },
-                    "postcssPlugin": "autoprefixer",
-                    "prepare": [Function],
-                  },
-                ],
               },
               "sourceMap": false,
             },
@@ -660,11 +582,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
           "priority": 0,
           "test": /node_modules\\[\\\\\\\\/\\]axios\\(-\\.\\+\\)\\?\\[\\\\\\\\/\\]/,
         },
-        "lib-lodash": {
-          "name": "lib-lodash",
-          "priority": 0,
-          "test": /node_modules\\[\\\\\\\\/\\]lodash\\(-es\\)\\?\\[\\\\\\\\/\\]/,
-        },
       },
       "chunks": "all",
       "enforceSizeThreshold": 50000,
@@ -683,6 +600,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
     "hints": false,
   },
   "plugins": [
+    RsbuildCorePlugin {},
     MiniCssExtractPlugin {
       "_sortedModulesCache": WeakMap {},
       "options": {
@@ -722,44 +640,30 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
-        "template": "<ROOT>/packages/core/static/template.html",
-        "templateContent": false,
+        "template": "",
+        "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
         "templateParameters": [Function],
         "title": "Rsbuild App",
         "xhtml": false,
       },
-      "userOptions": {
-        "chunks": [
-          "index",
-        ],
-        "entryName": "index",
-        "filename": "index.html",
-        "inject": "head",
-        "meta": {
-          "charset": {
-            "charset": "UTF-8",
-          },
-          "viewport": "width=device-width, initial-scale=1.0",
-        },
-        "scriptLoading": "defer",
-        "template": "<ROOT>/packages/core/static/template.html",
-        "templateParameters": [Function],
-        "title": "Rsbuild App",
-      },
       "version": 6,
     },
-    HtmlBasicPlugin {
+    RsbuildHtmlPlugin {
       "getEnvironment": [Function],
       "modifyTagsFn": [Function],
-      "name": "HtmlBasicPlugin",
+      "name": "RsbuildHtmlPlugin",
       "options": {
-        "index": {},
+        "index": {
+          "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
+        },
       },
     },
     DefinePlugin {
       "definitions": {
+        "import.meta.env.DEV": false,
+        "import.meta.env.MODE": ""production"",
+        "import.meta.env.PROD": true,
         "process.env.ASSET_PREFIX": """",
-        "process.env.NODE_ENV": ""production"",
       },
     },
     ProgressPlugin {
@@ -782,9 +686,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
     "extensions": [
       ".ts",
       ".tsx",
+      ".mjs",
       ".js",
       ".jsx",
-      ".mjs",
       ".json",
     ],
     "plugins": [
@@ -794,9 +698,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "extensions": [
           ".ts",
           ".tsx",
+          ".mjs",
           ".js",
           ".jsx",
-          ".mjs",
           ".json",
         ],
         "log": {
@@ -835,7 +739,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   "devtool": false,
   "entry": {
     "index": [
-      "src/index.js",
+      "./src/index.js",
     ],
   },
   "experiments": {
@@ -864,14 +768,15 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         },
         "sideEffects": true,
         "test": /\\\\\\.css\\$/,
+        "type": "javascript/auto",
         "use": [
           {
             "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
           },
           {
-            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
             "options": {
-              "importLoaders": 1,
+              "importLoaders": 0,
               "modules": {
                 "auto": true,
                 "exportGlobals": false,
@@ -1030,6 +935,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
           {
             "loader": "<ROOT>/packages/core/dist/transformRawLoader.cjs",
             "options": {
+              "getEnvironment": [Function],
               "id": "rsbuild-transform-0",
             },
           },
@@ -1058,11 +964,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
-    RsbuildTransformPlugin {},
+    RsbuildCorePlugin {},
     DefinePlugin {
       "definitions": {
+        "import.meta.env.DEV": false,
+        "import.meta.env.MODE": ""production"",
+        "import.meta.env.PROD": true,
         "process.env.ASSET_PREFIX": """",
-        "process.env.NODE_ENV": ""production"",
       },
     },
     ProgressPlugin {
@@ -1085,9 +993,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "extensions": [
       ".ts",
       ".tsx",
+      ".mjs",
       ".js",
       ".jsx",
-      ".mjs",
       ".json",
     ],
     "plugins": [
@@ -1097,9 +1005,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "extensions": [
           ".ts",
           ".tsx",
+          ".mjs",
           ".js",
           ".jsx",
-          ".mjs",
           ".json",
         ],
         "log": {
@@ -1135,7 +1043,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   "devtool": false,
   "entry": {
     "index": [
-      "src/index.js",
+      "./src/index.js",
     ],
   },
   "experiments": {
@@ -1165,14 +1073,15 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         },
         "sideEffects": true,
         "test": /\\\\\\.css\\$/,
+        "type": "javascript/auto",
         "use": [
           {
             "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
           },
           {
-            "loader": "<ROOT>/packages/core/compiled/css-loader",
+            "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
             "options": {
-              "importLoaders": 1,
+              "importLoaders": 0,
               "modules": {
                 "auto": true,
                 "exportGlobals": false,
@@ -1345,10 +1254,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
+    RsbuildCorePlugin {},
     DefinePlugin {
       "definitions": {
+        "import.meta.env.DEV": false,
+        "import.meta.env.MODE": ""production"",
+        "import.meta.env.PROD": true,
         "process.env.ASSET_PREFIX": """",
-        "process.env.NODE_ENV": ""production"",
       },
     },
     ProgressPlugin {
@@ -1371,9 +1283,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "extensions": [
       ".ts",
       ".tsx",
+      ".mjs",
       ".js",
       ".jsx",
-      ".mjs",
       ".json",
     ],
     "plugins": [
@@ -1383,9 +1295,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "extensions": [
           ".ts",
           ".tsx",
+          ".mjs",
           ".js",
           ".jsx",
-          ".mjs",
           ".json",
         ],
         "log": {

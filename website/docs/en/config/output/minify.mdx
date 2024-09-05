@@ -13,12 +13,11 @@ type Minify =
     };
 ```
 
-- **Version:** `>= 0.4.11`
 - **Default:** `true`
 
-Configure whether to enable code minification in the production build, or to configure minimizer options.
+Configure whether to enable code minification in production mode, or to configure minimizer options.
 
-By default, JS and CSS code will be automatically minimized during production builds to enhance page performance. If you do not want to minify the code, you can set `minify` to `false` to disable minification for all code. Alternatively, you can control the behavior of code minification through detailed configuration of the `minify` option. Below are detailed explanations for each configuration option:
+By default, JS and CSS code will be automatically minimized in production mode to improve page performance. If you do not want to minify the code, you can set `minify` to `false` to disable minification for all code. Alternatively, you can control the behavior of code minification through detailed configuration of the `minify` option. Below are detailed explanations for each configuration option:
 
 Here are explanations for each field:
 
@@ -57,22 +56,23 @@ export default {
 
 ### JavaScript minify options
 
-`output.minify.jsOptions` is used to configure SWC's minification options. For specific configuration items, please refer to [SWC Documentation](https://swc.rs/docs/configuration/minification#configuration). The following configuration will override the default settings, turning off code obfuscation and the removal of `console` statements.
+`output.minify.jsOptions` is used to configure SWC's minification options. For detailed configurations, please refer to [SwcJsMinimizerRspackPlugin](https://rspack.dev/plugins/rspack/swc-js-minimizer-rspack-plugin). The following configuration will override the default settings, disable the mangle feature.
 
 ```js
 export default {
   output: {
     minify: {
       jsOptions: {
-        mangle: false,
-        compress: {
-          drop_console: false,
+        minimizerOptions: {
+          mangle: false,
         },
       },
     },
   },
 };
 ```
+
+> Refer to [Configure SWC](/guide/basic/configure-swc) for more details.
 
 ### CSS minify options
 
@@ -83,7 +83,9 @@ export default {
   output: {
     minify: {
       cssOptions: {
-        errorRecovery: false,
+        minimizerOptions: {
+          errorRecovery: false,
+        },
       },
     },
   },

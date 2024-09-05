@@ -6,18 +6,16 @@ import {
   reduceConfigsMergeContext,
   reduceConfigsWithContext,
 } from 'reduce-configs';
-import { STATIC_PATH } from '../constants';
 import {
   castArray,
   getPublicPathFromChain,
   isFileExists,
   isPlainObject,
-  isURL,
 } from '../helpers';
-import type { HtmlInfo, TagConfig } from '../rspack/HtmlBasicPlugin';
+import type { HtmlInfo, TagConfig } from '../rspack/RsbuildHtmlPlugin';
 import type {
-  HTMLPluginOptions,
   HtmlConfig,
+  HtmlRspackPlugin,
   ModifyHTMLTagsFn,
   NormalizedEnvironmentConfig,
   RsbuildPlugin,
@@ -39,24 +37,29 @@ function getInject(entryName: string, config: NormalizedEnvironmentConfig) {
   });
 }
 
-const existTemplatePath: string[] = [];
+const getDefaultTemplateContent = (mountId: string) =>
+  `<!doctype html><html><head></head><body><div id="${mountId}"></div></body></html>`;
+
+const existTemplatePath = new Set<string>();
 
 export async function getTemplate(
   entryName: string,
   config: NormalizedEnvironmentConfig,
   rootPath: string,
-): Promise<{ templatePath: string; templateContent?: string }> {
-  const DEFAULT_TEMPLATE = path.resolve(STATIC_PATH, 'template.html');
-
+): Promise<
+  | { templatePath: string; templateContent?: string }
+  | { templatePath: undefined; templateContent: string }
+> {
   const templatePath = reduceConfigsMergeContext({
-    initial: DEFAULT_TEMPLATE,
+    initial: '',
     config: config.html.template,
     ctx: { entryName },
   });
 
-  if (templatePath === DEFAULT_TEMPLATE) {
+  if (!templatePath) {
     return {
-      templatePath: templatePath,
+      templatePath: undefined,
+      templateContent: getDefaultTemplateContent(config.html.mountId),
     };
   }
 
@@ -64,7 +67,7 @@ export async function getTemplate(
     ? templatePath
     : path.resolve(rootPath, templatePath);
 
-  if (!existTemplatePath.includes(absolutePath)) {
+  if (!existTemplatePath.has(absolutePath)) {
     // Check if custom template exists
     if (!(await isFileExists(absolutePath))) {
       throw new Error(
@@ -74,7 +77,7 @@ export async function getTemplate(
       );
     }
 
-    existTemplatePath.push(absolutePath);
+    existTemplatePath.add(absolutePath);
   }
 
   const templateContent = await fs.promises.readFile(absolutePath, 'utf-8');
@@ -124,21 +127,35 @@ function getTemplateParameters(
   entryName: string,
   config: NormalizedEnvironmentConfig,
   assetPrefix: string,
-): HTMLPluginOptions['templateParameters'] {
+): HtmlRspackPlugin.Options['templateParameters'] {
   return (compilation, assets, assetTags, pluginOptions) => {
     const { mountId, templateParameters } = config.html;
+    const rspackConfig = compilation.options;
+    const htmlPlugin = {
+      tags: assetTags,
+      files: assets,
+      options: pluginOptions,
+    };
+
     const defaultOptions = {
       mountId,
       entryName,
       assetPrefix,
       compilation,
-      webpackConfig: compilation.options,
-      htmlWebpackPlugin: {
-        tags: assetTags,
-        files: assets,
-        options: pluginOptions,
-      },
+      htmlPlugin,
+      rspackConfig,
+      /**
+       * compatible with html-webpack-plugin
+       * @deprecated may be removed in a future major version, use `rspackConfig` instead
+       */
+      webpackConfig: rspackConfig,
+      /**
+       * compatible with html-webpack-plugin
+       * @deprecated may be removed in a future major version, use `htmlPlugin` instead
+       */
+      htmlWebpackPlugin: htmlPlugin,
     };
+
     return reduceConfigsWithContext({
       initial: defaultOptions,
       config: templateParameters,
@@ -191,7 +208,9 @@ const getTagConfig = (
   };
 };
 
-export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
+export const pluginHtml = (
+  modifyTagsFn?: (environment: string) => ModifyHTMLTagsFn,
+): RsbuildPlugin => ({
   name: 'rsbuild:html',
 
   setup(api) {
@@ -205,7 +224,9 @@ export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
 
         const assetPrefix = getPublicPathFromChain(chain, false);
         const entries = chain.entryPoints.entries() || {};
-        const entryNames = Object.keys(entries);
+        const entryNames = Object.keys(entries).filter((entryName) =>
+          Boolean(htmlPaths[entryName]),
+        );
         const htmlInfoMap: Record<string, HtmlInfo> = {};
 
         const finalOptions = await Promise.all(
@@ -233,16 +254,19 @@ export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
 
             const metaTags = getMetaTags(entryName, config, templateContent);
 
-            const pluginOptions: HTMLPluginOptions = {
+            const pluginOptions: HtmlRspackPlugin.Options = {
               meta: metaTags,
               chunks,
               inject,
               filename,
-              template: templatePath,
               entryName,
               templateParameters,
               scriptLoading: config.html.scriptLoading,
             };
+
+            if (templatePath) {
+              pluginOptions.template = templatePath;
+            }
 
             if (chunks.length > 1) {
               // load entires by the order of `chunks`
@@ -265,12 +289,7 @@ export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
 
             const favicon = getFavicon(entryName, config);
             if (favicon) {
-              if (isURL(favicon)) {
-                htmlInfo.favicon = favicon;
-              } else {
-                // HTMLWebpackPlugin only support favicon file path
-                pluginOptions.favicon = favicon;
-              }
+              htmlInfo.favicon = favicon;
             }
 
             const finalOptions = reduceConfigsWithContext({
@@ -281,6 +300,12 @@ export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
                   : config.tools.htmlPlugin,
               ctx: { entryName, entryValue },
             });
+
+            // fallback to the default template content
+            if (!finalOptions.template && !finalOptions.templateContent) {
+              pluginOptions.template = '';
+              pluginOptions.templateContent = templateContent;
+            }
 
             return finalOptions;
           }),
@@ -293,34 +318,24 @@ export const pluginHtml = (modifyTagsFn?: ModifyHTMLTagsFn): RsbuildPlugin => ({
             .use(HtmlPlugin, [finalOptions[index]]);
         });
 
-        const { HtmlBasicPlugin } = await import('../rspack/HtmlBasicPlugin');
+        const { RsbuildHtmlPlugin } = await import(
+          '../rspack/RsbuildHtmlPlugin'
+        );
 
         chain
-          .plugin(CHAIN_ID.PLUGIN.HTML_BASIC)
-          .use(HtmlBasicPlugin, [htmlInfoMap, environment, modifyTagsFn]);
+          .plugin('rsbuild-html-plugin')
+          .use(RsbuildHtmlPlugin, [
+            htmlInfoMap,
+            () => environment,
+            modifyTagsFn?.(environment.name),
+          ]);
 
         if (config.html) {
-          const { appIcon, crossorigin } = config.html;
-
+          const { crossorigin } = config.html;
           if (crossorigin) {
             const formattedCrossorigin =
               crossorigin === true ? 'anonymous' : crossorigin;
             chain.output.crossOriginLoading(formattedCrossorigin);
-          }
-
-          if (appIcon) {
-            const { HtmlAppIconPlugin } = await import(
-              '../rspack/HtmlAppIconPlugin'
-            );
-
-            const distDir = config.output.distPath.image;
-            const iconPath = path.isAbsolute(appIcon)
-              ? appIcon
-              : path.join(api.context.rootPath, appIcon);
-
-            chain
-              .plugin(CHAIN_ID.PLUGIN.APP_ICON)
-              .use(HtmlAppIconPlugin, [{ iconPath, distDir }]);
           }
         }
       },

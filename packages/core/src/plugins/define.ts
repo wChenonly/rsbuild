@@ -1,4 +1,4 @@
-import { getNodeEnv, getPublicPathFromChain } from '../helpers';
+import { getPublicPathFromChain } from '../helpers';
 import type { Define, RsbuildPlugin } from '../types';
 
 export const pluginDefine = (): RsbuildPlugin => ({
@@ -8,7 +8,9 @@ export const pluginDefine = (): RsbuildPlugin => ({
     api.modifyBundlerChain((chain, { CHAIN_ID, bundler, environment }) => {
       const { config } = environment;
       const builtinVars: Define = {
-        'process.env.NODE_ENV': JSON.stringify(getNodeEnv()),
+        'import.meta.env.MODE': JSON.stringify(config.mode),
+        'import.meta.env.DEV': config.mode === 'development',
+        'import.meta.env.PROD': config.mode === 'production',
         'process.env.ASSET_PREFIX': JSON.stringify(
           getPublicPathFromChain(chain, false),
         ),

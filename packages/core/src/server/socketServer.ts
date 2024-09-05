@@ -1,9 +1,11 @@
 import type { IncomingMessage } from 'node:http';
 import type { Socket } from 'node:net';
+import { parse } from 'node:querystring';
 import type Ws from 'ws';
 import { getAllStatsErrors, getAllStatsWarnings } from '../helpers';
 import { logger } from '../logger';
-import type { DevConfig, Stats } from '../types';
+import type { DevConfig, Rspack } from '../types';
+import { getCompilationId } from './helper';
 
 interface ExtWebSocket extends Ws {
   isAlive: boolean;
@@ -29,13 +31,15 @@ export class SocketServer {
 
   private readonly options: DevConfig;
 
-  private stats?: Stats;
-  private initialChunks?: Set<string>;
+  private stats: Record<string, Rspack.Stats>;
+  private initialChunks: Record<string, Set<string>>;
 
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: DevConfig) {
     this.options = options;
+    this.stats = {};
+    this.initialChunks = {};
   }
 
   public upgrade(req: IncomingMessage, sock: Socket, head: any): void {
@@ -77,32 +81,55 @@ export class SocketServer {
       }
     }, 30000);
 
-    this.wsServer.on('connection', (socket) => {
-      this.onConnect(socket);
+    this.wsServer.on('connection', (socket, req) => {
+      // /rsbuild-hmr?compilationId=web
+      const queryStr = req.url ? req.url.split('?')[1] : '';
+
+      this.onConnect(
+        socket,
+        queryStr ? (parse(queryStr) as Record<string, string>) : {},
+      );
     });
   }
 
-  public updateStats(stats: Stats): void {
-    this.stats = stats;
-    this.sendStats();
+  public updateStats(stats: Rspack.Stats): void {
+    const compilationId = getCompilationId(stats.compilation);
+
+    this.stats[compilationId] = stats;
+
+    this.sendStats({
+      compilationId,
+    });
   }
 
   // write message to each socket
-  public sockWrite(
-    type: string,
-    data?: Record<string, any> | string | boolean,
-  ): void {
+  public sockWrite({
+    type,
+    compilationId,
+    data,
+  }: {
+    type: string;
+    compilationId?: string;
+    data?: Record<string, any> | string | boolean;
+  }): void {
     for (const socket of this.sockets) {
-      this.send(socket, JSON.stringify({ type, data }));
+      this.send(socket, JSON.stringify({ type, data, compilationId }));
     }
   }
 
   private singleWrite(
     socket: Ws,
-    type: string,
-    data?: Record<string, any> | string | boolean,
+    {
+      type,
+      data,
+      compilationId,
+    }: {
+      type: string;
+      compilationId?: string;
+      data?: Record<string, any> | string | boolean;
+    },
   ) {
-    this.send(socket, JSON.stringify({ type, data }));
+    this.send(socket, JSON.stringify({ type, data, compilationId }));
   }
 
   public close(): void {
@@ -116,7 +143,7 @@ export class SocketServer {
     }
   }
 
-  private onConnect(socket: Ws) {
+  private onConnect(socket: Ws, params: Record<string, string>) {
     const connection = socket as ExtWebSocket;
 
     connection.isAlive = true;
@@ -139,18 +166,24 @@ export class SocketServer {
     });
 
     if (this.options.hmr || this.options.liveReload) {
-      this.singleWrite(connection, 'hot');
+      this.singleWrite(connection, {
+        type: 'hot',
+        compilationId: params.compilationId,
+      });
     }
 
     // send first stats to active client sock if stats exist
     if (this.stats) {
-      this.sendStats(true);
+      this.sendStats({
+        force: true,
+        compilationId: params.compilationId,
+      });
     }
   }
 
   // get standard stats
-  private getStats() {
-    const curStats = this.stats;
+  private getStats(name: string) {
+    const curStats = this.stats[name];
 
     if (!curStats) {
       return null;
@@ -173,8 +206,14 @@ export class SocketServer {
   }
 
   // determine what message should send by stats
-  private sendStats(force = false) {
-    const stats = this.getStats();
+  private sendStats({
+    force = false,
+    compilationId,
+  }: {
+    compilationId: string;
+    force?: boolean;
+  }) {
+    const stats = this.getStats(compilationId);
 
     // this should never happened
     if (!stats) {
@@ -188,20 +227,32 @@ export class SocketServer {
     if (stats.entrypoints) {
       for (const entrypoint of Object.values(stats.entrypoints)) {
         const chunks = entrypoint.chunks;
-        if (Array.isArray(chunks)) {
-          for (const chunkName of chunks) {
-            chunkName && newInitialChunks.add(chunkName);
+
+        if (!Array.isArray(chunks)) {
+          continue;
+        }
+
+        for (const chunkName of chunks) {
+          if (!chunkName) {
+            continue;
           }
+          newInitialChunks.add(String(chunkName));
         }
       }
     }
+
+    const initialChunks = this.initialChunks[compilationId];
     const shouldReload =
       Boolean(stats.entrypoints) &&
-      Boolean(this.initialChunks) &&
-      !isEqualSet(this.initialChunks as Set<string>, newInitialChunks);
-    this.initialChunks = newInitialChunks;
+      Boolean(initialChunks) &&
+      !isEqualSet(initialChunks, newInitialChunks);
+
+    this.initialChunks[compilationId] = newInitialChunks;
     if (shouldReload) {
-      return this.sockWrite('content-changed');
+      return this.sockWrite({
+        type: 'content-changed',
+        compilationId,
+      });
     }
 
     const shouldEmit =
@@ -212,18 +263,36 @@ export class SocketServer {
       stats.assets.every((asset: any) => !asset.emitted);
 
     if (shouldEmit) {
-      return this.sockWrite('still-ok');
+      return this.sockWrite({
+        type: 'still-ok',
+        compilationId,
+      });
     }
 
-    this.sockWrite('hash', stats.hash);
+    this.sockWrite({
+      type: 'hash',
+      compilationId,
+      data: stats.hash,
+    });
 
     if (stats.errorsCount) {
-      return this.sockWrite('errors', getAllStatsErrors(stats));
+      return this.sockWrite({
+        type: 'errors',
+        compilationId,
+        data: getAllStatsErrors(stats),
+      });
     }
     if (stats.warningsCount) {
-      return this.sockWrite('warnings', getAllStatsWarnings(stats));
+      return this.sockWrite({
+        type: 'warnings',
+        compilationId,
+        data: getAllStatsWarnings(stats),
+      });
     }
-    return this.sockWrite('ok');
+    return this.sockWrite({
+      type: 'ok',
+      compilationId,
+    });
   }
 
   // send message to connecting socket

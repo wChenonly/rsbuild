@@ -54,6 +54,7 @@ async function watchDevFiles(
   const watchOptions = prepareWatchOptions(
     watchFiles.paths,
     watchFiles.options,
+    watchFiles.type,
   );
   return startWatchFiles(watchOptions, compileMiddlewareAPI);
 }
@@ -82,17 +83,24 @@ function watchServerFiles(
 function prepareWatchOptions(
   paths: string | string[],
   options: ChokidarWatchOptions = {},
+  type?: WatchFiles['type'],
 ) {
   return {
     paths: typeof paths === 'string' ? [paths] : paths,
     options,
+    type,
   };
 }
 
 async function startWatchFiles(
-  { paths, options }: WatchFiles,
+  { paths, options, type }: ReturnType<typeof prepareWatchOptions>,
   compileMiddlewareAPI: CompileMiddlewareAPI,
 ) {
+  // If `type` is 'reload-server', skip it.
+  if (type === 'reload-server') {
+    return;
+  }
+
   const chokidar = await import('chokidar');
   const watcher = chokidar.watch(paths, options);
 
