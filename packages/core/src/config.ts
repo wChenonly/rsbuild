@@ -1,9 +1,10 @@
 import fs from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import type { WatchOptions } from 'chokidar';
 import color from 'picocolors';
 import RspackChain from 'rspack-chain';
 import {
+  ASSETS_DIST_DIR,
   CSS_DIST_DIR,
   DEFAULT_ASSET_PREFIX,
   DEFAULT_DATA_URL_SIZE,
@@ -55,8 +56,10 @@ import type {
 const getDefaultDevConfig = (): NormalizedDevConfig => ({
   hmr: true,
   liveReload: true,
+  // Temporary placeholder, default: `${server.base}`
   assetPrefix: DEFAULT_ASSET_PREFIX,
   writeToDisk: false,
+  cliShortcuts: false,
   client: {
     path: HMR_SOCKET_PATH,
     port: '',
@@ -70,21 +73,32 @@ const getDefaultServerConfig = (): NormalizedServerConfig => ({
   port: DEFAULT_PORT,
   host: DEFAULT_DEV_HOST,
   open: false,
+  base: '/',
   htmlFallback: 'index',
   compress: true,
   printUrls: true,
   strictPort: false,
 });
 
-const getDefaultSourceConfig = (): NormalizedSourceConfig => ({
-  alias: {},
-  define: {},
-  aliasStrategy: 'prefer-tsconfig',
-  preEntry: [],
-  decorators: {
-    version: '2022-03',
-  },
-});
+let swcHelpersPath: string;
+
+const getDefaultSourceConfig = (): NormalizedSourceConfig => {
+  if (!swcHelpersPath) {
+    swcHelpersPath = dirname(require.resolve('@swc/helpers/package.json'));
+  }
+
+  return {
+    alias: {
+      '@swc/helpers': swcHelpersPath,
+    },
+    define: {},
+    aliasStrategy: 'prefer-tsconfig',
+    preEntry: [],
+    decorators: {
+      version: '2022-03',
+    },
+  };
+};
 
 const getDefaultHtmlConfig = (): NormalizedHtmlConfig => ({
   meta: {
@@ -138,7 +152,9 @@ const getDefaultOutputConfig = (): NormalizedOutputConfig => ({
     wasm: WASM_DIST_DIR,
     image: IMAGE_DIST_DIR,
     media: MEDIA_DIST_DIR,
+    assets: ASSETS_DIST_DIR,
   },
+  // Temporary placeholder, default: `${server.base}`
   assetPrefix: DEFAULT_ASSET_PREFIX,
   filename: {},
   charset: 'utf8',
@@ -212,6 +228,18 @@ export const withDefaultConfig = async (
 
   merged.root ||= rootPath;
   merged.source ||= {};
+
+  if (merged.server?.base) {
+    if (config.dev?.assetPrefix === undefined) {
+      merged.dev ||= {};
+      merged.dev.assetPrefix = merged.server.base;
+    }
+
+    if (config.output?.assetPrefix === undefined) {
+      merged.output ||= {};
+      merged.output.assetPrefix = merged.server.base;
+    }
+  }
 
   if (!merged.source.tsconfigPath) {
     const tsconfigPath = join(rootPath, TS_CONFIG_FILE);
@@ -313,7 +341,7 @@ const resolveConfigPath = (root: string, customConfig?: string) => {
   return null;
 };
 
-export async function watchFiles(
+export async function watchFilesForRestart(
   files: string[],
   watchOptions?: WatchOptions,
 ): Promise<void> {

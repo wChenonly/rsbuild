@@ -4,6 +4,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
 {
   "dev": {
     "assetPrefix": "/",
+    "cliShortcuts": false,
     "client": {
       "host": "",
       "overlay": true,
@@ -48,9 +49,10 @@ exports[`environment config > should normalize environment config correctly 1`] 
       "svg": 4096,
     },
     "distPath": {
+      "assets": "static/assets",
       "css": "static/css",
       "font": "static/font",
-      "html": "/",
+      "html": "./",
       "image": "static/image",
       "js": "static/js",
       "media": "static/media",
@@ -92,6 +94,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
     },
   },
   "server": {
+    "base": "/",
     "compress": true,
     "host": "0.0.0.0",
     "htmlFallback": "index",
@@ -103,6 +106,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
   "source": {
     "alias": {
       "@common": "./src/common",
+      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
     "aliasStrategy": "prefer-tsconfig",
     "decorators": {
@@ -129,6 +133,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
 {
   "dev": {
     "assetPrefix": "/foo",
+    "cliShortcuts": false,
     "client": {
       "host": "",
       "overlay": true,
@@ -173,9 +178,10 @@ exports[`environment config > should normalize environment config correctly 2`] 
       "svg": 4096,
     },
     "distPath": {
+      "assets": "static/assets",
       "css": "static/css",
       "font": "static/font",
-      "html": "/",
+      "html": "./",
       "image": "static/image",
       "js": "",
       "media": "static/media",
@@ -217,6 +223,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
     },
   },
   "server": {
+    "base": "/",
     "compress": true,
     "host": "0.0.0.0",
     "htmlFallback": "index",
@@ -228,6 +235,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
   "source": {
     "alias": {
       "@common": "./src/common",
+      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
     "aliasStrategy": "prefer-tsconfig",
     "decorators": {
@@ -255,6 +263,7 @@ exports[`environment config > should print environment config when inspect confi
   "ssr": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -263,7 +272,6 @@ exports[`environment config > should print environment config when inspect confi
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -299,9 +307,10 @@ exports[`environment config > should print environment config when inspect confi
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -357,7 +366,6 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -379,6 +387,7 @@ exports[`environment config > should print environment config when inspect confi
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -390,6 +399,7 @@ exports[`environment config > should print environment config when inspect confi
     "source": {
       "alias": {
         "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -413,6 +423,7 @@ exports[`environment config > should print environment config when inspect confi
   "web": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -421,7 +432,6 @@ exports[`environment config > should print environment config when inspect confi
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -457,9 +467,10 @@ exports[`environment config > should print environment config when inspect confi
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -515,7 +526,6 @@ exports[`environment config > should print environment config when inspect confi
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -537,6 +547,7 @@ exports[`environment config > should print environment config when inspect confi
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -548,6 +559,7 @@ exports[`environment config > should print environment config when inspect confi
     "source": {
       "alias": {
         "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -574,10 +586,12 @@ exports[`environment config > should print environment config when inspect confi
 exports[`environment config > should support add single environment plugin 1`] = `
 {
   "ssr": {
+    "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     "global": "ssr",
     "ssr": "ssr",
   },
   "web": {
+    "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     "global": "web",
     "web": "web",
   },
@@ -589,6 +603,7 @@ exports[`environment config > should support modify environment config by api.mo
   "ssr": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -597,7 +612,6 @@ exports[`environment config > should support modify environment config by api.mo
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -633,9 +647,10 @@ exports[`environment config > should support modify environment config by api.mo
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -691,7 +706,6 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -714,6 +728,7 @@ exports[`environment config > should support modify environment config by api.mo
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -725,6 +740,7 @@ exports[`environment config > should support modify environment config by api.mo
     "source": {
       "alias": {
         "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -748,6 +764,7 @@ exports[`environment config > should support modify environment config by api.mo
   "web": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -756,7 +773,6 @@ exports[`environment config > should support modify environment config by api.mo
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -792,9 +808,10 @@ exports[`environment config > should support modify environment config by api.mo
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -850,7 +867,6 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -873,6 +889,7 @@ exports[`environment config > should support modify environment config by api.mo
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -885,6 +902,7 @@ exports[`environment config > should support modify environment config by api.mo
       "alias": {
         "@common": "./src/common",
         "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -908,6 +926,7 @@ exports[`environment config > should support modify environment config by api.mo
   "web1": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -916,7 +935,6 @@ exports[`environment config > should support modify environment config by api.mo
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -952,9 +970,10 @@ exports[`environment config > should support modify environment config by api.mo
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -1010,7 +1029,6 @@ exports[`environment config > should support modify environment config by api.mo
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -1033,6 +1051,7 @@ exports[`environment config > should support modify environment config by api.mo
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -1045,6 +1064,7 @@ exports[`environment config > should support modify environment config by api.mo
       "alias": {
         "@common": "./src/common",
         "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1071,6 +1091,7 @@ exports[`environment config > should support modify single environment config by
   "ssr": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -1079,7 +1100,6 @@ exports[`environment config > should support modify single environment config by
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -1115,9 +1135,10 @@ exports[`environment config > should support modify single environment config by
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -1173,7 +1194,6 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -1196,6 +1216,7 @@ exports[`environment config > should support modify single environment config by
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -1207,6 +1228,7 @@ exports[`environment config > should support modify single environment config by
     "source": {
       "alias": {
         "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1230,6 +1252,7 @@ exports[`environment config > should support modify single environment config by
   "web": {
     "dev": {
       "assetPrefix": "/",
+      "cliShortcuts": false,
       "client": {
         "host": "",
         "overlay": true,
@@ -1238,7 +1261,6 @@ exports[`environment config > should support modify single environment config by
         "reconnect": 100,
       },
       "hmr": true,
-      "lazyCompilation": undefined,
       "liveReload": true,
       "writeToDisk": false,
     },
@@ -1274,9 +1296,10 @@ exports[`environment config > should support modify single environment config by
         "svg": 4096,
       },
       "distPath": {
+        "assets": "static/assets",
         "css": "static/css",
         "font": "static/font",
-        "html": "/",
+        "html": "./",
         "image": "static/image",
         "js": "static/js",
         "media": "static/media",
@@ -1332,7 +1355,6 @@ exports[`environment config > should support modify single environment config by
       "rsbuild:swc",
       "rsbuild:externals",
       "rsbuild:split-chunks",
-      "rsbuild:open",
       "rsbuild:inline-chunk",
       "rsbuild:rsdoctor",
       "rsbuild:resource-hints",
@@ -1355,6 +1377,7 @@ exports[`environment config > should support modify single environment config by
       },
     },
     "server": {
+      "base": "/",
       "compress": true,
       "host": "0.0.0.0",
       "htmlFallback": "index",
@@ -1367,6 +1390,7 @@ exports[`environment config > should support modify single environment config by
       "alias": {
         "@common": "./src/common",
         "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
       },
       "aliasStrategy": "prefer-tsconfig",
       "decorators": {
@@ -1390,7 +1414,7 @@ exports[`environment config > should support modify single environment config by
 }
 `;
 
-exports[`environment config > tools.rspack / bundlerChain can be used in environment config 1`] = `
+exports[`environment config > tools.rspack / bundlerChain can be configured in environment config 1`] = `
 [
   {
     "context": "<ROOT>",
@@ -1424,7 +1448,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
           "type": "javascript/auto",
           "use": [
             {
-              "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/builtin-plugin/css-extract/loader.js",
+              "loader": "<ROOT>/node_modules/<PNPM_INNER>/@rspack/core/dist/cssExtractLoader.js",
             },
             {
               "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
@@ -1464,6 +1488,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
               ],
             },
             /\\\\\\.\\(\\?:ts\\|tsx\\|jsx\\|mts\\|cts\\)\\$/,
+            /\\[\\\\\\\\/\\]@rsbuild\\[\\\\\\\\/\\]core\\[\\\\\\\\/\\]dist\\[\\\\\\\\/\\]/,
           ],
           "test": /\\\\\\.\\(\\?:js\\|jsx\\|mjs\\|cjs\\|ts\\|tsx\\|mts\\|cts\\)\\$/,
           "type": "javascript/auto",
@@ -1491,7 +1516,6 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                     "syntax": "typescript",
                     "tsx": false,
                   },
-                  "preserveAllComments": true,
                   "transform": {
                     "decoratorVersion": "2022-03",
                     "legacyDecorator": false,
@@ -1535,7 +1559,6 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                     "syntax": "typescript",
                     "tsx": false,
                   },
-                  "preserveAllComments": true,
                   "transform": {
                     "decoratorVersion": "2022-03",
                     "legacyDecorator": false,
@@ -1678,6 +1701,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       },
     },
     "output": {
+      "assetModuleFilename": "static/assets/[name].[contenthash:8][ext]",
       "chunkFilename": "static/js/async/[name].js",
       "devtoolModuleFilenameTemplate": [Function],
       "filename": "static/js/[name].js",
@@ -1705,10 +1729,13 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       DefinePlugin {
         "_args": [
           {
+            "import.meta.env.ASSET_PREFIX": "\\"\\"",
+            "import.meta.env.BASE_URL": "\\"/\\"",
             "import.meta.env.DEV": true,
-            "import.meta.env.MODE": ""development"",
+            "import.meta.env.MODE": "\\"development\\"",
             "import.meta.env.PROD": false,
-            "process.env.ASSET_PREFIX": """",
+            "process.env.ASSET_PREFIX": "\\"\\"",
+            "process.env.BASE_URL": "\\"/\\"",
           },
         ],
         "affectedHooks": "compilation",
@@ -1818,7 +1845,6 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                     "syntax": "typescript",
                     "tsx": false,
                   },
-                  "preserveAllComments": true,
                   "transform": {
                     "decoratorVersion": "2022-03",
                     "legacyDecorator": false,
@@ -1858,7 +1884,6 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
                     "syntax": "typescript",
                     "tsx": false,
                   },
-                  "preserveAllComments": true,
                   "transform": {
                     "decoratorVersion": "2022-03",
                     "legacyDecorator": false,
@@ -2004,6 +2029,7 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       "splitChunks": false,
     },
     "output": {
+      "assetModuleFilename": "static/assets/[name].[contenthash:8][ext]",
       "chunkFilename": "[name].js",
       "devtoolModuleFilenameTemplate": [Function],
       "filename": "bundle.js",
@@ -2024,10 +2050,13 @@ exports[`environment config > tools.rspack / bundlerChain can be used in environ
       DefinePlugin {
         "_args": [
           {
+            "import.meta.env.ASSET_PREFIX": "\\"\\"",
+            "import.meta.env.BASE_URL": "\\"/\\"",
             "import.meta.env.DEV": true,
-            "import.meta.env.MODE": ""development"",
+            "import.meta.env.MODE": "\\"development\\"",
             "import.meta.env.PROD": false,
-            "process.env.ASSET_PREFIX": """",
+            "process.env.ASSET_PREFIX": "\\"\\"",
+            "process.env.BASE_URL": "\\"/\\"",
           },
         ],
         "affectedHooks": "compilation",

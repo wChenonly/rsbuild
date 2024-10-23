@@ -3,7 +3,7 @@ import { join } from 'node:path';
 // Paths
 // loaders will be emitted to the same folder of the main bundle
 export const ROOT_DIST_DIR = 'dist';
-export const HTML_DIST_DIR = '/';
+export const HTML_DIST_DIR = './';
 export const JS_DIST_DIR = 'static/js';
 export const CSS_DIST_DIR = 'static/css';
 export const SVG_DIST_DIR = 'static/svg';
@@ -11,6 +11,7 @@ export const FONT_DIST_DIR = 'static/font';
 export const WASM_DIST_DIR = 'static/wasm';
 export const IMAGE_DIST_DIR = 'static/image';
 export const MEDIA_DIST_DIR = 'static/media';
+export const ASSETS_DIST_DIR = 'static/assets';
 export const LOADER_PATH: string = join(__dirname);
 export const STATIC_PATH: string = join(__dirname, '../static');
 export const COMPILED_PATH: string = join(__dirname, '../compiled');
@@ -24,6 +25,7 @@ export const DEFAULT_DATA_URL_SIZE = 4096;
 export const DEFAULT_MOUNT_ID = 'root';
 export const DEFAULT_DEV_HOST = '0.0.0.0';
 export const DEFAULT_ASSET_PREFIX = '/';
+export const DEFAULT_BASE_URL = '/';
 export const DEFAULT_WEB_BROWSERSLIST: string[] = [
   'chrome >= 87',
   'edge >= 88',

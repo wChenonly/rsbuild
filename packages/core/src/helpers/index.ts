@@ -159,10 +159,9 @@ export const getPublicPathFromCompiler = (
   return DEFAULT_ASSET_PREFIX;
 };
 
-const urlJoin = (base: string, path: string) => {
-  const fullUrl = new URL(base);
-  fullUrl.pathname = posix.join(fullUrl.pathname, path);
-  return fullUrl.toString();
+export const urlJoin = (base: string, path: string) => {
+  const [urlProtocol, baseUrl] = base.split('://');
+  return `${urlProtocol}://${posix.join(baseUrl, path)}`;
 };
 
 // Can be replaced with URL.canParse when we drop support for Node.js 16
@@ -222,7 +221,12 @@ export function getFilename(
 ): NonNullable<FilenameConfig['js']>;
 export function getFilename(
   config: NormalizedConfig | NormalizedEnvironmentConfig,
-  type: Exclude<keyof FilenameConfig, 'js'>,
+  type: 'css',
+  isProd: boolean,
+): NonNullable<FilenameConfig['css']>;
+export function getFilename(
+  config: NormalizedConfig | NormalizedEnvironmentConfig,
+  type: Exclude<keyof FilenameConfig, 'js' | 'css'>,
   isProd: boolean,
   isServer?: boolean,
 ): string;
@@ -256,6 +260,8 @@ export function getFilename(
       return filename.image ?? `[name]${hash}[ext]`;
     case 'media':
       return filename.media ?? `[name]${hash}[ext]`;
+    case 'assets':
+      return filename.assets ?? `[name]${hash}[ext]`;
     default:
       throw new Error(`unknown key ${type} in "output.filename"`);
   }

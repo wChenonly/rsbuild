@@ -76,6 +76,7 @@ export type ToolsHtmlPluginConfig = ConfigChainWithContext<
 
 export type ModifyRspackConfigUtils = ModifyChainUtils & {
   addRules: (rules: RspackRule | RspackRule[]) => void;
+  appendRules: (rules: RspackRule | RspackRule[]) => void;
   prependPlugins: (
     plugins: BundlerPluginInstance | BundlerPluginInstance[],
   ) => void;
@@ -326,6 +327,12 @@ export type PublicDir = false | PublicDirOptions | PublicDirOptions[];
 
 export interface ServerConfig {
   /**
+   * Configure the base path of the server.
+   *
+   * @default '/'
+   */
+  base?: string;
+  /**
    * Whether to enable gzip compression
    */
   compress?: boolean;
@@ -394,6 +401,7 @@ export type NormalizedServerConfig = ServerConfig &
       | 'strictPort'
       | 'printUrls'
       | 'open'
+      | 'base'
     >
   >;
 
@@ -645,6 +653,11 @@ export type DistPathConfig = {
    * @default 'static/media'
    */
   media?: string;
+  /**
+   * The output directory of assets, except for above (image, svg, font, html, wasm...)
+   * @default 'static/assets'
+   */
+  assets?: string;
 };
 
 export type FilenameConfig = {
@@ -661,7 +674,7 @@ export type FilenameConfig = {
    * - dev: '[name].css'
    * - prod: '[name].[contenthash:8].css'
    */
-  css?: string;
+  css?: NonNullable<Rspack.Configuration['output']>['cssFilename'];
   /**
    * The name of the SVG images.
    * @default '[name].[contenthash:8].svg'
@@ -687,6 +700,11 @@ export type FilenameConfig = {
    * @default '[name].[contenthash:8][ext]'
    */
   media?: string;
+  /**
+   * the name of other assets, except for above (image, svg, font, html, wasm...)
+   * @default '[name].[contenthash:8][ext]'
+   */
+  assets?: string;
 };
 
 export type DataUriLimit = {
@@ -1171,6 +1189,21 @@ export type WatchFiles = {
   type?: 'reload-page' | 'reload-server';
 };
 
+export type CliShortcut = {
+  /**
+   * The key to trigger the shortcut.
+   */
+  key: string;
+  /**
+   * The description of the shortcut.
+   */
+  description: string;
+  /**
+   * The action to execute when the shortcut is triggered.
+   */
+  action: () => void | Promise<void>;
+};
+
 export interface DevConfig {
   /**
    * Whether to enable Hot Module Replacement.
@@ -1194,6 +1227,19 @@ export interface DevConfig {
    */
   client?: ClientConfig;
   /**
+   * Whether to enable CLI shortcuts.
+   */
+  cliShortcuts?:
+    | boolean
+    | {
+        /**
+         * Customize the CLI shortcuts.
+         * @param shortcuts - The default CLI shortcuts.
+         * @returns - The customized CLI shortcuts.
+         */
+        custom?: (shortcuts?: CliShortcut[]) => CliShortcut[];
+      };
+  /**
    * Provides the ability to execute a custom function and apply custom middlewares.
    */
   setupMiddlewares?: SetupMiddlewaresFn[];
@@ -1205,7 +1251,7 @@ export interface DevConfig {
   /**
    * This option allows you to configure a list of globs/directories/files to watch for file changes.
    */
-  watchFiles?: WatchFiles;
+  watchFiles?: WatchFiles | WatchFiles[];
   /**
    * Enable lazy compilation.
    * @default false
@@ -1215,7 +1261,10 @@ export interface DevConfig {
 
 export type NormalizedDevConfig = DevConfig &
   Required<
-    Pick<DevConfig, 'hmr' | 'liveReload' | 'assetPrefix' | 'writeToDisk'>
+    Pick<
+      DevConfig,
+      'hmr' | 'liveReload' | 'assetPrefix' | 'writeToDisk' | 'cliShortcuts'
+    >
   > & {
     client: NormalizedClientConfig;
   };
@@ -1240,7 +1289,10 @@ export interface EnvironmentConfig {
   /**
    * Options for local development.
    */
-  dev?: Pick<DevConfig, 'assetPrefix' | 'lazyCompilation' | 'progressBar'>;
+  dev?: Pick<
+    DevConfig,
+    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation'
+  >;
   /**
    * Options for HTML generation.
    */
@@ -1318,7 +1370,7 @@ export type MergedEnvironmentConfig = {
   root: string;
   dev: Pick<
     NormalizedDevConfig,
-    'assetPrefix' | 'lazyCompilation' | 'progressBar'
+    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation'
   >;
   html: NormalizedHtmlConfig;
   tools: NormalizedToolsConfig;

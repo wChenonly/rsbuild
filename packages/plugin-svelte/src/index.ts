@@ -1,7 +1,8 @@
+import { promises } from 'node:fs';
 import path from 'node:path';
 import { logger } from '@rsbuild/core';
 import type { RsbuildPlugin } from '@rsbuild/core';
-import type { sveltePreprocess } from 'svelte-preprocess';
+import { sveltePreprocess } from 'svelte-preprocess';
 import type { CompileOptions } from 'svelte/compiler';
 
 export type AutoPreprocessOptions = NonNullable<
@@ -37,6 +38,17 @@ export type PluginSvelteOptions = {
 
 export const PLUGIN_SVELTE_NAME = 'rsbuild:svelte';
 
+const isSvelte5 = async (sveltePath: string) => {
+  try {
+    const pkgPath = path.join(sveltePath, 'package.json');
+    const pkgRaw = await promises.readFile(pkgPath, 'utf-8');
+    const pkgJson = JSON.parse(pkgRaw);
+    return pkgJson.version.startsWith('5.');
+  } catch (err) {
+    return false;
+  }
+};
+
 export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
   return {
     name: PLUGIN_SVELTE_NAME,
@@ -61,16 +73,17 @@ export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
 
       api.modifyBundlerChain(
         async (chain, { CHAIN_ID, environment, isDev, isProd }) => {
-          const { default: sveltePreprocess } = await import(
-            'svelte-preprocess'
-          );
+          const svelte5 = await isSvelte5(sveltePath);
 
           const environmentConfig = environment.config;
 
-          chain.resolve.alias.set(
-            'svelte',
-            path.join(sveltePath, 'src/runtime'),
-          );
+          if (!svelte5) {
+            chain.resolve.alias.set(
+              'svelte',
+              path.join(sveltePath, 'src/runtime'),
+            );
+          }
+
           chain.resolve.extensions.add('.svelte');
           chain.resolve.mainFields.add('svelte').add('...');
           chain.resolve.conditionNames.add('svelte').add('...');
@@ -106,7 +119,7 @@ export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
 
           chain.module
             .rule(CHAIN_ID.RULE.SVELTE)
-            .test(/\.svelte$/)
+            .test(svelte5 ? /\.(?:svelte|svelte\.js|svelte\.ts)$/ : /\.svelte$/)
             .use(CHAIN_ID.USE.SVELTE)
             .loader(loaderPath)
             .options(svelteLoaderOptions);

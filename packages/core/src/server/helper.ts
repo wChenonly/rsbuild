@@ -6,7 +6,7 @@ import os from 'node:os';
 import { posix } from 'node:path';
 import color from 'picocolors';
 import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
-import { isFunction } from '../helpers';
+import { addTrailingSlash, isFunction, removeLeadingSlash } from '../helpers';
 import { logger } from '../logger';
 import type {
   InternalContext,
@@ -42,7 +42,13 @@ export const normalizeUrl = (url: string): string =>
 /**
  * Make sure there is slash before and after prefix
  */
-const formatPrefix = (prefix: string | undefined) => {
+const formatPrefix = (input: string | undefined) => {
+  let prefix = input;
+
+  if (prefix?.startsWith('./')) {
+    prefix = prefix.replace('./', '');
+  }
+
   if (!prefix) {
     return '/';
   }
@@ -50,6 +56,26 @@ const formatPrefix = (prefix: string | undefined) => {
   const hasLeadingSlash = prefix.startsWith('/');
   const hasTailSlash = prefix.endsWith('/');
   return `${hasLeadingSlash ? '' : '/'}${prefix}${hasTailSlash ? '' : '/'}`;
+};
+
+// /a + /b => /a/b
+export const joinUrlSegments = (s1: string, s2: string): string => {
+  if (!s1 || !s2) {
+    return s1 || s2 || '';
+  }
+
+  return addTrailingSlash(s1) + removeLeadingSlash(s2);
+};
+
+export const stripBase = (path: string, base: string): string => {
+  if (path === base) {
+    return '/';
+  }
+  const trailingSlashBase = addTrailingSlash(base);
+
+  return path.startsWith(trailingSlashBase)
+    ? path.slice(trailingSlashBase.length - 1)
+    : path;
 };
 
 export const getRoutes = (context: InternalContext): Routes => {
@@ -60,6 +86,7 @@ export const getRoutes = (context: InternalContext): Routes => {
 
       const routes = formatRoutes(
         environmentContext.htmlPaths,
+        context.normalizedConfig!.server.base,
         posix.join(distPrefix, config.output.distPath.html),
         config.html.outputStructure,
       );
@@ -74,10 +101,11 @@ export const getRoutes = (context: InternalContext): Routes => {
  */
 export const formatRoutes = (
   entry: RsbuildEntry,
-  prefix: string | undefined,
+  base: string,
+  distPathPrefix: string | undefined,
   outputStructure: OutputStructure | undefined,
 ): Routes => {
-  const formattedPrefix = formatPrefix(prefix);
+  const prefix = joinUrlSegments(base, formatPrefix(distPathPrefix));
 
   return (
     Object.keys(entry)
@@ -87,7 +115,7 @@ export const formatRoutes = (
         const displayName = isIndex ? '' : entryName;
         return {
           entryName,
-          pathname: formattedPrefix + displayName,
+          pathname: prefix + displayName,
         };
       })
       // adjust the index route to be the first
@@ -99,14 +127,14 @@ function getURLMessages(
   urls: Array<{ url: string; label: string }>,
   routes: Routes,
 ) {
-  if (routes.length === 1) {
+  if (routes.length <= 1) {
+    const pathname = routes.length ? routes[0].pathname : '';
     return urls
-      .map(
-        ({ label, url }) =>
-          `  ${`> ${label.padEnd(10)}`}${color.cyan(
-            normalizeUrl(`${url}${routes[0].pathname}`),
-          )}\n`,
-      )
+      .map(({ label, url }) => {
+        const normalizedPathname = normalizeUrl(`${url}${pathname}`);
+        const prefix = `➜ ${color.dim(label.padEnd(10))}`;
+        return `  ${prefix}${color.cyan(normalizedPathname)}\n`;
+      })
       .join('');
   }
 
@@ -116,7 +144,7 @@ function getURLMessages(
     if (index > 0) {
       message += '\n';
     }
-    message += `  ${`> ${label}`}\n`;
+    message += `  ${`➜ ${label}`}\n`;
 
     for (const r of routes) {
       message += `  ${color.dim('-')} ${color.dim(
@@ -134,20 +162,23 @@ export function printServerURLs({
   routes,
   protocol,
   printUrls,
+  trailingLineBreak = true,
 }: {
   urls: Array<{ url: string; label: string }>;
   port: number;
   routes: Routes;
   protocol: string;
   printUrls?: PrintUrls;
+  trailingLineBreak?: boolean;
 }): string | null {
   if (printUrls === false) {
     return null;
   }
 
   let urls = originalUrls;
+  const useCustomUrl = isFunction(printUrls);
 
-  if (isFunction(printUrls)) {
+  if (useCustomUrl) {
     const newUrls = printUrls({
       urls: urls.map((item) => item.url),
       port,
@@ -171,11 +202,22 @@ export function printServerURLs({
     }));
   }
 
-  if (urls.length === 0 || routes.length === 0) {
+  // If no urls, skip printing
+  if (urls.length === 0) {
     return null;
   }
 
-  const message = getURLMessages(urls, routes);
+  // If no routes and not use custom url, skip printing
+  if (routes.length === 0 && !useCustomUrl) {
+    return null;
+  }
+
+  let message = getURLMessages(urls, routes);
+
+  if (trailingLineBreak === false && message.endsWith('\n')) {
+    message = message.slice(0, -1);
+  }
+
   logger.log(message);
 
   return message;
@@ -193,13 +235,11 @@ export const getPort = async ({
   port,
   strictPort,
   tryLimits = 20,
-  silent = false,
 }: {
   host: string;
   port: string | number;
   strictPort: boolean;
   tryLimits?: number;
-  silent?: boolean;
 }): Promise<number> => {
   if (typeof port === 'string') {
     port = Number.parseInt(port, 10);
@@ -239,11 +279,6 @@ export const getPort = async ({
         `Port "${original}" is occupied, please choose another one.`,
       );
     }
-    if (!silent) {
-      logger.info(
-        `Port ${original} is in use, ${color.yellow(`using port ${port}.`)}\n`,
-      );
-    }
   }
 
   return port;
@@ -251,24 +286,33 @@ export const getPort = async ({
 
 export const getServerConfig = async ({
   config,
-  getPortSilently,
 }: {
   config: NormalizedConfig;
-  getPortSilently?: boolean;
 }): Promise<{
   port: number;
   host: string;
   https: boolean;
+  portTip: string | undefined;
 }> => {
   const host = config.server.host || DEFAULT_DEV_HOST;
+  const originalPort = config.server.port || DEFAULT_PORT;
   const port = await getPort({
     host,
-    port: config.server.port || DEFAULT_PORT,
+    port: originalPort,
     strictPort: config.server.strictPort || false,
-    silent: getPortSilently,
   });
   const https = Boolean(config.server.https) || false;
-  return { port, host, https };
+  const portTip =
+    port !== originalPort
+      ? `Port ${originalPort} is in use, ${color.yellow(`using port ${port}.`)}`
+      : undefined;
+
+  return {
+    port,
+    host,
+    https,
+    portTip,
+  };
 };
 
 const getIpv4Interfaces = () => {

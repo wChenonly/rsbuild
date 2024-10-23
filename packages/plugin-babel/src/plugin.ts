@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type {
   EnvironmentContext,
   NormalizedEnvironmentConfig,
@@ -7,8 +9,11 @@ import type {
   RsbuildPlugin,
 } from '@rsbuild/core';
 import deepmerge from 'deepmerge';
-import { BABEL_JS_RULE, applyUserBabelConfig, castArray } from './helper';
-import type { BabelLoaderOptions, PluginBabelOptions } from './types';
+import { BABEL_JS_RULE, applyUserBabelConfig, castArray } from './helper.js';
+import type { BabelLoaderOptions, PluginBabelOptions } from './types.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 export const PLUGIN_BABEL_NAME = 'rsbuild:babel';
 const SCRIPT_REGEX = /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/;

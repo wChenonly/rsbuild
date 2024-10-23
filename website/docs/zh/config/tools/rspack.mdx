@@ -29,6 +29,23 @@ export default {
 };
 ```
 
+在合并配置时，`webpack-merge` 会自动合并数组，比如 `plugins`、`module.rules`、`resolve.extensions` 等配置。
+
+```js
+export default {
+  tools: {
+    rspack: {
+      resolve: {
+        // 与内置的 resolve.extensions 合并
+        extensions: ['.foo'],
+      },
+    },
+  },
+};
+```
+
+如果你需要覆盖某个配置项，而不是与默认值合并，可以使用 `tools.rspack` 的函数类型。
+
 ## Function 类型
 
 `tools.rspack` 也可以配置为一个函数，这个函数接收一个参数，即内置的 Rspack 配置对象，你可以对这个对象进行修改，然后返回一份新的配置。比如：
@@ -218,7 +235,9 @@ export default {
 
 - **类型：** `(rules: RuleSetRule | RuleSetRule[]) => void`
 
-添加额外的 [Rspack rules](https://rspack.dev/config/module#modulerules)。
+添加额外的 [Rspack rules](https://rspack.dev/config/module#modulerules) 到 Rspack rules 列表的最前面。
+
+需要注意的是，Rspack loaders 会按照从右到左的顺序执行，如果你希望你添加的 loader（Normal Phase）先于其他 loader 执行，应使用 [appendRules](#appendrules) 将该规则添加到最后面。
 
 示例：
 
@@ -248,9 +267,39 @@ export default {
 };
 ```
 
-:::tip
-`addRules(...)` 会将新规则插入到 Rspack rules 列表的最前面。如果想要在末尾插入新规则，请改用 `config.module.rules.push(...)`。
-:::
+### appendRules
+
+- **类型：** `(rules: RuleSetRule | RuleSetRule[]) => void`
+
+添加额外的 [Rspack rules](https://rspack.dev/config/module#modulerules) 到 Rspack rules 列表的最后面。
+
+示例：
+
+```ts
+export default {
+  tools: {
+    rspack: (config, { appendRules }) => {
+      // 追加单条规则
+      appendRules({
+        test: /\.foo/,
+        loader: require.resolve('foo-loader'),
+      });
+
+      // 以数组形式追加多条规则
+      appendRules([
+        {
+          test: /\.foo/,
+          loader: require.resolve('foo-loader'),
+        },
+        {
+          test: /\.bar/,
+          loader: require.resolve('bar-loader'),
+        },
+      ]);
+    },
+  },
+};
+```
 
 ### prependPlugins
 

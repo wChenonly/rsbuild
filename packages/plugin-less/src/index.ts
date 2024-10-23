@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type {
   ConfigChainWithContext,
   RsbuildPlugin,
@@ -6,12 +7,13 @@ import type {
 } from '@rsbuild/core';
 import deepmerge from 'deepmerge';
 import { reduceConfigsWithContext } from 'reduce-configs';
-import type Less from '../compiled/less';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_LESS_NAME = 'rsbuild:less';
 
 export type LessLoaderOptions = {
-  lessOptions?: Less.Options;
+  lessOptions?: import('../compiled/less/index.js').default.Options;
   additionalData?:
     | string
     | ((

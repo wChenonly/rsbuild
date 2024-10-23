@@ -58,7 +58,7 @@ describe('tools.rspack', () => {
     const rsbuild = await createStubRsbuild({
       rsbuildConfig: {
         tools: {
-          rspack: (_config, { addRules, prependPlugins }) => {
+          rspack: (_config, { addRules, prependPlugins, appendRules }) => {
             addRules({
               test: /\.test$/,
               use: [
@@ -67,6 +67,11 @@ describe('tools.rspack', () => {
                 },
               ],
             });
+            appendRules({
+              test: /\.foo/,
+              loader: 'foo-loader',
+            });
+
             prependPlugins([new TestPlugin()]);
           },
         },
@@ -194,5 +199,45 @@ describe('bundlerApi', () => {
         ],
       }
     `);
+  });
+});
+
+describe('default value', () => {
+  it('should apply server.base as assetPrefix default value', async () => {
+    const rsbuild = await createStubRsbuild({
+      rsbuildConfig: {
+        server: {
+          base: '/base',
+        },
+      },
+    });
+
+    const {
+      origin: { rsbuildConfig },
+    } = await rsbuild.inspectConfig();
+    expect(rsbuildConfig.dev.assetPrefix).toBe('/base');
+    expect(rsbuildConfig.output.assetPrefix).toBe('/base');
+  });
+
+  it('should apply dev / output assetPrefix value correctly', async () => {
+    const rsbuild = await createStubRsbuild({
+      rsbuildConfig: {
+        server: {
+          base: '/base',
+        },
+        dev: {
+          assetPrefix: '/base/aaa',
+        },
+        output: {
+          assetPrefix: '/',
+        },
+      },
+    });
+
+    const {
+      origin: { rsbuildConfig },
+    } = await rsbuild.inspectConfig();
+    expect(rsbuildConfig.dev.assetPrefix).toBe('/base/aaa');
+    expect(rsbuildConfig.output.assetPrefix).toBe('/');
   });
 });

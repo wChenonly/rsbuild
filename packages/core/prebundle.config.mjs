@@ -5,20 +5,6 @@ import fs from 'node:fs';
  */
 import { join } from 'node:path';
 
-// The package size of `schema-utils` is large, and validate has a performance overhead of tens of ms.
-// So we skip the validation and let TypeScript to ensure type safety.
-const writeEmptySchemaUtils = (task) => {
-  const schemaUtilsPath = join(task.distPath, 'schema-utils.js');
-  fs.writeFileSync(schemaUtilsPath, 'module.exports.validate = () => {};');
-};
-
-// postcss-loader and css-loader use `semver` to compare PostCSS ast version,
-// Rsbuild uses the same PostCSS version and do not need the comparison.
-const writeEmptySemver = (task) => {
-  const schemaUtilsPath = join(task.distPath, 'semver.js');
-  fs.writeFileSync(schemaUtilsPath, 'module.exports.satisfies = () => true;');
-};
-
 function replaceFileContent(filePath, replaceFn) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const newContent = replaceFn(content);
@@ -27,13 +13,18 @@ function replaceFileContent(filePath, replaceFn) {
   }
 }
 
+// postcss-loader and css-loader use `semver` to compare PostCSS ast version,
+// Rsbuild uses the same PostCSS version and do not need the comparison.
+const skipSemver = (task) => {
+  replaceFileContent(join(task.depPath, 'dist/index.js'), (content) =>
+    content.replaceAll('require("semver")', '({ satisfies: () => true })'),
+  );
+};
+
 /** @type {import('prebundle').Config} */
 export default {
   prettier: true,
   externals: {
-    // External caniuse-lite data, so users can update it manually.
-    'caniuse-lite': 'caniuse-lite',
-    '/^caniuse-lite(/.*)/': 'caniuse-lite$1',
     '@rspack/core': '@rspack/core',
     '@rspack/lite-tapable': '@rspack/lite-tapable',
     webpack: 'webpack',
@@ -41,9 +32,6 @@ export default {
   },
   dependencies: [
     'open',
-    'commander',
-    'dotenv',
-    'dotenv-expand',
     'ws',
     'on-finished',
     'connect',
@@ -99,21 +87,17 @@ export default {
       ignoreDts: true,
     },
     {
-      name: 'browserslist',
-      // preserve the `require(require.resolve())`
-      beforeBundle(task) {
-        replaceFileContent(join(task.depPath, 'node.js'), (content) =>
-          content.replaceAll(
-            'require(require.resolve',
-            'eval("require")(require.resolve',
-          ),
-        );
-      },
-    },
-    {
       name: 'rspack-chain',
       externals: {
         '@rspack/core': '@rspack/core',
+      },
+      ignoreDts: true,
+      afterBundle(task) {
+        // copy types to dist because prebundle will break the types
+        fs.cpSync(
+          join(task.depPath, 'types/index.d.ts'),
+          join(task.distPath, 'index.d.ts'),
+        );
       },
     },
     {
@@ -159,6 +143,9 @@ export default {
     {
       name: 'postcss',
       ignoreDts: true,
+      externals: {
+        picocolors: '../picocolors',
+      },
     },
     {
       name: 'css-loader',
@@ -166,9 +153,8 @@ export default {
       externals: {
         semver: './semver',
         postcss: '../postcss',
-        picocolors: '../picocolors',
       },
-      afterBundle: writeEmptySemver,
+      beforeBundle: skipSemver,
     },
     {
       name: 'postcss-loader',
@@ -184,8 +170,8 @@ export default {
           // the ralevent code will never be executed, so we can replace it with an empty object.
           content.replaceAll('require("cosmiconfig")', '{}'),
         );
+        skipSemver(task);
       },
-      afterBundle: writeEmptySemver,
     },
     {
       name: 'postcss-load-config',

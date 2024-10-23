@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   type Argv,
   type ESLintTemplateName,
@@ -6,6 +7,8 @@ import {
   create,
   select,
 } from 'create-rstack';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const frameworkAlias: Record<string, string> = {
   vue: 'vue3',
@@ -31,7 +34,8 @@ async function getTemplateName({ template }: Argv) {
         { value: 'vue2', label: 'Vue 2' },
         { value: 'lit', label: 'Lit' },
         { value: 'preact', label: 'Preact' },
-        { value: 'svelte', label: 'Svelte' },
+        { value: 'svelte', label: 'Svelte 5' },
+        { value: 'svelte4', label: 'Svelte 4' },
         { value: 'solid', label: 'Solid' },
       ],
     }),

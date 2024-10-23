@@ -1,9 +1,14 @@
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { RsbuildPlugin } from '@rsbuild/core';
 import deepmerge from 'deepmerge';
 import { reduceConfigsWithContext } from 'reduce-configs';
-import { getResolveUrlJoinFn, patchCompilerGlobalLocation } from './helpers';
-import type { PluginSassOptions, SassLoaderOptions } from './types';
+import { getResolveUrlJoinFn, patchCompilerGlobalLocation } from './helpers.js';
+import type { PluginSassOptions, SassLoaderOptions } from './types.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 export const PLUGIN_SASS_NAME = 'rsbuild:sass';
 
@@ -53,6 +58,15 @@ const getSassLoaderOptions = (
     ctx: { addExcludes },
     mergeFn,
   });
+
+  if (
+    mergedOptions.api === 'legacy' &&
+    !mergedOptions.sassOptions?.silenceDeprecations
+  ) {
+    // mute the noisy legacy API deprecation warnings
+    mergedOptions.sassOptions ||= {};
+    mergedOptions.sassOptions.silenceDeprecations = ['legacy-js-api'];
+  }
 
   return {
     options: mergedOptions,
@@ -111,7 +125,7 @@ export const pluginSass = (
 
       rule
         .use(CHAIN_ID.USE.RESOLVE_URL)
-        .loader(join(__dirname, '../compiled/resolve-url-loader/index.js'))
+        .loader(path.join(__dirname, '../compiled/resolve-url-loader/index.js'))
         .options({
           join: await getResolveUrlJoinFn(),
           // 'resolve-url-loader' relies on 'adjust-sourcemap-loader',
@@ -121,7 +135,7 @@ export const pluginSass = (
         })
         .end()
         .use(CHAIN_ID.USE.SASS)
-        .loader(join(__dirname, '../compiled/sass-loader/index.js'))
+        .loader(path.join(__dirname, '../compiled/sass-loader/index.js'))
         .options(options);
     });
   },

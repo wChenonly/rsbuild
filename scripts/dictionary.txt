@@ -62,6 +62,7 @@ mYbzBtlg6o
 napi
 nolyfill
 nosources
+nuxt
 ntqry
 oklab
 onclosetag
@@ -94,6 +95,7 @@ rslog
 rspack
 rspress
 rstack
+ruleset
 selfsign
 selfsigned
 sirv
