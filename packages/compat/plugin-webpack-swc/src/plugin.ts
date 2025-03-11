@@ -18,9 +18,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /**
  * In this plugin, we do:
  * - Remove Babel loader if exists
- * - Add our own swc loader
+ * - Add our own swc-loader
  * - Remove JS minifier
- * - Add swc minifier plugin
+ * - Add SWC minifier plugin
  */
 export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
   name: 'rsbuild-webpack:swc',
@@ -63,11 +63,11 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
             i > 0 ? CHAIN_ID.RULE.JS + i.toString() : CHAIN_ID.RULE.JS;
           const rule = chain.module.rule(ruleId);
 
-          // Insert swc loader and plugin
+          // Insert SWC loader and plugin
           rule
             .test(test || /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/)
             .use(CHAIN_ID.USE.SWC)
-            .loader(path.resolve(__dirname, './loader.cjs'))
+            .loader(path.resolve(__dirname, './loader.mjs'))
             .options(removeUselessOptions(swcConfig) satisfies TransformConfig);
 
           if (include) {
@@ -103,7 +103,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
           .resolve.set('fullySpecified', false)
           .end()
           .use(CHAIN_ID.USE.SWC)
-          .loader(path.resolve(__dirname, './loader.cjs'))
+          .loader(path.resolve(__dirname, './loader.mjs'))
           .options(removeUselessOptions(mainConfig) satisfies TransformConfig);
       },
     });
@@ -152,7 +152,7 @@ export const pluginSwc = (options: PluginSwcOptions = {}): RsbuildPlugin => ({
   },
 });
 
-/// default swc configuration
+/// default SWC configuration
 export function getDefaultSwcConfig(): TransformConfig {
   const cwd = process.cwd();
   return {

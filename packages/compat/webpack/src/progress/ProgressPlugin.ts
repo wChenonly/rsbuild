@@ -1,14 +1,14 @@
 import { logger } from '@rsbuild/core';
 import color from 'picocolors';
 import webpack from 'webpack';
-import { prettyTime } from '../shared';
-import { bus, createFriendlyPercentage } from './helpers';
-import { createNonTTYLogger } from './helpers/nonTty';
-import type { Props } from './helpers/types';
+import { bus, createFriendlyPercentage } from './helpers/index.js';
+import { createNonTTYLogger } from './helpers/nonTty.js';
+import type { Props } from './helpers/types.js';
 
 export interface ProgressOptions
   extends Omit<Partial<Props>, 'message' | 'total' | 'current' | 'done'> {
   id?: string;
+  prettyTime: (seconds: number) => string;
 }
 
 export class ProgressPlugin extends webpack.ProgressPlugin {
@@ -19,6 +19,8 @@ export class ProgressPlugin extends webpack.ProgressPlugin {
   hasCompileErrors = false;
 
   compileTime: string | null = null;
+
+  prettyTime: (seconds: number) => string;
 
   constructor(options: ProgressOptions) {
     const { id = 'Rsbuild' } = options;
@@ -61,6 +63,7 @@ export class ProgressPlugin extends webpack.ProgressPlugin {
     });
 
     this.id = id;
+    this.prettyTime = options.prettyTime;
   }
 
   apply(compiler: webpack.Compiler): void {
@@ -78,12 +81,12 @@ export class ProgressPlugin extends webpack.ProgressPlugin {
         this.hasCompileErrors = stat.hasErrors();
         const hrtime = process.hrtime(startTime);
         const seconds = hrtime[0] + hrtime[1] / 1e9;
-        this.compileTime = prettyTime(seconds);
+        this.compileTime = this.prettyTime(seconds);
         startTime = null;
 
         if (!this.hasCompileErrors) {
           const suffix = this.id ? color.gray(` (${this.id})`) : '';
-          logger.ready(`Built in ${this.compileTime} ${suffix}`);
+          logger.ready(`built in ${this.compileTime} ${suffix}`);
         }
       }
     });

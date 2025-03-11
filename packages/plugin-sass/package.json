@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-sass",
-  "version": "1.0.4",
+  "version": "1.2.2",
   "description": "Sass plugin for Rsbuild",
   "homepage": "https://rsbuild.dev",
   "repository": {
@@ -31,22 +31,23 @@
   "dependencies": {
     "deepmerge": "^4.3.1",
     "loader-utils": "^2.0.4",
-    "postcss": "^8.4.47",
-    "reduce-configs": "^1.0.0",
-    "sass-embedded": "^1.80.3"
+    "postcss": "^8.5.3",
+    "reduce-configs": "^1.1.0",
+    "sass-embedded": "^1.85.1"
   },
   "devDependencies": {
     "@rsbuild/core": "workspace:*",
+    "@rslib/core": "0.5.3",
     "@scripts/test-helper": "workspace:*",
-    "@types/node": "18.x",
+    "@types/node": "^22.13.10",
     "@types/sass-loader": "^8.0.9",
-    "prebundle": "1.2.2",
+    "prebundle": "1.2.7",
     "resolve-url-loader": "^5.0.0",
-    "sass-loader": "^16.0.2",
-    "typescript": "^5.6.3"
+    "sass-loader": "^16.0.5",
+    "typescript": "^5.8.2"
   },
   "peerDependencies": {
-    "@rsbuild/core": "1.x || ^1.0.1-rc.0"
+    "@rsbuild/core": "1.x"
   },
   "publishConfig": {
     "access": "public",

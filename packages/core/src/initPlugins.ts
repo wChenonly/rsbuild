@@ -87,7 +87,7 @@ const mapProcessAssetsStage = (
     case 'report':
       return Compilation.PROCESS_ASSETS_STAGE_REPORT;
     default:
-      throw new Error(`Invalid process assets stage: ${stage}`);
+      throw new Error(`[rsbuild] Invalid process assets stage: ${stage}`);
   }
 };
 
@@ -113,7 +113,7 @@ export function initPluginAPI({
 
         if (!config) {
           throw new Error(
-            `Cannot find normalized config by environment: ${options.environment}.`,
+            `[rsbuild] Cannot find normalized config by environment: ${options.environment}.`,
           );
         }
         return config;
@@ -121,7 +121,7 @@ export function initPluginAPI({
       return context.normalizedConfig;
     }
     throw new Error(
-      'Cannot access normalized config until modifyRsbuildConfig is called.',
+      '[rsbuild] Cannot access normalized config until modifyRsbuildConfig is called.',
     );
   }
 
@@ -134,7 +134,7 @@ export function initPluginAPI({
       case 'normalized':
         return getNormalizedConfig();
     }
-    throw new Error('`getRsbuildConfig` get an invalid type param.');
+    throw new Error('[rsbuild] `getRsbuildConfig` get an invalid type param.');
   }) as GetRsbuildConfig;
 
   const exposed: Array<{ id: string | symbol; api: any }> = [];
@@ -169,6 +169,8 @@ export function initPluginAPI({
      * Transform Rsbuild plugin hooks to Rspack plugin hooks
      */
     class RsbuildCorePlugin {
+      name = pluginName;
+
       apply(compiler: Compiler): void {
         compiler.__rsbuildTransformer = transformer;
 
@@ -177,7 +179,7 @@ export function initPluginAPI({
             pluginEnvironment &&
             !isPluginMatchEnvironment(pluginEnvironment, environment.name)
           ) {
-            return;
+            continue;
           }
 
           compiler.hooks.compilation.tap(
@@ -211,7 +213,7 @@ export function initPluginAPI({
           } of processAssetsFns) {
             // filter by targets
             if (descriptor.targets && !descriptor.targets.includes(target)) {
-              return;
+              continue;
             }
 
             // filter by environments
@@ -222,7 +224,7 @@ export function initPluginAPI({
               (pluginEnvironment &&
                 !isPluginMatchEnvironment(pluginEnvironment, environment.name))
             ) {
-              return;
+              continue;
             }
 
             compilation.hooks.processAssets.tapPromise(
@@ -277,10 +279,22 @@ export function initPluginAPI({
           if (descriptor.resourceQuery) {
             rule.resourceQuery(descriptor.resourceQuery);
           }
+          if (descriptor.layer) {
+            rule.layer(descriptor.layer);
+          }
+          if (descriptor.issuerLayer) {
+            rule.issuerLayer(descriptor.issuerLayer);
+          }
+          if (descriptor.issuer) {
+            rule.issuer(descriptor.issuer);
+          }
+          if (descriptor.with) {
+            rule.with(descriptor.with);
+          }
 
           const loaderName = descriptor.raw
-            ? 'transformRawLoader.cjs'
-            : 'transformLoader.cjs';
+            ? 'transformRawLoader.mjs'
+            : 'transformLoader.mjs';
           const loaderPath = join(LOADER_PATH, loaderName);
 
           rule
@@ -309,7 +323,7 @@ export function initPluginAPI({
   const onExit: typeof hooks.onExit.tap = (cb) => {
     if (!onExitListened) {
       process.on('exit', () => {
-        hooks.onExit.call();
+        hooks.onExit.callBatch();
       });
       onExitListened = true;
     }
@@ -331,6 +345,7 @@ export function initPluginAPI({
     // Hooks
     onExit,
     onAfterBuild: hooks.onAfterBuild.tap,
+    onCloseBuild: hooks.onCloseBuild.tap,
     onBeforeBuild: hooks.onBeforeBuild.tap,
     onCloseDevServer: hooks.onCloseDevServer.tap,
     onDevCompileDone: hooks.onDevCompileDone.tap,

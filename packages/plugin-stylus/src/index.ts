@@ -11,7 +11,12 @@ type StylusOptions = {
   use?: string[];
   define?: [string, any, boolean?];
   include?: string[];
-  import?: string;
+  /**
+   * Import the specified Stylus files/paths, can not be relative path.
+   * @example import: ["nib", path.join(__dirname, "src/styl/mixins")],
+   * @default []
+   */
+  import?: string[];
   resolveURL?: boolean;
   lineNumbers?: boolean;
   hoistAtrules?: boolean;
@@ -35,9 +40,10 @@ export const pluginStylus = (options?: PluginStylusOptions): RsbuildPlugin => ({
     api.modifyBundlerChain(async (chain, { CHAIN_ID, environment }) => {
       const { config } = environment;
 
+      const { sourceMap } = config.output;
       const mergedOptions = reduceConfigs({
         initial: {
-          sourceMap: config.output.sourceMap.css,
+          sourceMap: typeof sourceMap === 'boolean' ? sourceMap : sourceMap.css,
         },
         config: options,
         mergeFn: deepmerge,
@@ -50,9 +56,10 @@ export const pluginStylus = (options?: PluginStylusOptions): RsbuildPlugin => ({
         .resolve.preferRelative(true)
         .end();
 
-      const cssRule = chain.module.rules.get(CHAIN_ID.RULE.CSS);
-
       // Copy the builtin CSS rules
+      const cssRule = chain.module.rules.get(CHAIN_ID.RULE.CSS);
+      rule.dependency(cssRule.get('dependency'));
+
       for (const id of Object.keys(cssRule.uses.entries())) {
         const loader = cssRule.uses.get(id);
         const options = loader.get('options') ?? {};

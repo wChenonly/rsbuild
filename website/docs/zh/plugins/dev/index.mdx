@@ -13,9 +13,9 @@ Rsbuild 提供了一套轻量强大的插件系统，用以实现自身的大多
 
 ## 对比其他插件
 
-在开发 Rsbuild 插件之前，你可能已经接触过 Webpack、Vite、esbuild 等工具的插件系统。
+在开发 Rsbuild 插件之前，你可能已经接触过 webpack、Vite、esbuild 等工具的插件系统。
 
-总体而言，Rsbuild 的插件 API 和 esbuild 相似，与 Webpack / Rspack 插件相比，Rsbuild 的插件 API 更加简洁和容易上手。
+总体而言，Rsbuild 的插件 API 和 esbuild 相似，与 webpack 或 Rspack 插件相比，Rsbuild 的插件 API 更加简洁和容易上手。
 
 ```ts
 // esbuild plugin
@@ -154,7 +154,7 @@ export type PluginFooOptions = {
 export const pluginFoo = (options: PluginFooOptions = {}): RsbuildPlugin => ({
   name: 'plugin-foo',
 
-  setup: (api) => {
+  setup(api) {
     api.modifyEnvironmentConfig((config) => {
       config.html.title = options.title || 'My Default Title';
     });
@@ -163,6 +163,26 @@ export const pluginFoo = (options: PluginFooOptions = {}): RsbuildPlugin => ({
     });
   },
 });
+```
+
+### 引用其他插件
+
+Rsbuild 的 [plugins](/config/plugins) 配置项支持传入一个嵌套的数组，这意味着你可以通过这种方式在插件内部引用其他 Rsbuild 插件。
+
+例如，在 `pluginFoo` 内部引用并注册 `pluginBar`：
+
+```ts
+import { pluginBar } from 'rsbuild-plugin-bar';
+
+export const pluginFoo = (): RsbuildPlugin => {
+  const foo = {
+    name: 'plugin-foo',
+    setup(api) {
+      // ...
+    },
+  };
+  return [foo, pluginBar()];
+};
 ```
 
 ## 生命周期钩子

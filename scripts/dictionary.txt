@@ -4,6 +4,7 @@ antd
 apng
 applescript
 atrules
+attributify
 biomejs
 brotli
 browserslistrc
@@ -22,6 +23,7 @@ corejs
 corepack
 craco
 crossorigin
+darkgrey
 datauri
 deepmerge
 docgen
@@ -36,6 +38,7 @@ flexbugs
 fnames
 frontends
 fullhash
+fullhref
 gzipped
 icss
 idents
@@ -62,8 +65,8 @@ mYbzBtlg6o
 napi
 nolyfill
 nosources
-nuxt
 ntqry
+nuxt
 oklab
 onclosetag
 onopentag
@@ -81,6 +84,7 @@ pmmmwh
 postcssrc
 preact
 prebundle
+preconnecting
 preflights
 prefresh
 preprocessors
@@ -109,13 +113,14 @@ subdir
 subpage
 subresource
 subresources
-svgr
 sveltejs
+svgr
 swcrc
 systemjs
 tailwindcss
 taze
 templating
+tinyglobby
 transpiling
 treeshaking
 tsbuildinfo

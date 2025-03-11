@@ -1,23 +1,18 @@
 import {
   type EnvironmentContext,
+  type InternalContext,
   type ModifyRspackConfigUtils,
   type ModifyWebpackChainUtils,
   type ModifyWebpackConfigUtils,
+  type RsbuildProviderHelpers,
   type RsbuildTarget,
   type Rspack,
   type RspackChain,
-  __internalHelper,
   logger,
 } from '@rsbuild/core';
 import { reduceConfigsWithContext } from 'reduce-configs';
-import {
-  type InternalContext,
-  castArray,
-  chainToConfig,
-  getChainUtils as getBaseChainUtils,
-  modifyBundlerChain,
-} from './shared';
-import type { WebpackConfig } from './types';
+import { castArray } from './shared.js';
+import type { WebpackConfig } from './types.js';
 
 async function modifyWebpackChain(
   context: InternalContext,
@@ -26,11 +21,10 @@ async function modifyWebpackChain(
 ): Promise<RspackChain> {
   logger.debug('modify webpack chain');
 
-  const [modifiedChain] =
-    await context.hooks.modifyWebpackChain.callInEnvironment({
-      environment: utils.environment.name,
-      args: [chain, utils],
-    });
+  const [modifiedChain] = await context.hooks.modifyWebpackChain.callChain({
+    environment: utils.environment.name,
+    args: [chain, utils],
+  });
 
   if (utils.environment.config.tools?.webpackChain) {
     for (const item of castArray(utils.environment.config.tools.webpackChain)) {
@@ -49,11 +43,10 @@ async function modifyWebpackConfig(
   utils: ModifyWebpackConfigUtils,
 ): Promise<WebpackConfig> {
   logger.debug('modify webpack config');
-  let [modifiedConfig] =
-    await context.hooks.modifyWebpackConfig.callInEnvironment({
-      environment: utils.environment.name,
-      args: [webpackConfig, utils],
-    });
+  let [modifiedConfig] = await context.hooks.modifyWebpackConfig.callChain({
+    environment: utils.environment.name,
+    args: [webpackConfig, utils],
+  });
 
   if (utils.environment.config.tools?.webpack) {
     modifiedConfig = reduceConfigsWithContext({
@@ -71,6 +64,7 @@ async function modifyWebpackConfig(
 async function getChainUtils(
   target: RsbuildTarget,
   environment: EnvironmentContext,
+  helpers: RsbuildProviderHelpers,
 ): Promise<ModifyWebpackChainUtils> {
   const { default: webpack } = await import('webpack');
   const nameMap = {
@@ -80,10 +74,10 @@ async function getChainUtils(
   };
 
   return {
-    ...getBaseChainUtils(target, environment),
+    ...helpers.getChainUtils(target, environment),
     name: nameMap[target] || '',
     webpack,
-    HtmlWebpackPlugin: __internalHelper.getHTMLPlugin(),
+    HtmlWebpackPlugin: helpers.getHTMLPlugin(),
   };
 }
 
@@ -91,14 +85,17 @@ export async function generateWebpackConfig({
   target,
   context,
   environment,
+  helpers,
 }: {
   environment: string;
   target: RsbuildTarget;
   context: InternalContext;
+  helpers: RsbuildProviderHelpers;
 }): Promise<WebpackConfig> {
   const chainUtils = await getChainUtils(
     target,
     context.environments[environment],
+    helpers,
   );
   const { default: webpack } = await import('webpack');
   const {
@@ -106,25 +103,27 @@ export async function generateWebpackConfig({
     DefinePlugin,
     IgnorePlugin,
     ProvidePlugin,
+    SourceMapDevToolPlugin,
     HotModuleReplacementPlugin,
   } = webpack;
 
-  const bundlerChain = await modifyBundlerChain(context, {
+  const bundlerChain = await helpers.modifyBundlerChain(context, {
     ...chainUtils,
     bundler: {
       BannerPlugin,
       DefinePlugin,
       IgnorePlugin,
       ProvidePlugin,
+      SourceMapDevToolPlugin,
       HotModuleReplacementPlugin,
     },
   });
 
   const chain = await modifyWebpackChain(context, chainUtils, bundlerChain);
 
-  let webpackConfig = chainToConfig(chain) as WebpackConfig;
+  let webpackConfig = chain.toConfig() as WebpackConfig;
 
-  const configUtils = (await __internalHelper.getConfigUtils(
+  const configUtils = (await helpers.getConfigUtils(
     webpackConfig as Rspack.Configuration,
     chainUtils as unknown as ModifyRspackConfigUtils,
   )) as unknown as ModifyWebpackConfigUtils;

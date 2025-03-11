@@ -43,6 +43,7 @@ exports[`environment config > should normalize environment config correctly 1`] 
       "namedExport": false,
     },
     "dataUriLimit": {
+      "assets": 4096,
       "font": 4096,
       "image": 4096,
       "media": 4096,
@@ -77,7 +78,6 @@ exports[`environment config > should normalize environment config correctly 1`] 
     "target": "web",
   },
   "performance": {
-    "buildCache": true,
     "chunkSplit": {
       "strategy": "split-by-experience",
     },
@@ -85,6 +85,21 @@ exports[`environment config > should normalize environment config correctly 1`] 
     "profile": false,
     "removeConsole": false,
     "removeMomentLocale": false,
+  },
+  "resolve": {
+    "alias": {
+      "@common": "./src/common",
+      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "aliasStrategy": "prefer-tsconfig",
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".mjs",
+      ".js",
+      ".jsx",
+      ".json",
+    ],
   },
   "root": "<ROOT>",
   "security": {
@@ -96,19 +111,17 @@ exports[`environment config > should normalize environment config correctly 1`] 
   "server": {
     "base": "/",
     "compress": true,
+    "cors": false,
     "host": "0.0.0.0",
     "htmlFallback": "index",
+    "middlewareMode": false,
     "open": false,
     "port": 3000,
     "printUrls": true,
     "strictPort": false,
   },
   "source": {
-    "alias": {
-      "@common": "./src/common",
-      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-    },
-    "aliasStrategy": "prefer-tsconfig",
+    "alias": {},
     "decorators": {
       "version": "2022-03",
     },
@@ -172,6 +185,7 @@ exports[`environment config > should normalize environment config correctly 2`] 
       "namedExport": false,
     },
     "dataUriLimit": {
+      "assets": 4096,
       "font": 4096,
       "image": 4096,
       "media": 4096,
@@ -206,7 +220,6 @@ exports[`environment config > should normalize environment config correctly 2`] 
     "target": "node",
   },
   "performance": {
-    "buildCache": true,
     "chunkSplit": {
       "strategy": "split-by-experience",
     },
@@ -214,6 +227,21 @@ exports[`environment config > should normalize environment config correctly 2`] 
     "profile": false,
     "removeConsole": false,
     "removeMomentLocale": false,
+  },
+  "resolve": {
+    "alias": {
+      "@common": "./src/common",
+      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "aliasStrategy": "prefer-tsconfig",
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".mjs",
+      ".js",
+      ".jsx",
+      ".json",
+    ],
   },
   "root": "<ROOT>",
   "security": {
@@ -225,19 +253,17 @@ exports[`environment config > should normalize environment config correctly 2`] 
   "server": {
     "base": "/",
     "compress": true,
+    "cors": false,
     "host": "0.0.0.0",
     "htmlFallback": "index",
+    "middlewareMode": false,
     "open": false,
     "port": 3000,
     "printUrls": true,
     "strictPort": false,
   },
   "source": {
-    "alias": {
-      "@common": "./src/common",
-      "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-    },
-    "aliasStrategy": "prefer-tsconfig",
+    "alias": {},
     "decorators": {
       "version": "2022-03",
     },
@@ -301,6 +327,7 @@ exports[`environment config > should print environment config when inspect confi
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -335,7 +362,6 @@ exports[`environment config > should print environment config when inspect confi
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -344,41 +370,21 @@ exports[`environment config > should print environment config when inspect confi
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -389,19 +395,17 @@ exports[`environment config > should print environment config when inspect confi
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -461,6 +465,7 @@ exports[`environment config > should print environment config when inspect confi
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -495,7 +500,6 @@ exports[`environment config > should print environment config when inspect confi
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -504,41 +508,21 @@ exports[`environment config > should print environment config when inspect confi
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -549,19 +533,17 @@ exports[`environment config > should print environment config when inspect confi
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -641,6 +623,7 @@ exports[`environment config > should support modify environment config by api.mo
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -675,7 +658,6 @@ exports[`environment config > should support modify environment config by api.mo
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -684,42 +666,21 @@ exports[`environment config > should support modify environment config by api.mo
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-      "test-environment",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -730,19 +691,17 @@ exports[`environment config > should support modify environment config by api.mo
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -802,6 +761,7 @@ exports[`environment config > should support modify environment config by api.mo
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -836,7 +796,6 @@ exports[`environment config > should support modify environment config by api.mo
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -845,42 +804,22 @@ exports[`environment config > should support modify environment config by api.mo
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-      "test-environment",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -891,20 +830,17 @@ exports[`environment config > should support modify environment config by api.mo
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@common1": "./src/common1",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -964,6 +900,7 @@ exports[`environment config > should support modify environment config by api.mo
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -998,7 +935,6 @@ exports[`environment config > should support modify environment config by api.mo
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -1007,42 +943,22 @@ exports[`environment config > should support modify environment config by api.mo
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-      "test-environment",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -1053,20 +969,17 @@ exports[`environment config > should support modify environment config by api.mo
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@common1": "./src/common1",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -1129,6 +1042,7 @@ exports[`environment config > should support modify single environment config by
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -1163,7 +1077,6 @@ exports[`environment config > should support modify single environment config by
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -1172,42 +1085,21 @@ exports[`environment config > should support modify single environment config by
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-      "test-environment",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -1218,19 +1110,17 @@ exports[`environment config > should support modify single environment config by
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -1290,6 +1180,7 @@ exports[`environment config > should support modify single environment config by
         "namedExport": false,
       },
       "dataUriLimit": {
+        "assets": 4096,
         "font": 4096,
         "image": 4096,
         "media": 4096,
@@ -1324,7 +1215,6 @@ exports[`environment config > should support modify single environment config by
       "target": "web",
     },
     "performance": {
-      "buildCache": true,
       "chunkSplit": {
         "strategy": "split-by-experience",
       },
@@ -1333,42 +1223,22 @@ exports[`environment config > should support modify single environment config by
       "removeConsole": false,
       "removeMomentLocale": false,
     },
-    "pluginNames": [
-      "rsbuild:basic",
-      "rsbuild:entry",
-      "rsbuild:cache",
-      "rsbuild:target",
-      "rsbuild:output",
-      "rsbuild:resolve",
-      "rsbuild:file-size",
-      "rsbuild:clean-output",
-      "rsbuild:asset",
-      "rsbuild:html",
-      "rsbuild:app-icon",
-      "rsbuild:wasm",
-      "rsbuild:moment",
-      "rsbuild:node-addons",
-      "rsbuild:define",
-      "rsbuild:css",
-      "rsbuild:minimize",
-      "rsbuild:progress",
-      "rsbuild:swc",
-      "rsbuild:externals",
-      "rsbuild:split-chunks",
-      "rsbuild:inline-chunk",
-      "rsbuild:rsdoctor",
-      "rsbuild:resource-hints",
-      "rsbuild:performance",
-      "rsbuild:bundle-analyzer",
-      "rsbuild:server",
-      "rsbuild:manifest",
-      "rsbuild:module-federation",
-      "rsbuild:rspack-profile",
-      "rsbuild:lazy-compilation",
-      "rsbuild:sri",
-      "rsbuild:nonce",
-      "test-environment",
-    ],
+    "resolve": {
+      "alias": {
+        "@common": "./src/common",
+        "@common1": "./src/common1",
+        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+      },
+      "aliasStrategy": "prefer-tsconfig",
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".js",
+        ".jsx",
+        ".json",
+      ],
+    },
     "root": "<ROOT>",
     "security": {
       "nonce": "",
@@ -1379,20 +1249,17 @@ exports[`environment config > should support modify single environment config by
     "server": {
       "base": "/",
       "compress": true,
+      "cors": false,
       "host": "0.0.0.0",
       "htmlFallback": "index",
+      "middlewareMode": false,
       "open": false,
       "port": 3000,
       "printUrls": true,
       "strictPort": false,
     },
     "source": {
-      "alias": {
-        "@common": "./src/common",
-        "@common1": "./src/common1",
-        "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
-      },
-      "aliasStrategy": "prefer-tsconfig",
+      "alias": {},
       "decorators": {
         "version": "2022-03",
       },
@@ -1440,6 +1307,9 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           "test": /\\\\\\.m\\?js/,
         },
         {
+          "dependency": {
+            "not": "url",
+          },
           "resolve": {
             "preferRelative": true,
           },
@@ -1478,6 +1348,9 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           ],
         },
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1509,6 +1382,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1552,6 +1426,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1593,7 +1468,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
               "type": "asset",
             },
           ],
-          "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+          "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
         },
         {
           "oneOf": [
@@ -1715,16 +1590,18 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
       "hints": false,
     },
     "plugins": [
-      RsbuildCorePlugin {},
-      HotModuleReplacementPlugin {
-        "name": "HotModuleReplacementPlugin",
-      },
       CssExtractRspackPlugin {
         "options": {
           "chunkFilename": "static/css/async/[name].css",
           "filename": "static/css/[name].css",
           "ignoreOrder": true,
         },
+      },
+      RsbuildCorePlugin {
+        "name": "RsbuildCorePlugin",
+      },
+      HotModuleReplacementPlugin {
+        "name": "HotModuleReplacementPlugin",
       },
       DefinePlugin {
         "_args": [
@@ -1759,6 +1636,10 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
       "web",
       "es2017",
     ],
+    "watchOptions": {
+      "aggregateTimeout": 0,
+      "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+    },
   },
   {
     "context": "<ROOT>",
@@ -1784,6 +1665,9 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           "test": /\\\\\\.m\\?js/,
         },
         {
+          "dependency": {
+            "not": "url",
+          },
           "resolve": {
             "preferRelative": true,
           },
@@ -1792,7 +1676,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           "type": "javascript/auto",
           "use": [
             {
-              "loader": "<ROOT>/packages/core/src/ignoreCssLoader.cjs",
+              "loader": "<ROOT>/packages/core/src/ignoreCssLoader.mjs",
             },
             {
               "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
@@ -1812,6 +1696,9 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           ],
         },
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1838,6 +1725,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1877,6 +1765,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1918,7 +1807,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
               "type": "asset",
             },
           ],
-          "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+          "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
         },
         {
           "oneOf": [
@@ -2013,7 +1902,7 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
           "test": /\\\\\\.node\\$/,
           "use": [
             {
-              "loader": "<ROOT>/packages/core/src/transformRawLoader.cjs",
+              "loader": "<ROOT>/packages/core/src/transformRawLoader.mjs",
               "options": {
                 "getEnvironment": [Function],
                 "id": "rsbuild-transform-0",
@@ -2046,7 +1935,9 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
       "hints": false,
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      RsbuildCorePlugin {
+        "name": "RsbuildCorePlugin",
+      },
       DefinePlugin {
         "_args": [
           {
@@ -2077,6 +1968,10 @@ exports[`environment config > tools.rspack / bundlerChain can be configured in e
       ],
     },
     "target": "node",
+    "watchOptions": {
+      "aggregateTimeout": 0,
+      "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+    },
   },
 ]
 `;

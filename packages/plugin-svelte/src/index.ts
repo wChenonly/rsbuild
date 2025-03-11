@@ -1,9 +1,12 @@
 import { promises } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { logger } from '@rsbuild/core';
 import type { RsbuildPlugin } from '@rsbuild/core';
 import { sveltePreprocess } from 'svelte-preprocess';
 import type { CompileOptions } from 'svelte/compiler';
+
+const require = createRequire(import.meta.url);
 
 export type AutoPreprocessOptions = NonNullable<
   Parameters<typeof sveltePreprocess>[0]
@@ -66,7 +69,7 @@ export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
         logger.error(
           'Cannot resolve `svelte` package under the project directory, did you forget to install it?',
         );
-        throw new Error('Cannot resolve `svelte` package', {
+        throw new Error('[rsbuild:svelte] Failed to resolve `svelte` package', {
           cause: err,
         });
       }
@@ -119,10 +122,29 @@ export function pluginSvelte(options: PluginSvelteOptions = {}): RsbuildPlugin {
 
           chain.module
             .rule(CHAIN_ID.RULE.SVELTE)
-            .test(svelte5 ? /\.(?:svelte|svelte\.js|svelte\.ts)$/ : /\.svelte$/)
+            .test(/\.svelte$/)
             .use(CHAIN_ID.USE.SVELTE)
             .loader(loaderPath)
             .options(svelteLoaderOptions);
+
+          const jsRule = chain.module.rules.get(CHAIN_ID.RULE.JS);
+          if (svelte5 && jsRule) {
+            const swcUse = jsRule.uses.get(CHAIN_ID.USE.SWC);
+            const regexp = /\.(?:svelte\.js|svelte\.ts)$/;
+
+            jsRule.exclude.add(regexp);
+
+            chain.module
+              .rule('svelte-js')
+              .test(regexp)
+              .use(CHAIN_ID.USE.SVELTE)
+              .loader(loaderPath)
+              .options(svelteLoaderOptions)
+              .end()
+              .use(CHAIN_ID.USE.SWC)
+              .loader(swcUse.get('loader'))
+              .options(swcUse.get('options'));
+          }
         },
       );
     },

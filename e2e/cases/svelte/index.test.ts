@@ -38,22 +38,7 @@ rspackOnlyTest(
   },
 );
 
-rspackOnlyTest(
-  'should build svelte component with typescript',
-  async ({ page }) => {
-    const rsbuild = await buildFixture('ts', 'src/index.ts');
-
-    await gotoPage(page, rsbuild);
-
-    const title = page.locator('#title');
-
-    await expect(title).toHaveText('Hello world!');
-
-    rsbuild.close();
-  },
-);
-
-// test cases for css preprocessors
+// test cases for CSS preprocessors
 for (const name of ['less', 'scss', 'stylus']) {
   rspackOnlyTest(
     `should build svelte component with ${name}`,

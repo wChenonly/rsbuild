@@ -1,4 +1,4 @@
-# 引用 CSS 文件
+# CSS
 
 Rsbuild 对 CSS 提供开箱即用的支持，包括 Lightning CSS、PostCSS、CSS Modules、CSS 预处理器、CSS 内联和 CSS 压缩。
 
@@ -17,8 +17,6 @@ Rsbuild 使用 Rspack 内置的 [lightningcss-loader](https://www.rspack.dev/gui
 - Lightning CSS 会自动添加浏览器前缀，比如 `-webkit-`、`-moz-`、`-ms-` 等，因此你不需要手动添加前缀，也不需要使用 [autoprefixer](https://github.com/postcss/autoprefixer) 插件。
 - Lightning CSS 会自动将 CSS 语法降级，这允许你在代码中使用现代的 CSS 特性，比如 CSS nesting，custom media queries 等，而无需担心浏览器兼容性问题。
 - 你可以使用 [tools.lightningcssLoader](/config/tools/lightningcss-loader) 来自定义 `lightningcss-loader` 的选项。
-
-> Rsbuild 从 `1.0.1-beta.7` 版本开始默认启用 Lightning CSS。
 
 ### 禁用 Lightning CSS
 
@@ -57,9 +55,11 @@ export default {
 
 Rsbuild 支持通过 [PostCSS](https://postcss.org/) 来转换 CSS 代码。你可以通过以下方式来配置 PostCSS：
 
-1. Rsbuild 使用 [postcss-load-config](https://github.com/postcss/postcss-load-config) 来加载当前项目根目录下的 PostCSS 配置文件，比如 `postcss.config.js`：
+### 配置文件
 
-```js title="postcss.config.js"
+Rsbuild 使用 [postcss-load-config](https://github.com/postcss/postcss-load-config) 来加载当前项目根目录下的 PostCSS 配置文件，比如 `postcss.config.js`：
+
+```js title="postcss.config.cjs"
 module.exports = {
   'postcss-px-to-viewport': {
     viewportWidth: 375,
@@ -67,7 +67,17 @@ module.exports = {
 };
 ```
 
-2. 通过 Rsbuild 的 [tools.postcss](/config/tools/postcss) 选项来配置 postcss-loader，该选项支持通过函数来修改内置配置，比如：
+`postcss-load-config` 支持多种文件格式，包括但不限于以下文件名：
+
+- postcss.config.js
+- postcss.config.mjs
+- postcss.config.cjs
+- postcss.config.ts
+- ...
+
+### tools.postcss
+
+你也可以通过 Rsbuild 的 [tools.postcss](/config/tools/postcss) 选项来配置 postcss-loader，该选项支持通过函数来修改内置配置，比如：
 
 ```ts title="rsbuild.config.ts"
 export default {
@@ -81,6 +91,8 @@ export default {
   },
 };
 ```
+
+### 配置优先级
 
 - 当你同时配置 `postcss.config.js` 文件和 `tools.postcss` 选项时，两者都会生效，并且 `tools.postcss` 的优先级更高。
 - 如果项目中没有 `postcss.config.js` 文件，也没有配置 `tools.postcss` 选项，Rsbuild 将不会注册 `postcss-loader`。

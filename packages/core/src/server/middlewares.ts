@@ -1,10 +1,10 @@
 import type { IncomingMessage } from 'node:http';
 import path from 'node:path';
-import type Connect from 'connect';
-import color from 'picocolors';
-import { addTrailingSlash } from '../helpers';
+import type Connect from '../../compiled/connect/index.js';
+import { addTrailingSlash, color } from '../helpers';
 import { logger } from '../logger';
 import type {
+  EnvironmentAPI,
   HtmlFallback,
   RequestHandler as Middleware,
   Rspack,
@@ -38,7 +38,9 @@ const getStatusCodeColor = (status: number) => {
 
 export const getRequestLoggerMiddleware: () => Promise<Connect.NextHandleFunction> =
   async () => {
-    const { default: onFinished } = await import('on-finished');
+    const { default: onFinished } = await import(
+      '../../compiled/on-finished/index.js'
+    );
 
     return (req, res, next) => {
       const _startAt = process.hrtime();
@@ -73,6 +75,17 @@ export const getRequestLoggerMiddleware: () => Promise<Connect.NextHandleFunctio
 export const notFoundMiddleware: Middleware = (_req, res, _next) => {
   res.statusCode = 404;
   res.end();
+};
+
+export const optionsFallbackMiddleware: Middleware = (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    // Use 204 as no content to send in the response body
+    res.statusCode = 204;
+    res.setHeader('Content-Length', '0');
+    res.end();
+    return;
+  }
+  next();
 };
 
 const isFileExists = async (
@@ -244,3 +257,89 @@ export const getHtmlFallbackMiddleware: (params: {
     next();
   };
 };
+
+/**
+ * Support viewing served files via `/rsbuild-dev-server` route
+ */
+export const viewingServedFilesMiddleware: (params: {
+  environments: EnvironmentAPI;
+}) => Middleware =
+  ({ environments }) =>
+  async (req, res, next) => {
+    const url = req.url!;
+    const pathname = getUrlPathname(url);
+
+    if (pathname === '/rsbuild-dev-server') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.write(
+        `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+        margin: 0;
+        color: #f6f7f9;
+        padding: 32px 40px;
+        line-height: 1.8;
+        min-height: 100vh;
+        background-image: linear-gradient(#020917, #101725);
+        font-family: ui-sans-serif,system-ui,sans-serif;
+      }
+      h1, h2 {
+        font-weight: 500;
+      }
+      h1 {
+        margin: 0;
+        font-size: 36px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 24px 0 16px;
+      }
+      ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+      a {
+        color: #58c4dc;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Assets Report</h1>
+  </body>
+</html>`,
+      );
+      try {
+        for (const key in environments) {
+          const list = [];
+          res.write(`<h2>Environment: ${key}</h2>`);
+          const environment = environments[key];
+          const stats = await environment.getStats();
+          const statsForPrint = stats.toJson();
+          const { assets = [] } = statsForPrint;
+          res.write('<ul>');
+          for (const asset of assets) {
+            list.push(
+              `<li><a target="_blank" href="${asset?.name}">${asset?.name}</a></li>`,
+            );
+          }
+          res.write(list?.join(''));
+          res.write('</ul>');
+        }
+        res.end('</body></html>');
+      } catch (err) {
+        logger.error(err);
+        res.writeHead(500);
+        res.end('Failed to list the files');
+      }
+    } else {
+      next();
+    }
+  };

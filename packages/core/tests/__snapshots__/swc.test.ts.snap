@@ -11,6 +11,9 @@ exports[`plugin-swc > should add browserslist 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -38,6 +41,7 @@ exports[`plugin-swc > should add browserslist 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -78,6 +82,7 @@ exports[`plugin-swc > should add browserslist 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -97,7 +102,9 @@ exports[`plugin-swc > should add browserslist 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -114,6 +121,9 @@ exports[`plugin-swc > should add pluginImport 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -144,6 +154,7 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -194,6 +205,7 @@ exports[`plugin-swc > should add pluginImport 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -220,7 +232,9 @@ exports[`plugin-swc > should add pluginImport 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -229,6 +243,9 @@ exports[`plugin-swc > should add pluginImport 1`] = `
 exports[`plugin-swc > should allow to use \`tools.swc\` to be function type 1`] = `
 [
   {
+    "dependency": {
+      "not": "url",
+    },
     "include": [
       {
         "and": [
@@ -280,6 +297,9 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to be function type 1`] 
 exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader options 1`] = `
 [
   {
+    "dependency": {
+      "not": "url",
+    },
     "include": [
       {
         "and": [
@@ -310,6 +330,7 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": false,
             "parser": {
@@ -353,6 +374,7 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": false,
             "parser": {
@@ -375,6 +397,9 @@ exports[`plugin-swc > should allow to use \`tools.swc\` to configure swc-loader 
 exports[`plugin-swc > should apply environment config correctly 1`] = `
 [
   {
+    "dependency": {
+      "not": "url",
+    },
     "exclude": [
       "src/example",
     ],
@@ -401,7 +426,7 @@ exports[`plugin-swc > should apply environment config correctly 1`] = `
         "loader": "builtin:swc-loader",
         "options": {
           "env": {
-            "coreJs": "3.38",
+            "coreJs": "3.41",
             "mode": "usage",
             "shippedProposals": true,
             "targets": [
@@ -415,6 +440,7 @@ exports[`plugin-swc > should apply environment config correctly 1`] = `
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": true,
             "parser": {
@@ -456,7 +482,7 @@ exports[`plugin-swc > should apply environment config correctly 1`] = `
         "loader": "builtin:swc-loader",
         "options": {
           "env": {
-            "coreJs": "3.38",
+            "coreJs": "3.41",
             "mode": "usage",
             "shippedProposals": true,
             "targets": [
@@ -470,6 +496,7 @@ exports[`plugin-swc > should apply environment config correctly 1`] = `
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": true,
             "parser": {
@@ -499,6 +526,9 @@ exports[`plugin-swc > should apply environment config correctly 1`] = `
 exports[`plugin-swc > should apply environment config correctly 2`] = `
 [
   {
+    "dependency": {
+      "not": "url",
+    },
     "exclude": [
       "src/example1",
     ],
@@ -528,6 +558,7 @@ exports[`plugin-swc > should apply environment config correctly 2`] = `
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": true,
             "parser": {
@@ -574,6 +605,7 @@ exports[`plugin-swc > should apply environment config correctly 2`] = `
           "jsc": {
             "experimental": {
               "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+              "keepImportAttributes": true,
             },
             "externalHelpers": true,
             "parser": {
@@ -611,6 +643,9 @@ exports[`plugin-swc > should apply pluginImport correctly when ConfigChain 1`] =
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -641,6 +676,7 @@ exports[`plugin-swc > should apply pluginImport correctly when ConfigChain 1`] =
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -694,6 +730,7 @@ exports[`plugin-swc > should apply pluginImport correctly when ConfigChain 1`] =
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -723,7 +760,9 @@ exports[`plugin-swc > should apply pluginImport correctly when ConfigChain 1`] =
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -740,6 +779,9 @@ exports[`plugin-swc > should disable pluginImport when return undefined 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -770,6 +812,7 @@ exports[`plugin-swc > should disable pluginImport when return undefined 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -813,6 +856,7 @@ exports[`plugin-swc > should disable pluginImport when return undefined 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -832,7 +876,9 @@ exports[`plugin-swc > should disable pluginImport when return undefined 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -849,6 +895,9 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -875,6 +924,7 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -914,6 +964,7 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -933,7 +984,9 @@ exports[`plugin-swc > should disable preset_env in target other than web 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -950,6 +1003,9 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -980,6 +1036,7 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1023,6 +1080,7 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1042,7 +1100,9 @@ exports[`plugin-swc > should disable preset_env mode 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -1060,6 +1120,9 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1083,7 +1146,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "entry",
                   "targets": [
                     "chrome >= 87",
@@ -1096,6 +1159,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1130,7 +1194,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "entry",
                   "targets": [
                     "chrome >= 87",
@@ -1143,6 +1207,7 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1162,7 +1227,9 @@ exports[`plugin-swc > should enable entry mode preset_env 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -1179,6 +1246,9 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1202,7 +1272,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "usage",
                   "shippedProposals": true,
                   "targets": [
@@ -1216,6 +1286,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1250,7 +1321,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "usage",
                   "shippedProposals": true,
                   "targets": [
@@ -1264,6 +1335,7 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1283,7 +1355,9 @@ exports[`plugin-swc > should enable usage mode preset_env 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -1301,6 +1375,9 @@ exports[`plugin-swc > should has correct core-js 1`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1324,7 +1401,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "entry",
                   "targets": [
                     "chrome >= 87",
@@ -1337,6 +1414,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1371,7 +1449,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
               "loader": "builtin:swc-loader",
               "options": {
                 "env": {
-                  "coreJs": "3.38",
+                  "coreJs": "3.41",
                   "mode": "entry",
                   "targets": [
                     "chrome >= 87",
@@ -1384,6 +1462,7 @@ exports[`plugin-swc > should has correct core-js 1`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1403,7 +1482,9 @@ exports[`plugin-swc > should has correct core-js 1`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]
@@ -1420,6 +1501,9 @@ exports[`plugin-swc > should has correct core-js 2`] = `
     "module": {
       "rules": [
         {
+          "dependency": {
+            "not": "url",
+          },
           "include": [
             {
               "and": [
@@ -1446,6 +1530,7 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1485,6 +1570,7 @@ exports[`plugin-swc > should has correct core-js 2`] = `
                 "jsc": {
                   "experimental": {
                     "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                    "keepImportAttributes": true,
                   },
                   "externalHelpers": true,
                   "parser": {
@@ -1504,7 +1590,9 @@ exports[`plugin-swc > should has correct core-js 2`] = `
       ],
     },
     "plugins": [
-      RsbuildCorePlugin {},
+      {
+        "name": "RsbuildCorePlugin",
+      },
     ],
   },
 ]

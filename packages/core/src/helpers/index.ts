@@ -1,11 +1,12 @@
 import { posix } from 'node:path';
+import { URL } from 'node:url';
 import deepmerge from 'deepmerge';
-import color from 'picocolors';
-import type RspackChain from 'rspack-chain';
 import type {
   Compiler as WebpackCompiler,
   MultiCompiler as WebpackMultiCompiler,
 } from 'webpack';
+import color from '../../compiled/picocolors/index.js';
+import type RspackChain from '../../compiled/rspack-chain/index.js';
 import { DEFAULT_ASSET_PREFIX } from '../constants';
 import type {
   FilenameConfig,
@@ -18,6 +19,8 @@ import type {
 export * from './fs';
 export * from './path';
 export * from './stats';
+
+export { color };
 
 export const rspackMinVersion = '1.0.0';
 
@@ -35,26 +38,12 @@ export const isFunction = (func: unknown): func is (...args: any[]) => any =>
 export const isObject = (obj: unknown): obj is Record<string, any> =>
   Object.prototype.toString.call(obj) === '[object Object]';
 
-export const isPlainObject = (o: unknown): o is Record<string, any> => {
-  if (isObject(o) === false) return false;
-
-  // If has modified constructor
-  const ctor = (o as Record<string, any>).constructor;
-  if (ctor === undefined) return true;
-
-  // If has modified prototype
-  const prot = ctor.prototype;
-  if (isObject(prot) === false) return false;
-
-  // If constructor does not have an Object-specific method
-
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: <explanation>
-  if (prot.hasOwnProperty('isPrototypeOf') === false) {
-    return false;
-  }
-
-  // Most likely a plain Object
-  return true;
+export const isPlainObject = (obj: unknown): obj is Record<string, any> => {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    Object.getPrototypeOf(obj) === Object.prototype
+  );
 };
 
 export const castArray = <T>(arr?: T | T[]): T[] => {
@@ -97,7 +86,7 @@ export const isSatisfyRspackVersion = async (
 ): Promise<boolean> => {
   let version = originalVersion;
 
-  // The nightly version of rspack is to append `-canary-abc` to the current version
+  // The nightly version of Rspack is to append `-canary-abc` to the current version
   if (version.includes('-canary')) {
     version = version.split('-canary')[0];
   }
@@ -174,6 +163,14 @@ export const canParse = (url: string): boolean => {
   }
 };
 
+export const parseUrl = (url: string): URL | null => {
+  try {
+    return new URL(url);
+  } catch {
+    return null;
+  }
+};
+
 export const ensureAssetPrefix = (
   url: string,
   assetPrefix: Rspack.PublicPath = DEFAULT_ASSET_PREFIX,
@@ -218,18 +215,18 @@ export function getFilename(
   type: 'js',
   isProd: boolean,
   isServer?: boolean,
-): NonNullable<FilenameConfig['js']>;
+): Rspack.Filename;
 export function getFilename(
   config: NormalizedConfig | NormalizedEnvironmentConfig,
   type: 'css',
   isProd: boolean,
-): NonNullable<FilenameConfig['css']>;
+): Rspack.CssFilename;
 export function getFilename(
   config: NormalizedConfig | NormalizedEnvironmentConfig,
   type: Exclude<keyof FilenameConfig, 'js' | 'css'>,
   isProd: boolean,
   isServer?: boolean,
-): string;
+): Rspack.AssetModuleFilename;
 export function getFilename(
   config: NormalizedConfig | NormalizedEnvironmentConfig,
   type: keyof FilenameConfig,
@@ -263,7 +260,9 @@ export function getFilename(
     case 'assets':
       return filename.assets ?? `[name]${hash}[ext]`;
     default:
-      throw new Error(`unknown key ${type} in "output.filename"`);
+      throw new Error(
+        `[rsbuild:config] unknown key ${type} in "output.filename"`,
+      );
   }
 }
 
@@ -334,7 +333,7 @@ export const isMultiCompiler = <
 >(
   compiler: C | M,
 ): compiler is M => {
-  return compiler.constructor.name === 'MultiCompiler';
+  return 'compilers' in compiler && Array.isArray(compiler.compilers);
 };
 
 export function pick<T, U extends keyof T>(
@@ -369,4 +368,23 @@ export const prettyTime = (seconds: number): string => {
 
   const minutes = seconds / 60;
   return `${format(minutes.toFixed(2))} m`;
+};
+
+/**
+ * Check if running in a TTY context
+ */
+export const isTTY = (type: 'stdin' | 'stdout' = 'stdout'): boolean => {
+  return (
+    (type === 'stdin' ? process.stdin.isTTY : process.stdout.isTTY) &&
+    !process.env.CI
+  );
+};
+
+export const addCompilationError = (
+  compilation: Rspack.Compilation,
+  message: string,
+): void => {
+  compilation.errors.push(
+    new compilation.compiler.webpack.WebpackError(message),
+  );
 };

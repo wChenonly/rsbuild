@@ -6,14 +6,12 @@ import {
   DEFAULT_PORT,
 } from '../constants';
 import { formatPublicPath, getFilename, urlJoin } from '../helpers';
-import { getCssExtractPlugin } from '../pluginHelper';
 import { replacePortPlaceholder } from '../server/open';
 import type {
   NormalizedEnvironmentConfig,
   RsbuildContext,
   RsbuildPlugin,
 } from '../types';
-import { isUseCssExtract } from './css';
 
 function getPublicPath({
   isProd,
@@ -27,7 +25,7 @@ function getPublicPath({
   const { dev, output, server } = config;
 
   let publicPath = DEFAULT_ASSET_PREFIX;
-  const port = context.devServer?.port || DEFAULT_PORT;
+  const port = context.devServer?.port || server.port || DEFAULT_PORT;
 
   if (isProd) {
     if (typeof output.assetPrefix === 'string') {
@@ -42,7 +40,7 @@ function getPublicPath({
     if (hostname === DEFAULT_DEV_HOST) {
       const localHostname = 'localhost';
       // If user not specify the hostname, it would use 0.0.0.0
-      // The http://0.0.0.0:port can't visit in windows, so we shouldn't set publicPath as `//0.0.0.0:${port}/`;
+      // The http://0.0.0.0:port can't visit in Windows, so we shouldn't set publicPath as `//0.0.0.0:${port}/`;
       // Relative to docs:
       // - https://github.com/quarkusio/quarkus/issues/12246
       publicPath = `${protocol}://${localHostname}:<port>/`;
@@ -78,7 +76,7 @@ export const pluginOutput = (): RsbuildPlugin => ({
 
   setup(api) {
     api.modifyBundlerChain(
-      async (chain, { CHAIN_ID, target, isProd, isServer, environment }) => {
+      async (chain, { CHAIN_ID, isProd, isServer, environment }) => {
         const { distPath, config } = environment;
 
         const publicPath = getPublicPath({
@@ -138,39 +136,6 @@ export const pluginOutput = (): RsbuildPlugin => ({
           chain
             .plugin(CHAIN_ID.PLUGIN.COPY)
             .use(rspack.CopyRspackPlugin, [options]);
-        }
-
-        // css output
-        if (isUseCssExtract(config, target)) {
-          const extractPluginOptions = config.tools.cssExtract.pluginOptions;
-
-          const cssPath = config.output.distPath.css;
-          const cssFilename = getFilename(config, 'css', isProd);
-          const isCssFilenameFn = typeof cssFilename === 'function';
-
-          const cssAsyncPath =
-            config.output.distPath.cssAsync ??
-            (cssPath ? `${cssPath}/async` : 'async');
-
-          chain
-            .plugin(CHAIN_ID.PLUGIN.MINI_CSS_EXTRACT)
-            .use(getCssExtractPlugin(), [
-              {
-                filename: isCssFilenameFn
-                  ? (...args) => {
-                      const name = cssFilename(...args);
-                      return posix.join(cssPath, name);
-                    }
-                  : posix.join(cssPath, cssFilename),
-                chunkFilename: isCssFilenameFn
-                  ? (...args) => {
-                      const name = cssFilename(...args);
-                      return posix.join(cssAsyncPath, name);
-                    }
-                  : posix.join(cssAsyncPath, cssFilename),
-                ...extractPluginOptions,
-              },
-            ]);
         }
       },
     );

@@ -1,4 +1,4 @@
-# Less Plugin
+# Less plugin
 
 import { SourceCode } from 'rspress/theme';
 
@@ -6,9 +6,9 @@ import { SourceCode } from 'rspress/theme';
 
 Use [Less](https://lesscss.org/) as the CSS preprocessor, implemented based on [less-loader](https://github.com/webpack-contrib/less-loader).
 
-## Quick Start
+## Quick start
 
-### Install Plugin
+### Install plugin
 
 You can install the plugin using the following command:
 
@@ -23,7 +23,7 @@ import { PackageManagerTabs } from '@theme';
 
 :::
 
-### Register Plugin
+### Register plugin
 
 You can register the plugin in the `rsbuild.config.ts` file:
 
@@ -39,7 +39,7 @@ After registering the plugin, you can import `*.less` or `*.module.less` files i
 
 ## Options
 
-If you need to customize the compilation behavior of Less, you can use the following configs.
+To customize the compilation behavior of Less, use the following options.
 
 ### lessLoaderOptions
 
@@ -89,6 +89,22 @@ pluginLess({
 The `lessLoaderOptions.lessOptions` config is passed to Less. See the [Less documentation](https://lesscss.org/usage/#command-line-usage-options) for all available options.
 :::
 
+### include
+
+- **Type:** [RuleSetCondition](https://rspack.dev/config/module#condition)
+- **Default:** `/\.less$/`
+- **Version:** `>= 1.1.0`
+
+Include some `.less` files, they will be transformed by `less-loader`. The value is the same as the `rule.test` option in Rspack.
+
+For example:
+
+```ts
+pluginLess({
+  include: /\.custom\.less$/,
+});
+```
+
 ### exclude
 
 - **Type:** [RuleSetCondition](https://rspack.dev/config/module#condition)
@@ -104,7 +120,7 @@ pluginLess({
 });
 ```
 
-## Modifying Less Version
+## Modifying Less version
 
 In some scenarios, if you need to use a specific version of Less instead of the built-in Less v4 in Rsbuild, you can install the desired Less version in your project and set it up using the `implementation` option of the `less-loader`.
 
@@ -114,6 +130,30 @@ pluginLess({
     implementation: require('less'),
   },
 });
+```
+
+## Practices
+
+### Configure multiple Less plugins
+
+By using the `include` and `exclude` options, you can register multiple Less plugins and specify different options for each plugin.
+
+For example:
+
+```ts
+export default {
+  plugins: [
+    pluginLess({
+      exclude: /\.another\.less$/,
+    }),
+    pluginLess({
+      include: /\.another\.less$/,
+      lessLoaderOptions: {
+        // some custom options
+      },
+    }),
+  ],
+};
 ```
 
 ## FAQ

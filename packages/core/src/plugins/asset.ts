@@ -1,5 +1,9 @@
 import path from 'node:path';
-import type { GeneratorOptionsByModuleType } from '@rspack/core';
+import type {
+  AssetModuleFilename,
+  GeneratorOptionsByModuleType,
+} from '@rspack/core';
+import { CHAIN_ID } from '../configChain';
 import {
   AUDIO_EXTENSIONS,
   FONT_EXTENSIONS,
@@ -19,7 +23,7 @@ const chainStaticAssetRule = ({
   emit: boolean;
   rule: RspackChain.Rule;
   maxSize: number;
-  filename: string;
+  filename: AssetModuleFilename;
   assetType: string;
 }) => {
   const generatorOptions:
@@ -78,9 +82,17 @@ export const pluginAsset = (): RsbuildPlugin => ({
 
       const getMergedFilename = (
         assetType: 'svg' | 'font' | 'image' | 'media' | 'assets',
-      ) => {
+      ): AssetModuleFilename => {
         const distDir = config.output.distPath[assetType];
         const filename = getFilename(config, assetType, isProd);
+
+        if (typeof filename === 'function') {
+          return (...args) => {
+            const name = filename(...args);
+            return path.posix.join(distDir, name);
+          };
+        }
+
         return path.posix.join(distDir, filename);
       };
 
@@ -109,22 +121,41 @@ export const pluginAsset = (): RsbuildPlugin => ({
       const { emitAssets } = config.output;
 
       // image
-      createAssetRule('image', IMAGE_EXTENSIONS, emitAssets);
+      createAssetRule(CHAIN_ID.RULE.IMAGE, IMAGE_EXTENSIONS, emitAssets);
       // svg
-      createAssetRule('svg', ['svg'], emitAssets);
+      createAssetRule(CHAIN_ID.RULE.SVG, ['svg'], emitAssets);
       // media
       createAssetRule(
-        'media',
+        CHAIN_ID.RULE.MEDIA,
         [...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS],
         emitAssets,
       );
       // font
-      createAssetRule('font', FONT_EXTENSIONS, emitAssets);
+      createAssetRule(CHAIN_ID.RULE.FONT, FONT_EXTENSIONS, emitAssets);
       // assets
       const assetsFilename = getMergedFilename('assets');
       chain.output.assetModuleFilename(assetsFilename);
       if (!emitAssets) {
         chain.module.generator.merge({ 'asset/resource': { emit: false } });
+      }
+
+      // additional assets
+      const { assetsInclude } = config.source;
+      if (assetsInclude) {
+        const { dataUriLimit } = config.output;
+        const rule = chain.module
+          .rule(CHAIN_ID.RULE.ADDITIONAL_ASSETS)
+          .test(assetsInclude);
+        const maxSize =
+          typeof dataUriLimit === 'number' ? dataUriLimit : dataUriLimit.assets;
+
+        chainStaticAssetRule({
+          emit: emitAssets,
+          rule,
+          maxSize,
+          filename: assetsFilename,
+          assetType: 'additional-assets',
+        });
       }
     });
   },

@@ -1,13 +1,11 @@
 import { isAbsolute, join } from 'node:path';
-import type { InspectConfigOptions, InspectConfigResult } from '@rsbuild/core';
-import { type InitConfigsOptions, initConfigs } from './initConfigs';
-import {
-  type InternalContext,
-  getRsbuildInspectConfig,
-  outputInspectConfigFiles,
-  stringifyConfig,
-} from './shared';
-import type { WebpackConfig } from './types';
+import type {
+  InspectConfigOptions,
+  InspectConfigResult,
+  InternalContext,
+} from '@rsbuild/core';
+import { type InitConfigsOptions, initConfigs } from './initConfigs.js';
+import type { WebpackConfig } from './types.js';
 
 const getInspectOutputPath = (
   context: InternalContext,
@@ -25,6 +23,7 @@ const getInspectOutputPath = (
 };
 
 export async function inspectConfig({
+  helpers,
   context,
   pluginManager,
   rsbuildOptions,
@@ -47,12 +46,13 @@ export async function inspectConfig({
         context,
         pluginManager,
         rsbuildOptions,
+        helpers,
       })
     ).webpackConfigs;
 
   const rawBundlerConfigs = webpackConfigs.map((config, index) => ({
     name: config.name || String(index),
-    content: stringifyConfig(config, inspectOptions.verbose),
+    content: helpers.stringifyConfig(config, inspectOptions.verbose),
   }));
 
   const {
@@ -60,7 +60,7 @@ export async function inspectConfig({
     rawRsbuildConfig,
     environmentConfigs,
     rawEnvironmentConfigs,
-  } = getRsbuildInspectConfig({
+  } = helpers.getRsbuildInspectConfig({
     normalizedConfig: context.normalizedConfig!,
     inspectOptions,
     pluginManager,
@@ -69,7 +69,7 @@ export async function inspectConfig({
   const outputPath = getInspectOutputPath(context, inspectOptions);
 
   if (inspectOptions.writeToDisk) {
-    await outputInspectConfigFiles({
+    await helpers.outputInspectConfigFiles({
       rawBundlerConfigs,
       rawEnvironmentConfigs,
       inspectOptions: {

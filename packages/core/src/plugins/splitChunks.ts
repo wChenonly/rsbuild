@@ -1,13 +1,15 @@
 import assert from 'node:assert';
 import { NODE_MODULES_REGEX } from '../constants';
 import type {
-  CacheGroups,
+  ChunkSplit,
   ForceSplitting,
   Polyfill,
-  RsbuildChunkSplit,
   RsbuildPlugin,
+  Rspack,
   SplitChunks,
 } from '../types';
+
+type CacheGroups = Record<string, Rspack.OptimizationSplitChunksCacheGroup>;
 
 // We expose three layers to specify Rspack chunk-split config:
 // 1. By strategy. Some best practices strategies.
@@ -30,7 +32,7 @@ interface SplitChunksContext {
   /**
    * User Rsbuild `chunkSplit` config
    */
-  userConfig: RsbuildChunkSplit;
+  userConfig: ChunkSplit;
   /**
    * The root path of current project
    */
@@ -41,7 +43,10 @@ interface SplitChunksContext {
   polyfill: Polyfill;
 }
 
-function getForceSplittingGroups(forceSplitting: ForceSplitting): CacheGroups {
+function getForceSplittingGroups(
+  forceSplitting: ForceSplitting,
+  strategy: ChunkSplit['strategy'],
+): CacheGroups {
   const cacheGroups: CacheGroups = {};
   const pairs = Array.isArray(forceSplitting)
     ? forceSplitting.map(
@@ -54,7 +59,8 @@ function getForceSplittingGroups(forceSplitting: ForceSplitting): CacheGroups {
       test: regexp,
       name: key,
       chunks: 'all',
-      priority: 0,
+      // ensure force splitting chunks have higher priority when chunkSplit is 'single-vendor'
+      priority: strategy === 'single-vendor' ? 1 : 0,
       // Ignore minimum size, minimum chunks and maximum requests and always create chunks.
       enforce: true,
     };
@@ -261,6 +267,7 @@ export const pluginSplitChunks = (): RsbuildPlugin => ({
         if (chunkSplit.forceSplitting) {
           forceSplittingGroups = getForceSplittingGroups(
             chunkSplit.forceSplitting,
+            chunkSplit.strategy,
           );
         }
 

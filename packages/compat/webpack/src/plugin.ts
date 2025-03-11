@@ -2,11 +2,12 @@ import fs from 'node:fs';
 import type {
   ChainIdentifier,
   RsbuildPlugin,
+  RsbuildProviderHelpers,
   RsbuildTarget,
   Rspack,
   RspackChain,
 } from '@rsbuild/core';
-import { castArray } from './shared';
+import { castArray } from './shared.js';
 
 async function applyTsConfigPathsPlugin({
   chain,
@@ -55,16 +56,20 @@ const getMainFields = (chain: RspackChain, target: RsbuildTarget) => {
 };
 
 /**
- * Handling differences between Webpack and Rspack
+ * Handling differences between webpack and Rspack
  */
-export const pluginAdaptor = (): RsbuildPlugin => ({
+export const pluginAdaptor = (
+  helpers: RsbuildProviderHelpers,
+): RsbuildPlugin => ({
   name: 'rsbuild-webpack:adaptor',
 
   setup(api) {
     api.modifyBundlerChain(async (chain, { CHAIN_ID, environment, target }) => {
       const { config, tsconfigPath } = environment;
+      const aliasStrategy =
+        config.source.aliasStrategy ?? config.resolve.aliasStrategy;
 
-      if (tsconfigPath && config.source.aliasStrategy === 'prefer-tsconfig') {
+      if (tsconfigPath && aliasStrategy === 'prefer-tsconfig') {
         await applyTsConfigPathsPlugin({
           chain,
           CHAIN_ID,
@@ -77,10 +82,11 @@ export const pluginAdaptor = (): RsbuildPlugin => ({
       // enable progress bar for webpack by default
       const progress = config.dev.progressBar ?? true;
       if (progress) {
-        const { ProgressPlugin } = await import('./progress/ProgressPlugin');
+        const { ProgressPlugin } = await import('./progress/ProgressPlugin.js');
         chain.plugin(CHAIN_ID.PLUGIN.PROGRESS).use(ProgressPlugin, [
           {
             id: environment.name,
+            prettyTime: helpers.prettyTime,
             ...(progress === true ? {} : progress),
           },
         ]);

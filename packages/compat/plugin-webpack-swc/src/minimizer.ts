@@ -1,6 +1,6 @@
 import {
   type NormalizedEnvironmentConfig,
-  __internalHelper,
+  type Rspack,
   logger,
 } from '@rsbuild/core';
 import type { webpack } from '@rsbuild/webpack';
@@ -9,6 +9,9 @@ import color from 'picocolors';
 import { minify, minifyCss } from './binding.js';
 import { JS_REGEX } from './constants.js';
 import type { CssMinifyOptions, JsMinifyOptions, Output } from './types.js';
+
+type SwcJsMinimizerRspackPluginOptions =
+  Rspack.SwcJsMinimizerRspackPluginOptions;
 
 export interface NormalizedSwcMinifyOption {
   jsMinify?: JsMinifyOptions;
@@ -28,6 +31,53 @@ const normalize = <T>(
   return v;
 };
 
+export const getSwcMinimizerOptions = (
+  config: NormalizedEnvironmentConfig,
+  jsOptions?: SwcJsMinimizerRspackPluginOptions,
+): SwcJsMinimizerRspackPluginOptions => {
+  const options: SwcJsMinimizerRspackPluginOptions = {};
+
+  options.minimizerOptions ||= {};
+  options.minimizerOptions.format ||= {};
+
+  const { removeConsole } = config.performance;
+
+  if (removeConsole === true) {
+    options.minimizerOptions.compress = {
+      drop_console: true,
+    };
+  } else if (Array.isArray(removeConsole)) {
+    const pureFuncs = removeConsole.map((method) => `console.${method}`);
+    options.minimizerOptions.compress = {
+      pure_funcs: pureFuncs,
+    };
+  }
+
+  switch (config.output.legalComments) {
+    case 'inline':
+      options.minimizerOptions.format.comments = 'some';
+      options.extractComments = false;
+      break;
+    case 'linked':
+      options.extractComments = true;
+      break;
+    case 'none':
+      options.minimizerOptions.format.comments = false;
+      options.extractComments = false;
+      break;
+    default:
+      break;
+  }
+
+  options.minimizerOptions.format.asciiOnly = config.output.charset === 'ascii';
+
+  if (jsOptions) {
+    return deepmerge(options, jsOptions);
+  }
+
+  return options;
+};
+
 const CSS_REGEX = /\.css$/;
 
 export class SwcMinimizerPlugin {
@@ -35,7 +85,7 @@ export class SwcMinimizerPlugin {
 
   private name = 'swc-minimizer-plugin';
 
-  private rsbuildSourceMapConfig: NormalizedEnvironmentConfig['output']['sourceMap'];
+  private sourceMapConfig: NormalizedEnvironmentConfig['output']['sourceMap'];
 
   constructor(options: {
     jsMinify?: boolean | JsMinifyOptions;
@@ -43,7 +93,7 @@ export class SwcMinimizerPlugin {
     getEnvironmentConfig: () => NormalizedEnvironmentConfig;
   }) {
     const rsbuildConfig = options.getEnvironmentConfig();
-    this.rsbuildSourceMapConfig = rsbuildConfig.output.sourceMap;
+    this.sourceMapConfig = rsbuildConfig.output.sourceMap;
     this.minifyOptions = {
       jsMinify: options.jsMinify
         ? deepmerge<JsMinifyOptions>(
@@ -61,8 +111,7 @@ export class SwcMinimizerPlugin {
     environmentConfig: NormalizedEnvironmentConfig,
   ): JsMinifyOptions {
     const options: JsMinifyOptions = {
-      ...__internalHelper.getSwcMinimizerOptions(environmentConfig)
-        .minimizerOptions,
+      ...getSwcMinimizerOptions(environmentConfig).minimizerOptions,
       mangle: true,
     };
 
@@ -80,24 +129,22 @@ export class SwcMinimizerPlugin {
       const { devtool } = compilation.options;
       const { jsMinify, cssMinify } = this.minifyOptions;
 
-      const enableMinify =
-        typeof devtool === 'string'
-          ? devtool.includes('source-map')
-          : Boolean(devtool);
+      const enableSourceMap = Boolean(devtool);
       const inlineSourceContent =
         typeof devtool === 'string' && devtool.includes('inline');
 
       if (jsMinify) {
-        const userSourceMapJS = this.rsbuildSourceMapConfig.js;
-        jsMinify.sourceMap =
-          userSourceMapJS === undefined ? enableMinify : !!userSourceMapJS;
+        jsMinify.sourceMap = enableSourceMap;
         jsMinify.inlineSourcesContent = inlineSourceContent;
       }
 
       if (cssMinify) {
-        const userSourceMapCss = this.rsbuildSourceMapConfig.css;
+        const userSourceMapCss =
+          typeof this.sourceMapConfig === 'boolean'
+            ? this.sourceMapConfig
+            : this.sourceMapConfig.css;
         cssMinify.sourceMap =
-          userSourceMapCss === undefined ? enableMinify : !!userSourceMapCss;
+          userSourceMapCss === undefined ? enableSourceMap : !!userSourceMapCss;
         cssMinify.inlineSourceContent = inlineSourceContent;
       }
 

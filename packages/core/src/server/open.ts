@@ -4,6 +4,7 @@ import { STATIC_PATH } from '../constants';
 import { canParse, castArray } from '../helpers';
 import { logger } from '../logger';
 import type { NormalizedConfig, Routes } from '../types';
+import { getHostInUrl } from './helper';
 
 const execAsync = promisify(exec);
 
@@ -60,9 +61,9 @@ async function openBrowser(url: string): Promise<boolean> {
 
         return true;
       }
-      logger.debug('Failed to find the target browser.');
+      logger.debug('failed to find the target browser.');
     } catch (err) {
-      logger.debug('Failed to open start URL with apple script.');
+      logger.debug('failed to open start URL with apple script.');
       logger.debug(err);
     }
   }
@@ -70,7 +71,7 @@ async function openBrowser(url: string): Promise<boolean> {
   // Fallback to open
   // (It will always open new tab)
   try {
-    const { default: open } = await import('open');
+    const { default: open } = await import('../../compiled/open/index.js');
     await open(url);
     return true;
   } catch (err) {
@@ -154,7 +155,8 @@ export async function open({
 
   const urls: string[] = [];
   const protocol = https ? 'https' : 'http';
-  const baseUrl = `${protocol}://localhost:${port}`;
+  const host = getHostInUrl(config.server.host);
+  const baseUrl = `${protocol}://${host}:${port}`;
 
   if (!targets.length) {
     if (routes.length) {

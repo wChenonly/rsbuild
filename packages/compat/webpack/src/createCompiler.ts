@@ -1,14 +1,13 @@
 import { type Rspack, logger } from '@rsbuild/core';
 import WebpackMultiStats from 'webpack/lib/MultiStats.js';
-import { type InitConfigsOptions, initConfigs } from './initConfigs';
-import { formatStats, getStatsOptions, registerDevHook } from './shared';
+import { type InitConfigsOptions, initConfigs } from './initConfigs.js';
 
 export async function createCompiler(options: InitConfigsOptions) {
   logger.debug('create compiler');
-  const { context } = options;
+  const { helpers, context } = options;
   const { webpackConfigs } = await initConfigs(options);
 
-  await context.hooks.onBeforeCreateCompiler.call({
+  await context.hooks.onBeforeCreateCompiler.callBatch({
     bundlerConfigs: webpackConfigs as Rspack.Configuration[],
     environments: context.environments,
   });
@@ -22,16 +21,18 @@ export async function createCompiler(options: InitConfigsOptions) {
     | Rspack.MultiCompiler;
 
   const done = (stats: Rspack.Stats) => {
-    const statsOptions = getStatsOptions(compiler);
+    const statsOptions = helpers.getStatsOptions(compiler);
     const statsJson = stats.toJson({
+      moduleTrace: true,
       children: true,
-      ...(typeof statsOptions === 'string'
-        ? { preset: statsOptions }
-        : { preset: 'errors-warnings' }),
-      ...(typeof statsOptions === 'object' ? statsOptions : {}),
+      preset: 'errors-warnings',
+      ...statsOptions,
     });
 
-    const { message, level } = formatStats(statsJson, stats.hasErrors());
+    const { message, level } = helpers.formatStats(
+      statsJson,
+      stats.hasErrors(),
+    );
 
     if (level === 'error') {
       logger.error(message);
@@ -45,8 +46,8 @@ export async function createCompiler(options: InitConfigsOptions) {
     done(stats as Rspack.Stats);
   });
 
-  if (context.normalizedConfig?.mode === 'development') {
-    registerDevHook({
+  if (context.command === 'dev') {
+    helpers.registerDevHook({
       compiler,
       context,
       bundlerConfigs: webpackConfigs as Rspack.Configuration[],
@@ -54,7 +55,7 @@ export async function createCompiler(options: InitConfigsOptions) {
     });
   }
 
-  await context.hooks.onAfterCreateCompiler.call({
+  await context.hooks.onAfterCreateCompiler.callBatch({
     compiler,
     environments: context.environments,
   });

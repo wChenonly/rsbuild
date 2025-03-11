@@ -46,7 +46,19 @@ export type PluginSassOptions = {
   >;
 
   /**
+   * Include some `.scss` or `.sass` files, they will be transformed by sass-loader.
+   * @default /\.s(?:a|c)ss$/
+   */
+  include?: Rspack.RuleSetCondition;
+
+  /**
    * Exclude some `.scss` or `.sass` files, they will not be transformed by sass-loader.
    */
   exclude?: Rspack.RuleSetCondition;
+
+  /**
+   * Whether to use `resolve-url-loader` to rewrite urls.
+   * @default true
+   */
+  rewriteUrls?: boolean;
 };

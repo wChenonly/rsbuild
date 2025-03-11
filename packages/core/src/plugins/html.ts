@@ -1,18 +1,22 @@
 import fs from 'node:fs';
 import path, { isAbsolute } from 'node:path';
 import type { EntryDescription } from '@rspack/core';
-import color from 'picocolors';
 import {
   reduceConfigsMergeContext,
   reduceConfigsWithContext,
 } from 'reduce-configs';
 import {
   castArray,
+  color,
   getPublicPathFromChain,
   isFileExists,
   isPlainObject,
 } from '../helpers';
-import type { HtmlInfo, TagConfig } from '../rspack/RsbuildHtmlPlugin';
+import {
+  type HtmlInfo,
+  RsbuildHtmlPlugin,
+  type TagConfig,
+} from '../rspack/RsbuildHtmlPlugin';
 import type {
   HtmlConfig,
   HtmlRspackPlugin,
@@ -65,13 +69,13 @@ export async function getTemplate(
 
   const absolutePath = isAbsolute(templatePath)
     ? templatePath
-    : path.resolve(rootPath, templatePath);
+    : path.join(rootPath, templatePath);
 
   if (!existTemplatePath.has(absolutePath)) {
     // Check if custom template exists
     if (!(await isFileExists(absolutePath))) {
       throw new Error(
-        `Failed to resolve HTML template, please check if the file exists: ${color.cyan(
+        `[rsbuild:html] Failed to resolve HTML template, please check if the file exists: ${color.cyan(
           absolutePath,
         )}`,
       );
@@ -317,10 +321,6 @@ export const pluginHtml = (
             .plugin(`${CHAIN_ID.PLUGIN.HTML}-${entryName}`)
             .use(HtmlPlugin, [finalOptions[index]]);
         });
-
-        const { RsbuildHtmlPlugin } = await import(
-          '../rspack/RsbuildHtmlPlugin'
-        );
 
         chain
           .plugin('rsbuild-html-plugin')

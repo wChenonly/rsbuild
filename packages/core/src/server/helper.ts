@@ -3,10 +3,14 @@ import type { Http2SecureServer } from 'node:http2';
 import net from 'node:net';
 import type { Socket } from 'node:net';
 import os from 'node:os';
-import { posix } from 'node:path';
-import color from 'picocolors';
+import { posix, relative, sep } from 'node:path';
 import { DEFAULT_DEV_HOST, DEFAULT_PORT } from '../constants';
-import { addTrailingSlash, isFunction, removeLeadingSlash } from '../helpers';
+import {
+  addTrailingSlash,
+  color,
+  isFunction,
+  removeLeadingSlash,
+} from '../helpers';
 import { logger } from '../logger';
 import type {
   InternalContext,
@@ -82,7 +86,9 @@ export const getRoutes = (context: InternalContext): Routes => {
   return Object.values(context.environments).reduce<Routes>(
     (prev, environmentContext) => {
       const { distPath, config } = environmentContext;
-      const distPrefix = posix.relative(context.distPath, distPath);
+      const distPrefix = relative(context.distPath, distPath)
+        .split(sep)
+        .join('/');
 
       const routes = formatRoutes(
         environmentContext.htmlPaths,
@@ -192,7 +198,7 @@ export function printServerURLs({
 
     if (!Array.isArray(newUrls)) {
       throw new Error(
-        `"server.printUrls" must return an array, but got ${typeof newUrls}.`,
+        `[rsbuild:config] "server.printUrls" must return an array, but got ${typeof newUrls}.`,
       );
     }
 
@@ -276,7 +282,7 @@ export const getPort = async ({
   if (port !== original) {
     if (strictPort) {
       throw new Error(
-        `Port "${original}" is occupied, please choose another one.`,
+        `[rsbuild:server] Port "${original}" is occupied, please choose another one.`,
       );
     }
   }
@@ -304,7 +310,7 @@ export const getServerConfig = async ({
   const https = Boolean(config.server.https) || false;
   const portTip =
     port !== originalPort
-      ? `Port ${originalPort} is in use, ${color.yellow(`using port ${port}.`)}`
+      ? `port ${originalPort} is in use, ${color.yellow(`using port ${port}.`)}`
       : undefined;
 
   return {
@@ -336,17 +342,29 @@ const getIpv4Interfaces = () => {
   return Array.from(ipv4Interfaces.values());
 };
 
+export const isWildcardHost = (host: string): boolean => {
+  const wildcardHosts = new Set([
+    '0.0.0.0',
+    '::',
+    '0000:0000:0000:0000:0000:0000:0000:0000',
+  ]);
+  return wildcardHosts.has(host);
+};
+
 const isLoopbackHost = (host: string) => {
-  const loopbackHosts = [
+  const loopbackHosts = new Set([
     'localhost',
     '127.0.0.1',
     '::1',
     '0000:0000:0000:0000:0000:0000:0000:0001',
-  ];
-  return loopbackHosts.includes(host);
+  ]);
+  return loopbackHosts.has(host);
 };
 
-const getHostInUrl = (host: string) => {
+export const getHostInUrl = (host: string): string => {
+  if (host === DEFAULT_DEV_HOST) {
+    return 'localhost';
+  }
   if (net.isIPv6(host)) {
     return host === '::' ? '[::1]' : `[${host}]`;
   }
@@ -466,4 +484,22 @@ export function getServerTerminator(
         resolve();
       }
     });
+}
+
+/**
+ * Escape HTML characters
+ * @example
+ * escapeHtml('<div>Hello</div>') // '&lt;div&gt;Hello&lt;/div&gt;'
+ */
+export function escapeHtml(text: string | null | undefined): string {
+  if (!text) {
+    return '';
+  }
+  // `&` must be replaced first to avoid double-escaping
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

@@ -1,6 +1,6 @@
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import vm from 'node:vm';
-
 import { BasicRunner } from './basic';
 import type {
   BasicGlobalContext,
@@ -9,6 +9,8 @@ import type {
   ModuleObject,
   RunnerRequirer,
 } from './type';
+
+const require = createRequire(import.meta.url);
 
 const define = (...args: unknown[]) => {
   const factory = args.pop() as () => void;
@@ -29,6 +31,7 @@ export class CommonJsRunner extends BasicRunner {
         return timeout;
       }) as typeof setTimeout,
       clearTimeout: clearTimeout,
+      queueMicrotask,
     };
   }
 
@@ -43,6 +46,7 @@ export class CommonJsRunner extends BasicRunner {
         });
         return m;
       },
+      queueMicrotask,
     };
     return baseModuleScope;
   }
@@ -71,10 +75,12 @@ export class CommonJsRunner extends BasicRunner {
   protected createMissRequirer(): RunnerRequirer {
     return (_currentDirectory, modulePath, _context = {}) => {
       const modulePathStr = modulePath as string;
+      const resolvedPath = require.resolve(modulePathStr, {
+        paths: [_currentDirectory],
+      });
+
       return require(
-        modulePathStr.startsWith('node:')
-          ? modulePathStr.slice(5)
-          : modulePathStr,
+        resolvedPath.startsWith('node:') ? resolvedPath.slice(5) : resolvedPath,
       );
     };
   }

@@ -1,5 +1,19 @@
-import color from 'picocolors';
-import { type Logger, logger } from 'rslog';
+/**
+ * Logging message case convention:
+ *
+ * Info, ready, success and debug messages:
+ * - Start with lowercase
+ * - Example: "info  build started..."
+ *
+ * Errors and warnings:
+ * - Start with uppercase
+ * - Example: "error  Failed to build"
+ *
+ * This convention helps distinguish between normal operations
+ * and important alerts that require attention.
+ */
+import { type Logger, logger } from '../compiled/rslog/index.js';
+import { color } from './helpers';
 
 export const isDebug = (): boolean => {
   if (!process.env.DEBUG) {

@@ -1,5 +1,4 @@
-import color from 'picocolors';
-import { isFunction } from './helpers';
+import { color, isFunction } from './helpers';
 import { logger } from './logger';
 import type {
   BundlerPluginInstance,
@@ -15,7 +14,7 @@ function validatePlugin(plugin: unknown) {
 
   if (type !== 'object' || plugin === null) {
     throw new Error(
-      `Expect Rsbuild plugin instance to be an object, but got ${type}.`,
+      `[rsbuild:plugin] Expect Rsbuild plugin instance to be an object, but got ${type}.`,
     );
   }
 
@@ -30,7 +29,7 @@ function validatePlugin(plugin: unknown) {
     const messages = [
       `${color.yellow(
         name,
-      )} looks like a Webpack or Rspack plugin, please use ${color.yellow(
+      )} looks like a webpack or Rspack plugin, please use ${color.yellow(
         '`tools.rspack`',
       )} to register it:`,
       color.green(`
@@ -49,7 +48,7 @@ function validatePlugin(plugin: unknown) {
   }
 
   throw new Error(
-    `Expect Rsbuild plugin.setup to be a function, but got ${type}.`,
+    `[rsbuild:plugin] Expect the setup function of Rsbuild plugin to be a function, but got ${type}.`,
   );
 }
 
@@ -79,17 +78,7 @@ export function createPluginManager(): PluginManager {
 
       validatePlugin(newPlugin);
 
-      const existPlugin = plugins.find(
-        (item) =>
-          item.instance.name === newPlugin.name &&
-          item.environment === environment,
-      );
-
-      if (existPlugin) {
-        logger.warn(
-          `Rsbuild plugin "${newPlugin.name}" registered multiple times.`,
-        );
-      } else if (before) {
+      if (before) {
         const index = plugins.findIndex(
           (item) => item.instance.name === before,
         );
@@ -167,7 +156,7 @@ export const pluginDagSort = (plugins: PluginMeta[]): PluginMeta[] => {
   function getPlugin(name: string) {
     const targets = plugins.filter((item) => item.instance.name === name);
     if (!targets.length) {
-      throw new Error(`plugin ${name} not existed`);
+      throw new Error(`[rsbuild:plugin] Plugin "${name}" not existed`);
     }
     return targets;
   }
@@ -222,9 +211,9 @@ export const pluginDagSort = (plugins: PluginMeta[]): PluginMeta[] => {
     }
 
     throw new Error(
-      `plugins dependencies has loop: ${Object.keys(restInRingPoints).join(
-        ',',
-      )}`,
+      `[rsbuild:plugin] Plugins dependencies has loop: ${Object.keys(
+        restInRingPoints,
+      ).join(',')}`,
     );
   }
 

@@ -1,7 +1,11 @@
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import type { Configuration } from '@rspack/core';
-import color from 'picocolors';
+import { color } from '../helpers';
 import { logger } from '../logger';
 import type { BundlerPluginInstance, RsbuildPlugin } from '../types';
+
+const require = createRequire(import.meta.url);
 
 type RsdoctorExports = {
   RsdoctorRspackPlugin: { new (): BundlerPluginInstance };
@@ -61,7 +65,11 @@ export const pluginRsdoctor = (): RsbuildPlugin => ({
 
       let module: RsdoctorExports;
       try {
-        module = await import(packagePath);
+        const moduleURL =
+          process.platform === 'win32'
+            ? pathToFileURL(packagePath).href
+            : packagePath;
+        module = await import(moduleURL);
       } catch (err) {
         logger.error(
           `\`process.env.RSDOCTOR\` enabled, but failed to load ${color.bold(color.yellow(packageName))} module.`,

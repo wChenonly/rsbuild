@@ -1,12 +1,8 @@
-import type {
-  DnsPrefetchOption,
-  HtmlBasicTag,
-  PreconnectOption,
-  RsbuildPlugin,
-} from '../types';
+import { HtmlPreloadOrPrefetchPlugin } from '../rspack/preload/HtmlPreloadOrPrefetchPlugin';
+import type { HtmlBasicTag, PreconnectOption, RsbuildPlugin } from '../types';
 
 const generateLinks = (
-  options: PreconnectOption[] | DnsPrefetchOption[],
+  options: PreconnectOption[],
   rel: 'preconnect' | 'dns-prefetch',
 ): HtmlBasicTag[] =>
   options.map((option) => ({
@@ -55,10 +51,6 @@ export const pluginResourceHints = (): RsbuildPlugin => ({
         performance: { preload, prefetch },
       } = config;
       const HTMLCount = chain.entryPoints.values().length;
-
-      const { HtmlPreloadOrPrefetchPlugin } = await import(
-        '../rspack/preload/HtmlPreloadOrPrefetchPlugin'
-      );
 
       if (prefetch) {
         chain

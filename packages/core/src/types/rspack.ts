@@ -1,5 +1,5 @@
 import type * as Rspack from '@rspack/core';
-import type RspackChain from 'rspack-chain';
+import type RspackChain from '../../compiled/rspack-chain/index.js';
 import type { TransformHandler } from './plugin';
 
 export type { Rspack, RspackChain };
@@ -18,6 +18,4 @@ export interface BundlerPluginInstance {
 /** T[] => T */
 type GetElementType<T extends any[]> = T extends (infer U)[] ? U : never;
 
-export type RspackRule = GetElementType<
-  NonNullable<NonNullable<Rspack.Configuration['module']>['rules']>
->;
+export type RspackRule = GetElementType<Rspack.RuleSetRules>;

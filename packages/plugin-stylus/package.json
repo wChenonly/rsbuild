@@ -1,6 +1,6 @@
 {
   "name": "@rsbuild/plugin-stylus",
-  "version": "1.0.4",
+  "version": "1.0.8",
   "description": "Stylus plugin for Rsbuild",
   "homepage": "https://rsbuild.dev",
   "repository": {
@@ -28,18 +28,19 @@
   },
   "dependencies": {
     "deepmerge": "^4.3.1",
-    "reduce-configs": "^1.0.0",
+    "reduce-configs": "^1.1.0",
     "stylus": "0.64.0",
     "stylus-loader": "8.1.1"
   },
   "devDependencies": {
     "@rsbuild/core": "workspace:*",
+    "@rslib/core": "0.5.3",
     "@scripts/test-helper": "workspace:*",
-    "@types/node": "18.x",
-    "typescript": "^5.6.3"
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
   },
   "peerDependencies": {
-    "@rsbuild/core": "1.x || ^1.0.1-rc.0"
+    "@rsbuild/core": "1.x"
   },
   "publishConfig": {
     "access": "public",

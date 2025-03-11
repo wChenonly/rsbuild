@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
-import type Connect from 'connect';
+import type Connect from '../../compiled/connect/index.js';
 import { pathnameParse } from '../helpers/path';
 import { logger } from '../logger';
 import type {
@@ -11,6 +11,12 @@ import type {
   ServerConfig,
 } from '../types';
 import { isCliShortcutsEnabled, setupCliShortcuts } from './cliShortcuts';
+import {
+  registerCleanup,
+  removeCleanup,
+  setupGracefulShutdown,
+} from './gracefulShutdown';
+import { gzipMiddleware } from './gzipMiddleware';
 import {
   type StartServerResult,
   getAddressUrls,
@@ -24,8 +30,11 @@ import {
   faviconFallbackMiddleware,
   getBaseMiddleware,
   getRequestLoggerMiddleware,
+  notFoundMiddleware,
+  optionsFallbackMiddleware,
 } from './middlewares';
 import { open } from './open';
+import { createProxyMiddleware } from './proxy';
 
 type RsbuildProdServerOptions = {
   pwd: string;
@@ -54,7 +63,7 @@ export class RsbuildProdServer {
   }
 
   private async applyDefaultMiddlewares() {
-    const { headers, proxy, historyApiFallback, compress, base } =
+    const { headers, proxy, historyApiFallback, compress, base, cors } =
       this.options.serverConfig;
 
     if (logger.level === 'verbose') {
@@ -63,7 +72,6 @@ export class RsbuildProdServer {
 
     // compression should be the first middleware
     if (compress) {
-      const { gzipMiddleware } = await import('./gzipMiddleware');
       this.middlewares.use(
         gzipMiddleware({
           // simulates the common gzip compression rates
@@ -81,8 +89,16 @@ export class RsbuildProdServer {
       });
     }
 
+    if (cors) {
+      const { default: corsMiddleware } = await import(
+        '../../compiled/cors/index.js'
+      );
+      this.middlewares.use(
+        corsMiddleware(typeof cors === 'boolean' ? {} : cors),
+      );
+    }
+
     if (proxy) {
-      const { createProxyMiddleware } = await import('./proxy');
       const { middlewares, upgrade } = await createProxyMiddleware(proxy);
 
       for (const middleware of middlewares) {
@@ -100,7 +116,7 @@ export class RsbuildProdServer {
 
     if (historyApiFallback) {
       const { default: connectHistoryApiFallback } = await import(
-        'connect-history-api-fallback'
+        '../../compiled/connect-history-api-fallback/index.js'
       );
       const historyApiFallbackMiddleware = connectHistoryApiFallback(
         historyApiFallback === true ? {} : historyApiFallback,
@@ -113,6 +129,8 @@ export class RsbuildProdServer {
     }
 
     this.middlewares.use(faviconFallbackMiddleware);
+    this.middlewares.use(optionsFallbackMiddleware);
+    this.middlewares.use(notFoundMiddleware);
   }
 
   private async applyStaticAssetMiddleware() {
@@ -121,7 +139,7 @@ export class RsbuildProdServer {
       serverConfig: { htmlFallback },
     } = this.options;
 
-    const { default: sirv } = await import('sirv');
+    const { default: sirv } = await import('../../compiled/sirv/index.js');
 
     const assetMiddleware = sirv(path, {
       etag: true,
@@ -160,7 +178,7 @@ export async function startProdServer(
     config,
   });
 
-  const { default: connect } = await import('connect');
+  const { default: connect } = await import('../../compiled/connect/index.js');
   const middlewares = connect();
 
   const serverConfig = config.server;
@@ -178,7 +196,7 @@ export async function startProdServer(
     middlewares,
   );
 
-  await context.hooks.onBeforeStartProdServer.call();
+  await context.hooks.onBeforeStartProdServer.callBatch();
 
   const httpServer = await createHttpServer({
     serverConfig,
@@ -196,7 +214,7 @@ export async function startProdServer(
       },
       async () => {
         const routes = getRoutes(context);
-        await context.hooks.onAfterStartProdServer.call({
+        await context.hooks.onAfterStartProdServer.callBatch({
           port,
           routes,
           environments: context.environments,
@@ -206,9 +224,16 @@ export async function startProdServer(
         const urls = getAddressUrls({ protocol, port, host });
         const cliShortcutsEnabled = isCliShortcutsEnabled(config.dev);
 
+        const cleanupGracefulShutdown = setupGracefulShutdown();
+
         const closeServer = async () => {
+          // ensure closeServer is only called once
+          removeCleanup(closeServer);
+          cleanupGracefulShutdown();
           await Promise.all([server.close(), serverTerminator()]);
         };
+
+        registerCleanup(closeServer);
 
         const printUrls = () =>
           printServerURLs({
@@ -233,14 +258,17 @@ export async function startProdServer(
         printUrls();
 
         if (cliShortcutsEnabled) {
+          const shortcutsOptions =
+            typeof config.dev.cliShortcuts === 'boolean'
+              ? {}
+              : config.dev.cliShortcuts;
+
           setupCliShortcuts({
             openPage,
             closeServer,
             printUrls,
-            customShortcuts:
-              typeof config.dev.cliShortcuts === 'boolean'
-                ? undefined
-                : config.dev.cliShortcuts.custom,
+            help: shortcutsOptions.help,
+            customShortcuts: shortcutsOptions.custom,
           });
         }
 

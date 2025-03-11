@@ -3,7 +3,9 @@
   "version": "1.0.1",
   "private": true,
   "devDependencies": {
-    "@types/node": "18.x",
-    "typescript": "^5.6.3"
+    "@rsbuild/core": "workspace:*",
+    "@rslib/core": "0.5.3",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
   }
 }

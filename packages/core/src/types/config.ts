@@ -12,13 +12,15 @@ import type {
   SwcLoaderOptions,
   rspack,
 } from '@rspack/core';
-import type { WatchOptions } from 'chokidar';
+import type { ChokidarOptions } from '../../compiled/chokidar/index.js';
+import type cors from '../../compiled/cors/index.js';
 import type {
   Options as HttpProxyOptions,
   Filter as ProxyFilter,
-} from 'http-proxy-middleware';
-import type RspackChain from 'rspack-chain';
-import type { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
+} from '../../compiled/http-proxy-middleware/index.js';
+import type RspackChain from '../../compiled/rspack-chain/index.js';
+import type { FileDescriptor } from '../../compiled/rspack-manifest-plugin';
+import type { BundleAnalyzerPlugin } from '../../compiled/webpack-bundle-analyzer/index.js';
 import type {
   ModifyBundlerChainUtils,
   ModifyChainUtils,
@@ -74,6 +76,12 @@ export type ToolsHtmlPluginConfig = ConfigChainWithContext<
   }
 >;
 
+// equivalent to import('webpack-merge').merge
+export type WebpackMerge = <Configuration extends object>(
+  firstConfiguration: Configuration | Configuration[],
+  ...configurations: Configuration[]
+) => Configuration;
+
 export type ModifyRspackConfigUtils = ModifyChainUtils & {
   addRules: (rules: RspackRule | RspackRule[]) => void;
   appendRules: (rules: RspackRule | RspackRule[]) => void;
@@ -84,7 +92,7 @@ export type ModifyRspackConfigUtils = ModifyChainUtils & {
     plugins: BundlerPluginInstance | BundlerPluginInstance[],
   ) => void;
   removePlugin: (pluginName: string) => void;
-  mergeConfig: typeof import('webpack-merge').merge;
+  mergeConfig: WebpackMerge;
   rspack: typeof rspack;
 };
 
@@ -174,27 +182,46 @@ export type Decorators = {
 
 export interface SourceConfig {
   /**
-   * Create aliases to import or require certain modules,
-   * same as the [resolve.alias](https://rspack.dev/config/resolve) config of Rspack.
+   * @deprecated Use `resolve.alias` instead.
+   * `source.alias` will be removed in v2.0.0.
    */
   alias?: ConfigChain<Alias>;
   /**
-   * Used to control the priority between the `paths` option in `tsconfig.json`
-   * and the `alias` option in the bundler.
+   * @deprecated Use `resolve.aliasStrategy` instead.
+   * `source.aliasStrategy` will be removed in v2.0.0.
    */
   aliasStrategy?: AliasStrategy;
   /**
-   * Specify directories or modules that need additional compilation.
-   * In order to maintain faster compilation speed, Rsbuild will not compile files under node_modules through
-   * `babel-loader` or `ts-loader` by default, as will as the files outside the current project directory.
+   * Include additional files that should be treated as static assets.
+   * @default undefined
+   */
+  assetsInclude?: Rspack.RuleSetCondition;
+  /**
+   * Specify additional JavaScript files that need to be compiled by SWC.
+   * Through the `source.include` config, you can specify directories or modules
+   * that need to be compiled by Rsbuild. The usage of `source.include` is
+   * consistent with [Rule.include](https://rspack.dev/config/module#ruleinclude)
+   * in Rspack, which supports passing in strings or regular expressions to match
+   * the module path.
+   * @default
+   * [
+   *   { and: [rootPath, { not: /[\\/]node_modules[\\/]/ }], },
+   *   /\.(?:ts|tsx|jsx|mts|cts)$/,
+   * ];
    */
   include?: RuleSetCondition[];
   /**
    * Set the entry modules.
+   * @default
+   * {
+   *   // Rsbuild also supports other suffixes by default, such as ts,
+   *   // tsx, jsx, mts, cts, mjs, cjs
+   *   index: './src/index.js',
+   * }
    */
   entry?: RsbuildEntry;
   /**
-   * Specifies that certain files that will be excluded from compilation.
+   * Exclude JavaScript or TypeScript files that do not need to be compiled by SWC.
    */
   exclude?: RuleSetCondition[];
   /**
@@ -243,8 +270,11 @@ type TransformImportFn = (
 
 export interface NormalizedSourceConfig extends SourceConfig {
   define: Define;
+  /**
+   * @deprecated Use `resolve.alias` instead.
+   * `source.alias` will be removed in v2.0.0.
+   */
   alias: ConfigChain<Alias>;
-  aliasStrategy: AliasStrategy;
   preEntry: string[];
   decorators: Required<Decorators>;
 }
@@ -255,7 +285,9 @@ export type ProxyBypass = (
   req: IncomingMessage,
   res: ServerResponse,
   proxyOptions: ProxyOptions,
-) => string | undefined | null | boolean;
+) => MaybePromise<string | undefined | null | boolean>;
+
+export type { ProxyFilter };
 
 export type ProxyOptions = HttpProxyOptions & {
   /**
@@ -264,6 +296,7 @@ export type ProxyOptions = HttpProxyOptions & {
    * - Return `true` to continue processing the request without proxy.
    * - Return `false` to produce a 404 error for the request.
    * - Return a path to serve from, instead of continuing to proxy the request.
+   * - Return a Promise to handle the request asynchronously.
    */
   bypass?: ProxyBypass;
   /**
@@ -312,10 +345,13 @@ export type PublicDirOptions = {
    */
   name?: string;
   /**
-   * Whether to copy files from the publicDir to the distDir on production build
-   * @default true
+   * Whether to copy files from the public directory to the dist directory on production build.
+   * - `true`: copy files
+   * - `false`: do not copy files
+   * - `'auto'`: if `output.target` is not `'node'`, copy files, otherwise do not copy
+   * @default 'auto'
    */
-  copyOnBuild?: boolean;
+  copyOnBuild?: boolean | 'auto';
   /**
    * whether to watch the public directory and reload the page when the files change
    * @default false
@@ -328,12 +364,12 @@ export type PublicDir = false | PublicDirOptions | PublicDirOptions[];
 export interface ServerConfig {
   /**
    * Configure the base path of the server.
-   *
    * @default '/'
    */
   base?: string;
   /**
-   * Whether to enable gzip compression
+   * Whether to enable gzip compression for served static assets.
+   * @default true
    */
   compress?: boolean;
   /**
@@ -341,15 +377,19 @@ export interface ServerConfig {
    */
   publicDir?: PublicDir;
   /**
-   * Specify a port number for Rsbuild Server to listen.
+   * Specify a port number for Rsbuild server to listen.
+   * @default 3000
    */
   port?: number;
   /**
-   * After configuring this option, you can enable HTTPS Server, and disabling the HTTP Server.
+   * Configure HTTPS options to enable HTTPS server.
+   * When enabled, HTTP server will be disabled.
+   * @default undefined
    */
   https?: HttpsServerOptions | SecureServerSessionOptions;
   /**
-   * Used to set the host of Rsbuild Server.
+   * Specify the host that the Rsbuild server listens to.
+   * @default '0.0.0.0'
    */
   host?: string;
   /**
@@ -357,7 +397,8 @@ export interface ServerConfig {
    */
   headers?: Record<string, string | string[]>;
   /**
-   * Whether to support html fallback.
+   * Whether to enable HTML fallback.
+   * @default 'index'
    */
   htmlFallback?: HtmlFallback;
   /**
@@ -367,6 +408,7 @@ export interface ServerConfig {
   historyApiFallback?: boolean | HistoryApiFallbackOptions;
   /**
    * Set the page URL to open when the server starts.
+   * @default false
    */
   open?:
     | boolean
@@ -377,17 +419,35 @@ export interface ServerConfig {
         before?: () => Promise<void> | void;
       };
   /**
-   * Configure proxy rules for the dev server or preview server to proxy requests to the specified service.
+   * Configure CORS for the dev server or preview server.
+   * - true: enable CORS with default options.
+   * - false: disable CORS.
+   * - object: enable CORS with the specified options.
+   * @default false
+   * @link https://github.com/expressjs/cors
+   */
+  cors?: boolean | cors.CorsOptions;
+  /**
+   * Configure proxy rules for the dev server or preview server to proxy requests to
+   * the specified service.
    */
   proxy?: ProxyConfig;
   /**
    * Whether to throw an error when the port is occupied.
+   * @default false
    */
   strictPort?: boolean;
   /**
-   * Whether to print the server urls when the server is started.
+   * Controls whether and how server URLs are printed when the server starts.
+   * @default true
    */
   printUrls?: PrintUrls;
+  /**
+   * Whether to create Rsbuild's server in middleware mode, which is useful for
+   * integrating with other servers.
+   * @default false
+   */
+  middlewareMode?: boolean;
 }
 
 export type NormalizedServerConfig = ServerConfig &
@@ -402,6 +462,8 @@ export type NormalizedServerConfig = ServerConfig &
       | 'printUrls'
       | 'open'
       | 'base'
+      | 'cors'
+      | 'middlewareMode'
     >
   >;
 
@@ -420,8 +482,9 @@ export interface SecurityConfig {
   nonce?: string;
 
   /**
-   * Adding an integrity attribute (`integrity`) to sub-resources introduced by HTML allows the browser to
-   * verify the integrity of the introduced resource, thus preventing tampering with the downloaded resource.
+   * Adding an integrity attribute (`integrity`) to sub-resources introduced by HTML
+   * allows the browser to verify the integrity of the introduced resource, thus preventing
+   * tampering with the downloaded resource.
    */
   sri?: SriOptions;
 }
@@ -430,29 +493,81 @@ export type NormalizedSecurityConfig = Required<SecurityConfig>;
 
 export type ConsoleType = 'log' | 'info' | 'warn' | 'error' | 'table' | 'group';
 
-// may extends cache options in the futures
 export type BuildCacheOptions = {
-  /** Base directory for the filesystem cache. */
+  /**
+   * The output directory of the cache files.
+   * @default 'node_modules/.cache'
+   */
   cacheDirectory?: string;
+  /**
+   * Add additional cache digests, the previous build cache will be invalidated
+   * when any value in the array changes.
+   * @default undefined
+   */
   cacheDigest?: Array<string | undefined>;
+  /**
+   * An array of files containing build dependencies.
+   * Rspack will use the hash of each of these files to invalidate the persistent cache.
+   */
+  buildDependencies?: string[];
+};
+
+export type PrintFileSizeAsset = {
+  /**
+   * The name of the asset.
+   * @example 'index.html', 'static/js/index.[hash].js'
+   */
+  name: string;
+  /**
+   * The size of the asset in bytes.
+   */
+  size: number;
 };
 
 export type PrintFileSizeOptions = {
+  /**
+   * Whether to print the total size of all static assets.
+   * @default true
+   */
   total?: boolean;
+  /**
+   * Whether to print the size of each static asset.
+   * @default true
+   */
   detail?: boolean;
+  /**
+   * Whether to print the gzip-compressed size of each static asset.
+   * Disable this option can save some gzip computation time for large projects.
+   * @default true
+   */
   compressed?: boolean;
+  /**
+   * A filter function to determine which static assets to print.
+   * If returned `false`, the static asset will be excluded and not included in the
+   * total size or detailed size.
+   * @default undefined
+   */
+  include?: (asset: PrintFileSizeAsset) => boolean;
+  /**
+   * A filter function to exclude static assets from the total size or detailed size.
+   * If both `include` and `exclude` are set, `exclude` will take precedence.
+   * @default (asset) => /\.(?:map|LICENSE\.txt)$/.test(asset.name)
+   */
+  exclude?: (asset: PrintFileSizeAsset) => boolean;
 };
 
 export interface PreconnectOption {
+  /**
+   * The URL of the resource to preconnect to.
+   */
   href: string;
+  /**
+   * Whether to add `crossorigin` attribute to the `<link>` element.
+   */
   crossorigin?: boolean;
 }
 
 export type Preconnect = Array<string | PreconnectOption>;
-
-export interface DnsPrefetchOption {
-  href: string;
-}
 
 export type DnsPrefetch = string[];
 
@@ -464,11 +579,15 @@ export type PreloadIncludeType =
 
 export type Filter = Array<string | RegExp> | ((filename: string) => boolean);
 
-export interface PreloadOrPreFetchOption {
+export interface PreloadOrPrefetchOption {
   type?: PreloadIncludeType;
   include?: Filter;
   exclude?: Filter;
+  dedupe?: boolean;
 }
+export type PreloadOption = PreloadOrPrefetchOption;
+
+export type PrefetchOption = Omit<PreloadOrPrefetchOption, 'dedupe'>;
 
 export interface PerformanceConfig {
   /**
@@ -482,7 +601,8 @@ export interface PerformanceConfig {
   removeMomentLocale?: boolean;
 
   /**
-   * Controls the Rsbuild's caching behavior during the build process.
+   * To enable or configure persistent build cache.
+   * @experimental This feature is experimental and may be changed in the future.
    */
   buildCache?: BuildCacheOptions | boolean;
 
@@ -494,7 +614,7 @@ export interface PerformanceConfig {
   /**
    * Configure the chunk splitting strategy.
    */
-  chunkSplit?: RsbuildChunkSplit;
+  chunkSplit?: ChunkSplit;
 
   /**
    * Analyze the size of output files.
@@ -511,35 +631,37 @@ export interface PerformanceConfig {
   /**
    * Used to control resource `DnsPrefetch`.
    *
-   * Specifies that the user agent should preemptively perform DNS resolution for the target resource's origin.
+   * Specifies that the user agent should preemptively perform DNS resolution for the target
+   * resource's origin.
    */
   dnsPrefetch?: DnsPrefetch;
 
   /**
    * Used to control resource `Preload`.
    *
-   * Specifies that the user agent must preemptively fetch and cache the target resource for current navigation.
+   * Specifies that the user agent must preemptively fetch and cache the target resource for
+   * current navigation.
    */
-  preload?: true | PreloadOrPreFetchOption;
+  preload?: true | PreloadOption;
 
   /**
    * Used to control resource `Prefetch`.
    *
-   * Specifies that the user agent should preemptively fetch and cache the target resource as it is likely to be required for a followup navigation.
+   * Specifies that the user agent should preemptively fetch and cache the target resource as it
+   * is likely to be required for a followup navigation.
    */
-  prefetch?: true | PreloadOrPreFetchOption;
+  prefetch?: true | PrefetchOption;
 
   /**
    * Whether capture timing information for each module,
-   * same as the [profile](https://webpack.js.org/configuration/other-options/#profile) config of webpack.
+   * same as the [profile](https://rspack.dev/config/other-options#profile) config of Rspack.
    */
   profile?: boolean;
 }
 
 export interface NormalizedPerformanceConfig extends PerformanceConfig {
   printFileSize: PrintFileSizeOptions | boolean;
-  buildCache: BuildCacheOptions | boolean;
-  chunkSplit: RsbuildChunkSplit;
+  chunkSplit: ChunkSplit;
 }
 
 export type SplitChunks = Configuration extends {
@@ -549,24 +671,6 @@ export type SplitChunks = Configuration extends {
 }
   ? P
   : never;
-
-export type CacheGroups = Configuration extends {
-  optimization?: {
-    splitChunks?:
-      | {
-          cacheGroups?: infer P;
-        }
-      | false;
-  };
-}
-  ? P
-  : never;
-
-export type CacheGroup = CacheGroups extends {
-  [key: string]: infer P;
-}
-  ? P
-  : null;
 
 export type ForceSplitting = RegExp[] | Record<string, RegExp>;
 
@@ -595,7 +699,7 @@ export interface SplitCustom extends BaseSplitRules {
   splitChunks?: SplitChunks;
 }
 
-export type RsbuildChunkSplit = BaseChunkSplit | SplitBySize | SplitCustom;
+export type ChunkSplit = BaseChunkSplit | SplitBySize | SplitCustom;
 
 export type DistPathConfig = {
   /**
@@ -662,60 +766,77 @@ export type DistPathConfig = {
 
 export type FilenameConfig = {
   /**
+   * The name of HTML files.
+   * @default `[name].html`
+   */
+  html?: string;
+  /**
    * The name of the JavaScript files.
    * @default
    * - dev: '[name].js'
    * - prod: '[name].[contenthash:8].js'
    */
-  js?: NonNullable<Rspack.Configuration['output']>['filename'];
+  js?: Rspack.Filename;
   /**
    * The name of the CSS files.
    * @default
    * - dev: '[name].css'
    * - prod: '[name].[contenthash:8].css'
    */
-  css?: NonNullable<Rspack.Configuration['output']>['cssFilename'];
+  css?: Rspack.CssFilename;
   /**
    * The name of the SVG images.
    * @default '[name].[contenthash:8].svg'
    */
-  svg?: string;
-  /**
-   * The name of HTML files.
-   * @default `[name].html`
-   */
-  html?: string;
+  svg?: Rspack.AssetModuleFilename;
   /**
    * The name of the font files.
    * @default '[name].[contenthash:8][ext]'
    */
-  font?: string;
+  font?: Rspack.AssetModuleFilename;
   /**
    * The name of non-SVG images.
    * @default '[name].[contenthash:8][ext]'
    */
-  image?: string;
+  image?: Rspack.AssetModuleFilename;
   /**
    * The name of media assets, such as video.
    * @default '[name].[contenthash:8][ext]'
    */
-  media?: string;
+  media?: Rspack.AssetModuleFilename;
   /**
    * the name of other assets, except for above (image, svg, font, html, wasm...)
    * @default '[name].[contenthash:8][ext]'
    */
-  assets?: string;
+  assets?: Rspack.AssetModuleFilename;
 };
 
 export type DataUriLimit = {
-  /** The data URI limit of the SVG image. */
+  /**
+   * The data URI limit of the SVG image.
+   * @default 4096
+   */
   svg?: number;
-  /** The data URI limit of the font file. */
+  /**
+   * The data URI limit of the font file.
+   * @default 4096
+   */
   font?: number;
-  /** The data URI limit of non-SVG images. */
+  /**
+   * The data URI limit of non-SVG images.
+   * @default 4096
+   */
   image?: number;
-  /** The data URI limit of media resources such as videos. */
+  /**
+   * The data URI limit of media resources such as videos.
+   * @default 4096
+   */
   media?: number;
+  /**
+   * The data URI limit of other static assets.
+   * @default 4096
+   */
+  assets?: number;
 };
 
 export type Charset = 'ascii' | 'utf8';
@@ -727,7 +848,15 @@ export type NormalizedDataUriLimit = Required<DataUriLimit>;
 export type Polyfill = 'usage' | 'entry' | 'off';
 
 export type SourceMap = {
+  /**
+   * The source map type for JavaScript files.
+   * @default isDev ? 'cheap-module-source-map' : false
+   */
   js?: Rspack.Configuration['devtool'];
+  /**
+   * Whether to generate source map for CSS files.
+   * @default false
+   */
   css?: boolean;
 };
 
@@ -741,26 +870,32 @@ export type CSSModulesLocalsConvention =
 export type CSSModules = {
   /**
    * Allows CSS Modules to be automatically enabled based on their filenames.
+   * @default true
    */
   auto?: CSSLoaderModulesOptions['auto'];
   /**
    * Allows exporting names from global class names, so you can use them via import.
+   * @default false
    */
   exportGlobals?: boolean;
   /**
    * Style of exported class names.
+   * @default 'camelCase'
    */
   exportLocalsConvention?: CSSModulesLocalsConvention;
   /**
    * Set the local ident name of CSS Modules.
+   * @default isProd ? '[local]-[hash:base64:6]' : '[path][name]__[local]-[hash:base64:6]'
    */
   localIdentName?: string;
   /**
    * Controls the level of compilation applied to the input styles.
+   * @default 'local'
    */
   mode?: CSSLoaderModulesOptions['mode'];
   /**
    * Whether to enable ES modules named export for locals.
+   * @default false
    */
   namedExport?: boolean;
 };
@@ -798,6 +933,71 @@ export type InlineChunkConfig =
   | InlineChunkTest
   | { enable?: boolean | 'auto'; test: InlineChunkTest };
 
+export type ManifestByEntry = {
+  initial?: {
+    js?: string[];
+    css?: string[];
+  };
+  async?: {
+    js?: string[];
+    css?: string[];
+  };
+  /** other assets (e.g. png、svg、source map) related to the current entry */
+  assets?: string[];
+  html?: string[];
+};
+
+export type ManifestData = {
+  entries: {
+    /** relate to Rsbuild's source.entry config */
+    [entryName: string]: ManifestByEntry;
+  };
+  /** Flatten all assets */
+  allFiles: string[];
+};
+
+export type ManifestObjectConfig = {
+  /**
+   * The filename or path of the manifest file.
+   * The manifest file will be emitted to the output directory.
+   * @default 'manifest.json'
+   */
+  filename?: string;
+  /**
+   * A custom function to generate the content of the manifest file.
+   */
+  generate?: (params: {
+    files: FileDescriptor[];
+    manifestData: ManifestData;
+  }) => Record<string, unknown>;
+  /**
+   * Allows you to filter the files included in the manifest.
+   * The function receives a `file` parameter and returns `true` to keep the file,
+   * or `false` to exclude it.
+   * @default (file: FileDescriptor) => !file.name.endsWith('.LICENSE.txt')
+   */
+  filter?: (file: FileDescriptor) => boolean;
+};
+
+export type ManifestConfig = string | boolean | ManifestObjectConfig;
+
+export type CleanDistPathObject = {
+  /**
+   * Whether to clean up all files under the output directory before the build starts.
+   * @default 'auto'
+   */
+  enable?: boolean | 'auto';
+  /**
+   * Specify the files to keep in the output directory.
+   * If the file's absolute path matches the regular expression in `keep`, the file
+   * will not be removed.
+   * @default undefined
+   */
+  keep?: RegExp[];
+};
+
+export type CleanDistPath = boolean | 'auto' | CleanDistPathObject;
+
 export interface OutputConfig {
   /**
    * Specify build target to run in specified environment.
@@ -805,17 +1005,19 @@ export interface OutputConfig {
    */
   target?: RsbuildTarget;
   /**
-   * At build time, prevent some `import` dependencies from being packed into bundles in your code, and instead fetch them externally at runtime.
+   * At build time, prevent some `import` dependencies from being packed into bundles in your code,
+   * and instead fetch them externally at runtime.
    * For more information, please see: [Rspack Externals](https://rspack.dev/config/externals)
+   * @default undefined
    */
   externals?: Externals;
   /**
-   * Set the directory of the dist files.
-   * Rsbuild will output files to the corresponding subdirectory according to the file type.
+   * Set the directory of the output files.
+   * Rsbuild will emit files to the specified subdirectory according to the file type.
    */
   distPath?: DistPathConfig;
   /**
-   * Sets the filename of dist files.
+   * Sets the filename of output files.
    */
   filename?: FilenameConfig;
   /**
@@ -826,17 +1028,20 @@ export interface OutputConfig {
   charset?: Charset;
   /**
    * Configure how the polyfill is injected.
+   * @default 'off'
    */
   polyfill?: Polyfill;
   /**
    * When using CDN in the production,
    * you can use this option to set the URL prefix of static assets,
-   * similar to the output.publicPath config of webpack.
+   * similar to the `output.publicPath` config of Rspack.
+   * @default `server.base`
    */
   assetPrefix?: string;
   /**
    * Set the size threshold to inline static assets such as images and fonts.
-   * By default, static assets will be Base64 encoded and inline into the page if the size is less than 4KiB.
+   * By default, static assets will be Base64 encoded and inline into the page if
+   * the size is less than 4KiB.
    */
   dataUriLimit?: number | DataUriLimit;
   /**
@@ -845,79 +1050,110 @@ export interface OutputConfig {
    * comment in CSS that contains @license or @preserve or that starts with //! or /\*!.
    * These comments are preserved in output files by default since that follows the intent
    * of the original authors of the code.
+   * @default 'linked'
    */
   legalComments?: LegalComments;
   /**
-   * Whether to clean all files in the dist path before starting compilation.
+   * Whether to clean up all files under the output directory before the build starts.
    * @default 'auto'
    */
-  cleanDistPath?: boolean | 'auto';
+  cleanDistPath?: CleanDistPath;
   /**
    * Allow to custom CSS Modules options.
    */
   cssModules?: CSSModules;
   /**
    * Whether to disable code minification in production build.
+   * @default true
    */
   minify?: Minify;
   /**
-   * Whether to generate manifest file.
+   * Configure how to generate the manifest file.
+   * - `true`: Generate a manifest file named `manifest.json` in the output directory.
+   * - `false`: Do not generate the manifest file.
+   * - `string`: Generate a manifest file with the specified filename or path.
+   * - `object`: Generate a manifest file with the specified options.
+   * @default false
    */
-  manifest?: string | boolean;
+  manifest?: ManifestConfig;
   /**
-   * Whether to generate source map files, and which format of source map to generate
+   * Whether to generate source map files, and which format of source map to generate.
+   *
+   * @default
+   * ```js
+   * const defaultSourceMap = {
+   *   js: isDev ? 'cheap-module-source-map' : false,
+   *   css: false,
+   * };
+   * ```
    */
-  sourceMap?: SourceMap;
+  sourceMap?: boolean | SourceMap;
   /**
    * Whether to add filename hash after production build.
+   * @default true
    */
   filenameHash?: boolean | string;
   /**
    * Whether to inline output scripts files (.js files) into HTML with `<script>` tags.
+   * @default false
    */
   inlineScripts?: InlineChunkConfig;
   /**
    * Whether to inline output style files (.css files) into html with `<style>` tags.
+   * @default false
    */
   inlineStyles?: InlineChunkConfig;
   /**
    * Whether to inject styles into the DOM via `style-loader`.
+   * @default false
    */
   injectStyles?: boolean;
   /**
    * Specifies the range of target browsers that the project is compatible with.
    * This value will be used by [SWC](https://github.com/swc-project/swc) and
-   * [Lightning CSS](https://github.com/parcel-bundler/lightningcss) to identify the JavaScript syntax that
-   * need to be transformed and the CSS browser prefixes that need to be added.
+   * [Lightning CSS](https://github.com/parcel-bundler/lightningcss) to identify
+   * the JavaScript syntax that need to be transformed and the CSS browser prefixes
+   * that need to be added.
+   * @default undefined
    */
   overrideBrowserslist?: string[];
   /**
    * Copies the specified file or directory to the dist directory.
+   * @default undefined
    */
   copy?: CopyRspackPluginOptions | CopyRspackPluginOptions['patterns'];
   /**
    * Whether to emit static assets such as image, font, etc.
    * Return `false` to avoid outputting unnecessary assets for some scenarios such as SSR.
+   * @default true
    */
   emitAssets?: boolean;
+  /**
+   * Whether to emit CSS to the output bundles.
+   * If `false`, the CSS will not be extracted to separate files or injected into the JavaScript
+   * bundles via `output.injectStyles`.
+   * @default `true` when `output.target` is `web`, otherwise `false`
+   */
+  emitCss?: boolean;
 }
 
 export interface NormalizedOutputConfig extends OutputConfig {
   target: RsbuildTarget;
   filename: FilenameConfig;
-  distPath: Omit<Required<DistPathConfig>, 'jsAsync' | 'cssAsync' | 'js'> & {
-    js?: string;
-    jsAsync?: string;
-    cssAsync?: string;
-  };
+  distPath: Omit<Required<DistPathConfig>, 'jsAsync' | 'cssAsync' | 'js'> &
+    Pick<DistPathConfig, 'jsAsync' | 'cssAsync' | 'js'>;
   polyfill: Polyfill;
-  sourceMap: {
-    js?: Rspack.Configuration['devtool'];
-    css: boolean;
-  };
+  sourceMap:
+    | boolean
+    | {
+        js?: Rspack.Configuration['devtool'];
+        css: boolean;
+      };
+  cleanDistPath: CleanDistPath;
   filenameHash: boolean | string;
   assetPrefix: string;
   dataUriLimit: number | NormalizedDataUriLimit;
+  manifest: ManifestConfig;
   minify: Minify;
   inlineScripts: InlineChunkConfig;
   inlineStyles: InlineChunkConfig;
@@ -1022,27 +1258,40 @@ export type AppIcon = {
 export interface HtmlConfig {
   /**
    * Configure the `<meta>` tag of the HTML.
+   *
+   * @default
+   * ```js
+   * const defaultMeta = {
+   *   charset: { charset: 'UTF-8' },
+   *   viewport: 'width=device-width, initial-scale=1.0',
+   * };
+   * ```
    */
   meta?: ChainedHtmlOption<MetaOptions>;
   /**
    * Set the title tag of the HTML page.
+   * @default 'Rsbuild App'
    */
   title?: ChainedHtmlOption<string>;
   /**
    * Set the inject position of the `<script>` tag.
+   * @default 'head'
    */
   inject?: ChainedHtmlOption<ScriptInject>;
   /**
    * Inject custom html tags into the output html files.
+   * @default undefined
    */
   tags?: OneOrMany<HtmlTagDescriptor>;
   /**
    * Set the favicon icon for all pages.
+   * @default undefined
    */
   favicon?: ChainedHtmlOption<string>;
   /**
    * Set the web application icons to display when added to the home screen of a mobile device.
    *
+   * @default undefined
    * @example
    * appIcon: {
    *   name: 'My Website',
@@ -1055,20 +1304,24 @@ export interface HtmlConfig {
   appIcon?: AppIcon;
   /**
    * Set the id of root element.
+   * @default 'root'
    */
   mountId?: string;
   /**
    * Set the [crossorigin](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/crossorigin) attribute
    * of the `<script>` tag.
+   * @default false
    */
   crossorigin?: boolean | CrossOrigin;
   /**
    * Define the directory structure of the HTML output files.
+   * @default 'flat'
    */
   outputStructure?: OutputStructure;
   /**
    * Define the path to the HTML template,
    * corresponding to the `template` config of [html-rspack-plugin](https://github.com/rspack-contrib/html-rspack-plugin).
+   * @default A built-in HTML template
    */
   template?: ChainedHtmlOption<string>;
   /**
@@ -1081,6 +1334,7 @@ export interface HtmlConfig {
   >;
   /**
    * Set the loading mode of the `<script>` tag.
+   * @default 'defer'
    */
   scriptLoading?: ScriptLoading;
 }
@@ -1181,11 +1435,11 @@ export type ClientConfig = {
 export type NormalizedClientConfig = Pick<ClientConfig, 'protocol'> &
   Omit<Required<ClientConfig>, 'protocol'>;
 
-export type ChokidarWatchOptions = WatchOptions;
+export type { ChokidarOptions };
 
 export type WatchFiles = {
   paths: string | string[];
-  options?: WatchOptions;
+  options?: ChokidarOptions;
   type?: 'reload-page' | 'reload-server';
 };
 
@@ -1215,7 +1469,7 @@ export interface DevConfig {
   liveReload?: boolean;
   /**
    * Set the URL prefix of static assets in development mode,
-   * similar to the [output.publicPath](https://rspack.dev/config/output#outputpublicpath) config of webpack.
+   * similar to the [output.publicPath](https://rspack.dev/config/output#outputpublicpath) config of Rspack.
    */
   assetPrefix?: string | boolean;
   /**
@@ -1237,7 +1491,12 @@ export interface DevConfig {
          * @param shortcuts - The default CLI shortcuts.
          * @returns - The customized CLI shortcuts.
          */
-        custom?: (shortcuts?: CliShortcut[]) => CliShortcut[];
+        custom?: (shortcuts: CliShortcut[]) => CliShortcut[];
+        /**
+         * Whether to print the help hint when the server is started.
+         * @default true
+         */
+        help?: boolean;
       };
   /**
    * Provides the ability to execute a custom function and apply custom middlewares.
@@ -1269,6 +1528,34 @@ export type NormalizedDevConfig = DevConfig &
     client: NormalizedClientConfig;
   };
 
+export interface ResolveConfig {
+  /**
+   * Force Rsbuild to resolve the specified packages from project root,
+   * which is useful for deduplicating packages and reducing the bundle size.
+   */
+  dedupe?: string[];
+  /**
+   * Set the alias for the module path, which is used to simplify the import path or redirect the module reference.
+   * Similar to the [resolve.alias](https://rspack.dev/config/resolve) config of Rspack.
+   */
+  alias?: ConfigChain<Alias>;
+  /**
+   * Control the priority between the `paths` option in `tsconfig.json`
+   * and the `resolve.alias` option of Rsbuild.
+   * @default 'prefer-tsconfig'
+   */
+  aliasStrategy?: AliasStrategy;
+  /**
+   * Automatically resolve file extensions when importing modules.
+   * This means you can import files without explicitly writing their extensions.
+   * @default ['.ts', '.tsx', '.mjs', '.js', '.jsx', '.json']
+   */
+  extensions?: string[];
+}
+
+export type NormalizedResolveConfig = ResolveConfig &
+  Pick<Required<ResolveConfig>, 'alias' | 'aliasStrategy' | 'extensions'>;
+
 export type ModuleFederationConfig = {
   options: ModuleFederationPluginOptions;
 };
@@ -1291,7 +1578,7 @@ export interface EnvironmentConfig {
    */
   dev?: Pick<
     DevConfig,
-    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation'
+    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation' | 'writeToDisk'
   >;
   /**
    * Options for HTML generation.
@@ -1302,7 +1589,11 @@ export interface EnvironmentConfig {
    */
   tools?: ToolsConfig;
   /**
-   * Options for source code parsing and compilation.
+   * Options for module resolution.
+   */
+  resolve?: ResolveConfig;
+  /**
+   * Options for input source code.
    */
   source?: SourceConfig;
   /**
@@ -1345,7 +1636,7 @@ export interface RsbuildConfig extends EnvironmentConfig {
    */
   dev?: DevConfig;
   /**
-   * Options for the Rsbuild Server,
+   * Options for the Rsbuild server,
    * will take effect during local development and preview.
    */
   server?: ServerConfig;
@@ -1370,10 +1661,11 @@ export type MergedEnvironmentConfig = {
   root: string;
   dev: Pick<
     NormalizedDevConfig,
-    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation'
+    'hmr' | 'assetPrefix' | 'progressBar' | 'lazyCompilation' | 'writeToDisk'
   >;
   html: NormalizedHtmlConfig;
   tools: NormalizedToolsConfig;
+  resolve: NormalizedResolveConfig;
   source: NormalizedSourceConfig;
   output: Omit<NormalizedOutputConfig, 'distPath'> & {
     distPath: Omit<Required<DistPathConfig>, 'jsAsync' | 'cssAsync'> & {

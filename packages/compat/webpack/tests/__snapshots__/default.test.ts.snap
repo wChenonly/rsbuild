@@ -43,6 +43,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -70,6 +73,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -118,7 +124,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -241,10 +247,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
-    HotModuleReplacementPlugin {
-      "options": {},
-    },
     MiniCssExtractPlugin {
       "_sortedModulesCache": WeakMap {},
       "options": {
@@ -260,7 +262,13 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "linkType": "text/css",
       },
     },
-    HtmlRspackPlugin {
+    {
+      "name": "RsbuildCorePlugin",
+    },
+    HotModuleReplacementPlugin {
+      "options": {},
+    },
+    HtmlWebpackPlugin {
       "options": {
         "base": false,
         "cache": true,
@@ -281,6 +289,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
+        "minify": "auto",
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
@@ -290,7 +299,26 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "title": "Rsbuild App",
         "xhtml": false,
       },
-      "version": 6,
+      "userOptions": {
+        "chunks": [
+          "index",
+        ],
+        "entryName": "index",
+        "filename": "index.html",
+        "inject": "head",
+        "meta": {
+          "charset": {
+            "charset": "UTF-8",
+          },
+          "viewport": "width=device-width, initial-scale=1.0",
+        },
+        "scriptLoading": "defer",
+        "template": "",
+        "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
+        "templateParameters": [Function],
+        "title": "Rsbuild App",
+      },
+      "version": 5,
     },
     RsbuildHtmlPlugin {
       "getEnvironment": [Function],
@@ -322,6 +350,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
+      "prettyTime": [Function],
       "profile": false,
       "showActiveModules": false,
       "showDependencies": true,
@@ -332,6 +361,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
     },
     "extensions": [
       ".ts",
@@ -370,6 +410,10 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -413,6 +457,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -440,6 +487,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -487,7 +537,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -609,7 +659,6 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
     MiniCssExtractPlugin {
       "_sortedModulesCache": WeakMap {},
       "options": {
@@ -625,7 +674,10 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "linkType": "text/css",
       },
     },
-    HtmlRspackPlugin {
+    {
+      "name": "RsbuildCorePlugin",
+    },
+    HtmlWebpackPlugin {
       "options": {
         "base": false,
         "cache": true,
@@ -646,6 +698,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
           },
           "viewport": "width=device-width, initial-scale=1.0",
         },
+        "minify": "auto",
         "publicPath": "auto",
         "scriptLoading": "defer",
         "showErrors": true,
@@ -655,7 +708,26 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
         "title": "Rsbuild App",
         "xhtml": false,
       },
-      "version": 6,
+      "userOptions": {
+        "chunks": [
+          "index",
+        ],
+        "entryName": "index",
+        "filename": "index.html",
+        "inject": "head",
+        "meta": {
+          "charset": {
+            "charset": "UTF-8",
+          },
+          "viewport": "width=device-width, initial-scale=1.0",
+        },
+        "scriptLoading": "defer",
+        "template": "",
+        "templateContent": "<!doctype html><html><head></head><body><div id=\\"root\\"></div></body></html>",
+        "templateParameters": [Function],
+        "title": "Rsbuild App",
+      },
+      "version": 5,
     },
     RsbuildHtmlPlugin {
       "getEnvironment": [Function],
@@ -687,6 +759,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
+      "prettyTime": [Function],
       "profile": false,
       "showActiveModules": false,
       "showDependencies": true,
@@ -697,6 +770,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
     },
     "extensions": [
       ".ts",
@@ -735,6 +819,10 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when produ
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -778,6 +866,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -786,7 +877,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "type": "javascript/auto",
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
+            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.mjs",
           },
           {
             "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
@@ -806,6 +897,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -853,7 +947,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -948,7 +1042,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.node\\$/,
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/transformRawLoader.cjs",
+            "loader": "<ROOT>/packages/core/dist/transformRawLoader.mjs",
             "options": {
               "getEnvironment": [Function],
               "id": "rsbuild-transform-0",
@@ -980,7 +1074,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
+    {
+      "name": "RsbuildCorePlugin",
+    },
     DefinePlugin {
       "definitions": {
         "import.meta.env.ASSET_PREFIX": "\\"\\"",
@@ -1001,6 +1097,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
+      "prettyTime": [Function],
       "profile": false,
       "showActiveModules": false,
       "showDependencies": true,
@@ -1011,6 +1108,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
     },
     "extensions": [
       ".ts",
@@ -1046,6 +1154,10 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     ],
   },
   "target": "node",
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -1090,6 +1202,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -1098,7 +1213,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "type": "javascript/auto",
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
+            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.mjs",
           },
           {
             "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
@@ -1118,6 +1233,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -1165,7 +1283,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -1277,7 +1395,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
+    {
+      "name": "RsbuildCorePlugin",
+    },
     DefinePlugin {
       "definitions": {
         "import.meta.env.ASSET_PREFIX": "\\"\\"",
@@ -1298,6 +1418,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
       "modulesCount": 5000,
       "name": "ProgressPlugin",
       "percentBy": null,
+      "prettyTime": [Function],
       "profile": false,
       "showActiveModules": false,
       "showDependencies": true,
@@ -1308,6 +1429,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
   "resolve": {
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
+    },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
     },
     "extensions": [
       ".ts",
@@ -1346,5 +1478,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "webworker",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;

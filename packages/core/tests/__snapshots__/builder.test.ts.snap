@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
+exports[`should use Rspack as the default bundler > apply Rspack correctly 1`] = `
 {
   "context": "<ROOT>",
   "devtool": "cheap-module-source-map",
@@ -30,6 +30,9 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -68,6 +71,9 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -99,6 +105,7 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -142,6 +149,7 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -183,7 +191,7 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -305,16 +313,18 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
-    HotModuleReplacementPlugin {
-      "name": "HotModuleReplacementPlugin",
-    },
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].css",
         "filename": "static/css/[name].css",
         "ignoreOrder": true,
       },
+    },
+    RsbuildCorePlugin {
+      "name": "RsbuildCorePlugin",
+    },
+    HotModuleReplacementPlugin {
+      "name": "HotModuleReplacementPlugin",
     },
     HtmlRspackPlugin {
       "options": {
@@ -391,5 +401,9 @@ exports[`should use rspack as default bundler > apply rspack correctly 1`] = `
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;

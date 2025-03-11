@@ -30,6 +30,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -68,6 +71,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -99,6 +105,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -142,6 +149,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -183,7 +191,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -305,16 +313,18 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
-    HotModuleReplacementPlugin {
-      "name": "HotModuleReplacementPlugin",
-    },
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].css",
         "filename": "static/css/[name].css",
         "ignoreOrder": true,
       },
+    },
+    {
+      "name": "RsbuildCorePlugin",
+    },
+    HotModuleReplacementPlugin {
+      "name": "HotModuleReplacementPlugin",
     },
     HtmlRspackPlugin {
       "options": {
@@ -378,6 +388,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
+    },
     "extensions": [
       ".ts",
       ".tsx",
@@ -388,12 +409,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly 1`] = `
     ],
     "tsConfig": {
       "configFile": "<ROOT>/packages/core/tests/tsconfig.json",
+      "references": "auto",
     },
   },
   "target": [
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -427,6 +453,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -465,6 +494,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -495,6 +527,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -538,6 +571,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -579,7 +613,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -732,13 +766,15 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].[contenthash:8].css",
         "filename": "static/css/[name].[contenthash:8].css",
         "ignoreOrder": true,
       },
+    },
+    {
+      "name": "RsbuildCorePlugin",
     },
     HtmlRspackPlugin {
       "options": {
@@ -811,6 +847,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
+    },
     "extensions": [
       ".ts",
       ".tsx",
@@ -821,12 +868,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when prod 
     ],
     "tsConfig": {
       "configFile": "<ROOT>/packages/core/tests/tsconfig.json",
+      "references": "auto",
     },
   },
   "target": [
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -860,6 +912,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -868,7 +923,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "type": "javascript/auto",
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.cjs",
+            "loader": "<ROOT>/packages/core/dist/ignoreCssLoader.mjs",
           },
           {
             "loader": "<ROOT>/packages/core/compiled/css-loader/index.js",
@@ -888,6 +943,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -914,6 +972,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -953,6 +1012,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -994,7 +1054,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -1089,7 +1149,7 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
         "test": /\\\\\\.node\\$/,
         "use": [
           {
-            "loader": "<ROOT>/packages/core/dist/transformRawLoader.cjs",
+            "loader": "<ROOT>/packages/core/dist/transformRawLoader.mjs",
             "options": {
               "getEnvironment": [Function],
               "id": "rsbuild-transform-0",
@@ -1121,7 +1181,9 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "hints": false,
   },
   "plugins": [
-    RsbuildCorePlugin {},
+    {
+      "name": "RsbuildCorePlugin",
+    },
     DefinePlugin {
       "_args": [
         {
@@ -1142,6 +1204,17 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
+    },
     "extensions": [
       ".ts",
       ".tsx",
@@ -1152,9 +1225,14 @@ exports[`applyDefaultPlugins > should apply default plugins correctly when targe
     ],
     "tsConfig": {
       "configFile": "<ROOT>/packages/core/tests/tsconfig.json",
+      "references": "auto",
     },
   },
   "target": "node",
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;
 
@@ -1196,6 +1274,9 @@ exports[`tools.rspack > should match snapshot 1`] = `
         "test": /\\\\\\.m\\?js/,
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "resolve": {
           "preferRelative": true,
         },
@@ -1234,6 +1315,9 @@ exports[`tools.rspack > should match snapshot 1`] = `
         ],
       },
       {
+        "dependency": {
+          "not": "url",
+        },
         "include": [
           {
             "and": [
@@ -1265,6 +1349,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -1308,6 +1393,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
               "jsc": {
                 "experimental": {
                   "cacheRoot": "<ROOT>/packages/core/tests/node_modules/.cache/.swc",
+                  "keepImportAttributes": true,
                 },
                 "externalHelpers": true,
                 "parser": {
@@ -1349,7 +1435,7 @@ exports[`tools.rspack > should match snapshot 1`] = `
             "type": "asset",
           },
         ],
-        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\)\\$/i,
+        "test": /\\\\\\.\\(\\?:png\\|jpg\\|jpeg\\|pjpeg\\|pjp\\|gif\\|bmp\\|webp\\|ico\\|apng\\|avif\\|tif\\|tiff\\|jfif\\|cur\\)\\$/i,
       },
       {
         "oneOf": [
@@ -1478,16 +1564,18 @@ exports[`tools.rspack > should match snapshot 1`] = `
     TestPlugin {
       "name": "TestPlugin",
     },
-    RsbuildCorePlugin {},
-    HotModuleReplacementPlugin {
-      "name": "HotModuleReplacementPlugin",
-    },
     CssExtractRspackPlugin {
       "options": {
         "chunkFilename": "static/css/async/[name].css",
         "filename": "static/css/[name].css",
         "ignoreOrder": true,
       },
+    },
+    {
+      "name": "RsbuildCorePlugin",
+    },
+    HotModuleReplacementPlugin {
+      "name": "HotModuleReplacementPlugin",
     },
     HtmlRspackPlugin {
       "options": {
@@ -1551,6 +1639,17 @@ exports[`tools.rspack > should match snapshot 1`] = `
     "alias": {
       "@swc/helpers": "<ROOT>/node_modules/<PNPM_INNER>/@swc/helpers",
     },
+    "extensionAlias": {
+      ".js": [
+        ".js",
+        ".ts",
+        ".tsx",
+      ],
+      ".jsx": [
+        ".jsx",
+        ".tsx",
+      ],
+    },
     "extensions": [
       ".ts",
       ".tsx",
@@ -1561,11 +1660,16 @@ exports[`tools.rspack > should match snapshot 1`] = `
     ],
     "tsConfig": {
       "configFile": "<ROOT>/packages/core/tests/tsconfig.json",
+      "references": "auto",
     },
   },
   "target": [
     "web",
     "es2017",
   ],
+  "watchOptions": {
+    "aggregateTimeout": 0,
+    "ignored": /\\[\\\\\\\\/\\]\\(\\?:\\\\\\.git\\|node_modules\\)\\[\\\\\\\\/\\]/,
+  },
 }
 `;

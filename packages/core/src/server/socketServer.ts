@@ -1,27 +1,32 @@
 import type { IncomingMessage } from 'node:http';
 import type { Socket } from 'node:net';
 import { parse } from 'node:querystring';
-import type Ws from 'ws';
-import { getAllStatsErrors, getAllStatsWarnings } from '../helpers';
+import type Ws from '../../compiled/ws/index.js';
+import {
+  getAllStatsErrors,
+  getAllStatsWarnings,
+  getStatsOptions,
+} from '../helpers';
+import { formatStatsMessages } from '../helpers/format';
 import { logger } from '../logger';
 import type { DevConfig, Rspack } from '../types';
 import { getCompilationId } from './helper';
+import { genOverlayHTML } from './overlay';
 
 interface ExtWebSocket extends Ws {
   isAlive: boolean;
 }
 
 function isEqualSet(a: Set<string>, b: Set<string>): boolean {
-  if (a.size !== b.size) {
-    return false;
-  }
+  return a.size === b.size && [...a].every((value) => b.has(value));
+}
 
-  for (const v of a.values()) {
-    if (!b.has(v)) {
-      return false;
-    }
-  }
-  return true;
+const CHECK_SOCKETS_INTERVAL = 30000;
+
+interface SocketMessage {
+  type: string;
+  compilationId?: string;
+  data?: Record<string, any> | string | boolean;
 }
 
 export class SocketServer {
@@ -34,7 +39,7 @@ export class SocketServer {
   private stats: Record<string, Rspack.Stats>;
   private initialChunks: Record<string, Set<string>>;
 
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
   constructor(options: DevConfig) {
     this.options = options;
@@ -54,9 +59,42 @@ export class SocketServer {
     });
   }
 
+  // detect and close broken connections
+  // https://github.com/websockets/ws/blob/8.18.0/README.md#how-to-detect-and-close-broken-connections
+  private checkSockets = () => {
+    for (const socket of this.wsServer.clients) {
+      const extWs = socket as ExtWebSocket;
+      if (!extWs.isAlive) {
+        extWs.terminate();
+      } else {
+        extWs.isAlive = false;
+        extWs.ping(() => {
+          // empty
+        });
+      }
+    }
+
+    // Schedule next check only if timer hasn't been cleared
+    if (this.heartbeatTimer !== null) {
+      this.heartbeatTimer = setTimeout(
+        this.checkSockets,
+        CHECK_SOCKETS_INTERVAL,
+      ).unref();
+    }
+  };
+
+  private clearHeartbeatTimer(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
   // create socket, install socket handler, bind socket event
   public async prepare(): Promise<void> {
-    const { default: ws } = await import('ws');
+    this.clearHeartbeatTimer();
+
+    const { default: ws } = await import('../../compiled/ws/index.js');
     this.wsServer = new ws.Server({
       noServer: true,
       path: this.options.client?.path,
@@ -67,19 +105,10 @@ export class SocketServer {
       logger.error(err);
     });
 
-    this.timer = setInterval(() => {
-      for (const socket of this.wsServer.clients) {
-        const extWs = socket as ExtWebSocket;
-        if (!extWs.isAlive) {
-          extWs.terminate();
-        } else {
-          extWs.isAlive = false;
-          extWs.ping(() => {
-            // empty
-          });
-        }
-      }
-    }, 30000);
+    this.heartbeatTimer = setTimeout(
+      this.checkSockets,
+      CHECK_SOCKETS_INTERVAL,
+    ).unref();
 
     this.wsServer.on('connection', (socket, req) => {
       // /rsbuild-hmr?compilationId=web
@@ -97,21 +126,17 @@ export class SocketServer {
 
     this.stats[compilationId] = stats;
 
+    if (!this.sockets.length) {
+      return;
+    }
+
     this.sendStats({
       compilationId,
     });
   }
 
   // write message to each socket
-  public sockWrite({
-    type,
-    compilationId,
-    data,
-  }: {
-    type: string;
-    compilationId?: string;
-    data?: Record<string, any> | string | boolean;
-  }): void {
+  public sockWrite({ type, compilationId, data }: SocketMessage): void {
     for (const socket of this.sockets) {
       this.send(socket, JSON.stringify({ type, data, compilationId }));
     }
@@ -119,49 +144,58 @@ export class SocketServer {
 
   private singleWrite(
     socket: Ws,
-    {
-      type,
-      data,
-      compilationId,
-    }: {
-      type: string;
-      compilationId?: string;
-      data?: Record<string, any> | string | boolean;
-    },
+    { type, data, compilationId }: SocketMessage,
   ) {
     this.send(socket, JSON.stringify({ type, data, compilationId }));
   }
 
-  public close(): void {
+  public async close(): Promise<void> {
+    this.clearHeartbeatTimer();
+
+    // Remove all event listeners
+    this.wsServer.removeAllListeners();
+
+    // Close all client sockets
+    for (const socket of this.wsServer.clients) {
+      socket.terminate();
+    }
+    // Close all tracked sockets
     for (const socket of this.sockets) {
       socket.close();
     }
 
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
+    // Reset all properties
+    this.stats = {};
+    this.initialChunks = {};
+    this.sockets.length = 0;
+
+    return new Promise<void>((resolve, reject) => {
+      this.wsServer.close((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
   private onConnect(socket: Ws, params: Record<string, string>) {
     const connection = socket as ExtWebSocket;
 
     connection.isAlive = true;
+
+    // heartbeat
     connection.on('pong', () => {
       connection.isAlive = true;
     });
 
-    if (!connection) {
-      return;
-    }
-
     this.sockets.push(connection);
 
     connection.on('close', () => {
-      const idx = this.sockets.indexOf(connection);
-
-      if (idx >= 0) {
-        this.sockets.splice(idx, 1);
+      const index = this.sockets.indexOf(connection);
+      if (index >= 0) {
+        this.sockets.splice(index, 1);
       }
     });
 
@@ -200,9 +234,16 @@ export class SocketServer {
       errorDetails: false,
       entrypoints: true,
       children: true,
+      moduleTrace: true,
     };
 
-    return curStats.toJson(defaultStats);
+    const statsOptions = getStatsOptions(curStats.compilation.compiler);
+    const statsJson = curStats.toJson({ ...defaultStats, ...statsOptions });
+
+    return {
+      statsJson,
+      root: curStats.compilation.compiler.options.context,
+    };
   }
 
   // determine what message should send by stats
@@ -213,19 +254,21 @@ export class SocketServer {
     compilationId: string;
     force?: boolean;
   }) {
-    const stats = this.getStats(compilationId);
+    const result = this.getStats(compilationId);
 
     // this should never happened
-    if (!stats) {
+    if (!result) {
       return null;
     }
+
+    const { statsJson, root } = result;
 
     // web-infra-dev/rspack#6633
     // when initial-chunks change, reload the page
     // e.g: ['index.js'] -> ['index.js', 'lib-polyfill.js']
     const newInitialChunks: Set<string> = new Set();
-    if (stats.entrypoints) {
-      for (const entrypoint of Object.values(stats.entrypoints)) {
+    if (statsJson.entrypoints) {
+      for (const entrypoint of Object.values(statsJson.entrypoints)) {
         const chunks = entrypoint.chunks;
 
         if (!Array.isArray(chunks)) {
@@ -243,24 +286,25 @@ export class SocketServer {
 
     const initialChunks = this.initialChunks[compilationId];
     const shouldReload =
-      Boolean(stats.entrypoints) &&
+      Boolean(statsJson.entrypoints) &&
       Boolean(initialChunks) &&
       !isEqualSet(initialChunks, newInitialChunks);
 
     this.initialChunks[compilationId] = newInitialChunks;
+
     if (shouldReload) {
       return this.sockWrite({
-        type: 'content-changed',
+        type: 'static-changed',
         compilationId,
       });
     }
 
     const shouldEmit =
       !force &&
-      stats &&
-      !stats.errorsCount &&
-      stats.assets &&
-      stats.assets.every((asset: any) => !asset.emitted);
+      statsJson &&
+      !statsJson.errorsCount &&
+      statsJson.assets &&
+      statsJson.assets.every((asset: any) => !asset.emitted);
 
     if (shouldEmit) {
       return this.sockWrite({
@@ -272,23 +316,41 @@ export class SocketServer {
     this.sockWrite({
       type: 'hash',
       compilationId,
-      data: stats.hash,
+      data: statsJson.hash,
     });
 
-    if (stats.errorsCount) {
+    if (statsJson.errorsCount) {
+      const errors = getAllStatsErrors(statsJson);
+      const { errors: formattedErrors } = formatStatsMessages({
+        errors,
+        warnings: [],
+      });
+
       return this.sockWrite({
         type: 'errors',
         compilationId,
-        data: getAllStatsErrors(stats),
+        data: {
+          text: formattedErrors,
+          html: genOverlayHTML(formattedErrors, root),
+        },
       });
     }
-    if (stats.warningsCount) {
+
+    if (statsJson.warningsCount) {
+      const warnings = getAllStatsWarnings(statsJson);
+      const { warnings: formattedWarnings } = formatStatsMessages({
+        warnings,
+        errors: [],
+      });
       return this.sockWrite({
         type: 'warnings',
         compilationId,
-        data: getAllStatsWarnings(stats),
+        data: {
+          text: formattedWarnings,
+        },
       });
     }
+
     return this.sockWrite({
       type: 'ok',
       compilationId,

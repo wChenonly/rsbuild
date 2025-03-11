@@ -67,26 +67,43 @@ export default {
 
 - 将 Rspack 的 [target](https://rspack.dev/config/target) 设置为 `'node'`。
 - 不会生成 HTML 文件，与 HTML 相关的逻辑也不会执行，因为 Node.js 环境不需要 HTML。
-- 不会打包或抽取 CSS 代码，但产物中会包含 CSS Modules 的 id 信息。
 - 不会开启默认的拆包策略，但 dynamic import 依然可以生效。
 - 不会开启热更新相关的能力。
-- 将 Browserslist 的默认值调整为 `['node >= 16']`。
+- 将 Browserslist 的默认值设置为 `['node >= 16']`。
+- 将 [output.emitCss](/config/output/emit-css) 的默认值设置为 `false`。这意味着 CSS 代码不会被抽取为单独的文件，但产物中会包含 CSS Modules 的 id 信息。
 
-## Web Worker 产物
+### Node addons
+
+当 `target` 为 `'node'` 时，Rsbuild 允许你在 JavaScript 文件中引入 Node.js [Addons](https://nodejs.org/api/addons.html)。
+
+例如：
+
+```js title="src/index.js"
+import addon from './addon.node';
+
+addon.doSomething();
+```
+
+被引用的 addons 文件会被输出到 `dist` 目录下：
+
+```
+dist/index.js
+dist/addon.node
+```
+
+## Web Workers 产物
 
 指运行在 [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) 环境的产物。
-
-:::tip Web Worker
-Web Worker 是一种 JavaScript API，它允许网页在后台线程中执行脚本，与主线程（网页）分离。这意味着，您可以使用 Web Worker 来执行计算密集型或长时间运行的任务，而无需阻塞主线程，进而影响网页的性能。
-:::
 
 当 `target` 设置为 `'web-worker'` 时，Rsbuild 会进行以下处理：
 
 - 将 Rspack 的 [target](https://rspack.dev/config/target) 设置为 `'webworker'`。
 - 不会生成 HTML 文件，与 HTML 相关的逻辑也不会执行，因为 Web Worker 环境不需要 HTML。
-- 不会打包或抽取 CSS 代码，但产物中会包含 CSS Modules 的 id 信息。
 - 不会开启默认的拆包策略，**并且 dynamic import 也不会生效**，因为 Web Worker 仅运行支持单个 JavaScript 文件。
+- 将 [output.emitCss](/config/output/emit-css) 的默认值设置为 `false`。这意味着 CSS 代码不会被抽取为单独的文件，但产物中会包含 CSS Modules 的 id 信息。
 - 不会开启热更新相关的能力。
+
+更多信息可参考 [使用 Web Workers](/guide/basic/web-workers)。
 
 ## 其他 target
 

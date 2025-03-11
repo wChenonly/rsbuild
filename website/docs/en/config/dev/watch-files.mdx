@@ -7,7 +7,7 @@ type WatchFiles = {
   paths: string | string[];
   type?: 'reload-page' | 'reload-server';
   // watch options for chokidar
-  options?: WatchOptions;
+  options?: ChokidarOptions;
 };
 
 type WatchFilesConfig = WatchFiles | WatchFiles[];
@@ -110,10 +110,10 @@ It should be noted that the reload-server functionality is provided by Rsbuild C
 
 ## options
 
-- **Type:** `WatchOptions`
+- **Type:** `ChokidarOptions`
 - **Default:** `undefined`
 
-`watchFiles` is implemented based on [chokidar v3](https://github.com/paulmillr/chokidar#api), and you can pass chokidar options through `options`.
+`watchFiles` is implemented based on [chokidar v4](https://github.com/paulmillr/chokidar#api), and you can pass chokidar options through `options`.
 
 ```js
 export default {
@@ -134,16 +134,4 @@ export default {
 
 If you want to prevent some files from triggering a rebuild when they change, you can use Rspack's [watchOptions.ignored](https://rspack.dev/config/watch#watchoptionsignored) configuration item.
 
-For example, to prevent changes in the `node_modules` directory from triggering a rebuild, you can add the following configuration:
-
-```js
-export default {
-  tools: {
-    rspack: {
-      watchOptions: {
-        ignored: /node_modules/,
-      },
-    },
-  },
-};
-```
+> See [HMR - File Watching](/guide/advanced/hmr#file-watching) for more details.
