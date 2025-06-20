@@ -28,5 +28,6 @@
       "outputs": ["{projectRoot}/compiled"]
     }
   },
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "nxCloudId": "6854f7355dd72b28e3652c2b"
 }
